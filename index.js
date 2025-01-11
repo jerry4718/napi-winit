@@ -310,11 +310,16 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { PositionType, EventLoop, EventType, StartCause, WindowAttributes, sum } = nativeBinding
+const { PositionType, SizeType, UnitType, TimeDuration, EventLoop, EventType, StartCause, WindowAttributes, Fullscreen, WindowButtons, sum } = nativeBinding
 
 module.exports.PositionType = PositionType
+module.exports.SizeType = SizeType
+module.exports.UnitType = UnitType
+module.exports.TimeDuration = TimeDuration
 module.exports.EventLoop = EventLoop
 module.exports.EventType = EventType
 module.exports.StartCause = StartCause
 module.exports.WindowAttributes = WindowAttributes
+module.exports.Fullscreen = Fullscreen
+module.exports.WindowButtons = WindowButtons
 module.exports.sum = sum
