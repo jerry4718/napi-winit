@@ -88,20 +88,24 @@ export const enum CursorIcon {
   ZoomOut = 33
 }
 export declare function sum(a: number, b: number): number
-export type JsTimeDuration = TimeDuration
 export declare class TimeDuration {
   tSecs: number
   tNanos: number
 }
-export type JsEventLoop = EventLoop
 export declare class EventLoop {
   constructor()
 }
-export type JsEvent = Event
-export declare class Event { }
-export type JsStartCause = StartCause
-export declare class StartCause { }
-export type JsWindowAttributes = WindowAttributes
+export declare class Event {
+  get type(): EventType
+  get startCause(): StartCause
+}
+export declare class StartCause {
+  get type(): StartCauseType
+  get start(): TimeDuration
+  get requestedResume(): TimeDuration | null
+}
+export declare class WindowPayload { }
+export declare class DevicePayload { }
 export declare class WindowAttributes {
   constructor()
   withInnerSize(this: object, size: Size): this
@@ -111,7 +115,7 @@ export declare class WindowAttributes {
   withResizable(this: object, resizable: boolean): this
   withEnabledButtons(this: object, buttons: WindowButtons): this
   withTitle(this: object, title: string): this
-  withFullscreen(this: object, fullscreen?: Fullscreen | null): this
+  withFullscreen(this: object, fullscreen?: Fullscreen | undefined | null): this
   withMaximized(this: object, maximized: boolean): this
   withVisible(this: object, visible: boolean): this
   withTransparent(this: object, transparent: boolean): this
@@ -119,15 +123,14 @@ export declare class WindowAttributes {
   withBlur(this: object, blur: boolean): this
   withDecorations(this: object, decorations: boolean): this
   withWindowLevel(this: object, level: WindowLevel): this
-  withTheme(this: object, theme?: Theme): this
+  withTheme(this: object, theme?: Theme | undefined | null): this
   withResizeIncrements(this: object, resizeIncrements: Size): this
   withContentProtected(this: object, protected: boolean): this
   withActive(this: object, active: boolean): this
 }
-export type JsWindowButtons = WindowButtons
 export declare class WindowButtons {
-  static all(): JsWindowButtons
-  static empty(): JsWindowButtons
+  static all(): WindowButtons
+  static empty(): WindowButtons
   toggleClose(this: object): this
   toggleMinimize(this: object): this
   toggleMaximize(this: object): this
@@ -138,11 +141,9 @@ export declare class WindowButtons {
   removeMinimize(this: object): this
   removeMaximize(this: object): this
 }
-export type JsIcon = Icon
 export declare class Icon {
   static fromRgba(rgba: Uint8Array, width: number, height: number): Icon
 }
-export type JsCursor = Cursor
 export declare class Cursor {
   static fromIcon(icon: CursorIcon): Cursor
 }

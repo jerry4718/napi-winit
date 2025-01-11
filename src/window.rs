@@ -1,53 +1,54 @@
-use crate::dpi::JsPosition;
-use crate::dpi::JsSize;
-use crate::event_loop::JsEventLoop;
-use std::cell::RefCell;
-use std::fmt;
-use std::ops::{BitAnd, DerefMut};
-use std::ptr::NonNull;
-use std::rc::Rc;
+use crate::dpi::Position;
+use crate::dpi::Size;
 
 use winit::{
-    dpi::{Position, Size},
-    event_loop::EventLoop,
-    window::{Cursor, CursorIcon, Fullscreen, Icon, Theme, Window, WindowAttributes, WindowButtons, WindowLevel}
+    window::{
+        CursorIcon as WCursorIcon,
+        Fullscreen as WFullscreen,
+        Icon as WIcon,
+        Theme as WTheme,
+        Window as WWindow,
+        WindowAttributes as WWindowAttributes,
+        WindowButtons as WWindowButtons,
+        WindowLevel as WWindowLevel
+    }
 };
 
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
-use crate::cursor::JsCursor;
+use crate::cursor::Cursor;
 
-#[napi(js_name = "WindowAttributes")]
-pub struct JsWindowAttributes {
-    pub(crate) inner_size: Option<JsSize>,
-    pub(crate) min_inner_size: Option<JsSize>,
-    pub(crate) max_inner_size: Option<JsSize>,
-    pub(crate) position: Option<JsPosition>,
+#[napi]
+pub struct WindowAttributes {
+    pub(crate) inner_size: Option<Size>,
+    pub(crate) min_inner_size: Option<Size>,
+    pub(crate) max_inner_size: Option<Size>,
+    pub(crate) position: Option<Position>,
     pub(crate) resizable: bool,
-    pub(crate) enabled_buttons: JsWindowButtons,
+    pub(crate) enabled_buttons: WindowButtons,
     pub(crate) title: String,
     pub(crate) maximized: bool,
     pub(crate) visible: bool,
     pub(crate) transparent: bool,
     pub(crate) blur: bool,
     pub(crate) decorations: bool,
-    pub(crate) window_icon: Option<JsIcon>,
-    pub(crate) preferred_theme: Option<JsTheme>,
-    pub(crate) resize_increments: Option<JsSize>,
+    pub(crate) window_icon: Option<Icon>,
+    pub(crate) preferred_theme: Option<Theme>,
+    pub(crate) resize_increments: Option<Size>,
     pub(crate) content_protected: bool,
-    pub(crate) window_level: JsWindowLevel,
+    pub(crate) window_level: WindowLevel,
     pub(crate) active: bool,
-    pub(crate) cursor: JsCursor,
+    pub(crate) cursor: Cursor,
     // #[cfg(feature = "rwh_06")]
     // pub(crate) parent_window: Option<SendSyncRawWindowHandle>,
-    pub(crate) fullscreen: Option<JsFullscreen>,
+    pub(crate) fullscreen: Option<Fullscreen>,
     // Platform-specific configuration.
     // #[allow(dead_code)]
     // pub(crate) platform_specific: PlatformSpecificWindowAttributes,
 }
 
-impl Default for JsWindowAttributes {
+impl Default for WindowAttributes {
     #[inline]
     fn default() -> Self {
         Self {
@@ -56,7 +57,7 @@ impl Default for JsWindowAttributes {
             max_inner_size: None,
             position: None,
             resizable: true,
-            enabled_buttons: JsWindowButtons::all(),
+            enabled_buttons: WindowButtons::all(),
             title: "winit window".to_owned(),
             maximized: false,
             fullscreen: None,
@@ -69,7 +70,7 @@ impl Default for JsWindowAttributes {
             preferred_theme: None,
             resize_increments: None,
             content_protected: false,
-            cursor: JsCursor::default(),
+            cursor: Cursor::default(),
             active: true,
             // #[cfg(feature = "rwh_06")]
             // parent_window: None,
@@ -78,9 +79,9 @@ impl Default for JsWindowAttributes {
     }
 }
 
-impl Into<WindowAttributes> for JsWindowAttributes {
-    fn into(self) -> WindowAttributes {
-        let attrs = WindowAttributes::default()
+impl Into<WWindowAttributes> for WindowAttributes {
+    fn into(self) -> WWindowAttributes {
+        let attrs = WWindowAttributes::default()
             .with_resizable(self.resizable)
             .with_enabled_buttons(self.enabled_buttons.into())
             .with_title(self.title)
@@ -139,32 +140,32 @@ impl Into<WindowAttributes> for JsWindowAttributes {
 }
 
 #[napi]
-impl JsWindowAttributes {
+impl WindowAttributes {
     #[napi(constructor)]
     pub fn new() -> Self {
         Self::default()
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_inner_size(&mut self, this: This<JsObject>, size: JsSize) -> This<JsObject> {
+    pub fn with_inner_size(&mut self, this: This<JsObject>, size: Size) -> This<JsObject> {
         self.inner_size = Some(size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_min_inner_size(&mut self, this: This<JsObject>, min_size: JsSize) -> This<JsObject> {
+    pub fn with_min_inner_size(&mut self, this: This<JsObject>, min_size: Size) -> This<JsObject> {
         self.min_inner_size = Some(min_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_max_inner_size(&mut self, this: This<JsObject>, max_size: JsSize) -> This<JsObject> {
+    pub fn with_max_inner_size(&mut self, this: This<JsObject>, max_size: Size) -> This<JsObject> {
         self.max_inner_size = Some(max_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_position(&mut self, this: This<JsObject>, position: JsPosition) -> This<JsObject> {
+    pub fn with_position(&mut self, this: This<JsObject>, position: Position) -> This<JsObject> {
         self.position = Some(position);
         this
     }
@@ -176,10 +177,7 @@ impl JsWindowAttributes {
     }
 
     #[napi(ts_return_type="this")]
-    pub fn with_enabled_buttons(
-        &mut self, this: This<JsObject>,
-        #[napi(ts_arg_type = "WindowButtons")] buttons: &JsWindowButtons
-    ) -> This<JsObject> {
+    pub fn with_enabled_buttons(&mut self, this: This<JsObject>, buttons: &WindowButtons) -> This<JsObject> {
         self.enabled_buttons = *buttons;
         this
     }
@@ -191,7 +189,7 @@ impl JsWindowAttributes {
     }
 
     #[napi(ts_return_type="this")]
-    pub fn with_fullscreen(&mut self, this: This<JsObject>, #[napi(ts_arg_type = "Fullscreen | null")] fullscreen: Option<JsFullscreen>) -> This<JsObject> {
+    pub fn with_fullscreen(&mut self, this: This<JsObject>, fullscreen: Option<Fullscreen>) -> This<JsObject> {
         self.fullscreen = fullscreen;
         this
     }
@@ -232,25 +230,25 @@ impl JsWindowAttributes {
     }
 
     #[napi(ts_return_type="this")]
-    pub fn with_window_level(&mut self, this: This<JsObject>, #[napi(ts_arg_type = "WindowLevel")] level: JsWindowLevel) -> This<JsObject> {
+    pub fn with_window_level(&mut self, this: This<JsObject>, level: WindowLevel) -> This<JsObject> {
         self.window_level = level;
         this
     }
 
     // #[inline]
-    pub fn with_window_icon(&mut self, this: This<JsObject>, window_icon: Option<JsIcon>) -> This<JsObject> {
+    pub fn with_window_icon(&mut self, this: This<JsObject>, window_icon: Option<Icon>) -> This<JsObject> {
         self.window_icon = window_icon;
         this
     }
 
     #[napi(ts_return_type="this")]
-    pub fn with_theme(&mut self, this: This<JsObject>, #[napi(ts_arg_type = "Theme")] theme: Option<JsTheme>) -> This<JsObject> {
+    pub fn with_theme(&mut self, this: This<JsObject>, theme: Option<Theme>) -> This<JsObject> {
         self.preferred_theme = theme;
         this
     }
 
     #[napi(ts_return_type="this")]
-    pub fn with_resize_increments(&mut self, this: This<JsObject>, resize_increments: JsSize) -> This<JsObject> {
+    pub fn with_resize_increments(&mut self, this: This<JsObject>, resize_increments: Size) -> This<JsObject> {
         self.resize_increments = Some(resize_increments.into());
         this
     }
@@ -291,41 +289,41 @@ impl JsWindowAttributes {
 
 #[napi(js_name = "Fullscreen")]
 #[repr(u8)]
-pub enum JsFullscreen {
+pub enum Fullscreen {
     Exclusive,
     Borderless
 }
 
-impl Into<Fullscreen> for JsFullscreen {
-    fn into(self) -> Fullscreen {
+impl Into<WFullscreen> for Fullscreen {
+    fn into(self) -> WFullscreen {
         match self {
             Self::Exclusive => unimplemented!("Fullscreen::Exclusive has not implemented"),
-            Self::Borderless => Fullscreen::Borderless(None),
+            Self::Borderless => WFullscreen::Borderless(None),
         }
     }
 }
 
 #[napi(js_name = "WindowButtons")]
 #[derive(Copy, Clone)]
-pub struct JsWindowButtons {
+pub struct WindowButtons {
     pub(crate) close: bool,
     pub(crate) minimize: bool,
     pub(crate) maximize: bool,
 }
 
-impl Into<WindowButtons> for JsWindowButtons {
-    fn into(self) -> WindowButtons {
-        let mut buttons = WindowButtons::empty();
+impl Into<WWindowButtons> for WindowButtons {
+    fn into(self) -> WWindowButtons {
+        let mut buttons = WWindowButtons::empty();
         let Self { close, minimize, maximize } = self;
-        if close { buttons.insert(WindowButtons::CLOSE) }
-        if minimize { buttons.insert(WindowButtons::MINIMIZE) }
-        if maximize { buttons.insert(WindowButtons::MAXIMIZE) }
+        if close { buttons.insert(WWindowButtons::CLOSE) }
+        if minimize { buttons.insert(WWindowButtons::MINIMIZE) }
+        if maximize { buttons.insert(WWindowButtons::MAXIMIZE) }
         buttons
     }
 }
 
 #[napi]
-impl JsWindowButtons {
+impl WindowButtons {
     #[napi(factory)]
     pub fn all() -> Self {
         Self { close: true, minimize: true, maximize: true }
@@ -382,59 +380,59 @@ impl JsWindowButtons {
 }
 
 #[napi(js_name = "WindowLevel")]
-pub enum JsWindowLevel {
+pub enum WindowLevel {
     AlwaysOnBottom,
     Normal,
     AlwaysOnTop,
 }
 
-impl Default for JsWindowLevel {
+impl Default for WindowLevel {
     fn default() -> Self {
         Self::Normal
     }
 }
 
-impl Into<WindowLevel> for JsWindowLevel {
-    fn into(self) -> WindowLevel {
+impl Into<WWindowLevel> for WindowLevel {
+    fn into(self) -> WWindowLevel {
         match self {
-            JsWindowLevel::AlwaysOnBottom => WindowLevel::AlwaysOnBottom,
-            JsWindowLevel::Normal => WindowLevel::Normal,
-            JsWindowLevel::AlwaysOnTop => WindowLevel::AlwaysOnTop,
+            WindowLevel::AlwaysOnBottom => WWindowLevel::AlwaysOnBottom,
+            WindowLevel::Normal => WWindowLevel::Normal,
+            WindowLevel::AlwaysOnTop => WWindowLevel::AlwaysOnTop,
         }
     }
 }
 
 #[napi(js_name = "Theme")]
-pub enum JsTheme {
+pub enum Theme {
     Light,
     Dark,
 }
 
-impl Into<Theme> for JsTheme {
-    fn into(self) -> Theme {
+impl Into<WTheme> for Theme {
+    fn into(self) -> WTheme {
         match self {
-            JsTheme::Light => Theme::Light,
-            JsTheme::Dark => Theme::Dark,
+            Theme::Light => WTheme::Light,
+            Theme::Dark => WTheme::Dark,
         }
     }
 }
 
 #[napi(js_name = "Icon")]
-pub struct JsIcon {
-    pub(crate) inner: Icon,
+pub struct Icon {
+    pub(crate) inner: WIcon,
 }
 
-impl Into<Icon> for JsIcon {
-    fn into(self) -> Icon {
+impl Into<WIcon> for Icon {
+    fn into(self) -> WIcon {
         self.inner
     }
 }
 
 #[napi]
-impl JsIcon {
+impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
-        match Icon::from_rgba(rgba.to_vec(), width, height) {
+        match WIcon::from_rgba(rgba.to_vec(), width, height) {
             Ok(icon) => Ok(Self { inner: icon }),
             Err(bad_icon) => Err(Error::from_reason(format!("{}", bad_icon))),
         }

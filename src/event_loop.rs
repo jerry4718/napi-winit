@@ -1,16 +1,16 @@
-use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::event_loop::{ActiveEventLoop as WActiveEventLoop, EventLoop as WEventLoop};
 use crate::event::UserPayload;
 
-#[napi(js_name = "EventLoop")]
-pub struct JsEventLoop {
-  pub(crate) inner: EventLoop<()>,
+#[napi]
+pub struct EventLoop {
+  pub(crate) inner: WEventLoop<()>,
 }
 
 #[napi]
-impl JsEventLoop {
+impl EventLoop {
   #[napi(constructor)]
   pub fn new() -> Self {
-    let event_loop = EventLoop::new().expect("Failed to build EventLoop");
+    let event_loop = WEventLoop::new().expect("Failed to build EventLoop");
     Self { inner: event_loop }
   }
   // with_user_event
@@ -24,21 +24,21 @@ impl JsEventLoop {
   // create_custom_cursor
 }
 
-// #[napi(js_name = "ActiveEventLoop")]
-// pub struct JsActiveEventLoop {
-//   pub(crate) inner: ActiveEventLoop,
+// #[napi(js_name = "WActiveEventLoop")]
+// pub struct ActiveEventLoop {
+//   pub(crate) inner: WActiveEventLoop,
 // }
 //
-// impl From<&ActiveEventLoop> for JsActiveEventLoop {
-//   fn from(value: &ActiveEventLoop) -> Self {
+// impl From<&WActiveEventLoop> for ActiveEventLoop {
+//   fn from(value: &WActiveEventLoop) -> Self {
 //     Self { inner: value }
 //   }
 // }
 
 /*#[napi]
-impl JsActiveEventLoop {
+impl ActiveEventLoop {
   pub fn new() -> Self {
     let event_loop = EventLoop::new().expect("Failed to build EventLoop");
-    JsActiveEventLoop { inner: event_loop }
+    ActiveEventLoop { inner: event_loop }
   }
 }*/

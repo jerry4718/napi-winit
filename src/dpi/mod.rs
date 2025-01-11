@@ -1,111 +1,122 @@
-use winit::dpi::{LogicalPosition, LogicalSize, LogicalUnit, PhysicalPosition, PhysicalSize, PhysicalUnit, Pixel, PixelUnit, Position, Size};
+use winit::dpi::{
+    LogicalPosition as WLogicalPosition,
+    LogicalSize as WLogicalSize,
+    LogicalUnit as WLogicalUnit,
+    PhysicalPosition as WPhysicalPosition,
+    PhysicalSize as WPhysicalSize,
+    PhysicalUnit as WPhysicalUnit,
+    Pixel as WPixel,
+    PixelUnit as WPixelUnit,
+    Position as WPosition,
+    Size as WSize
+};
 
-#[napi(js_name = "UnitType")]
+#[napi]
 #[repr(u8)]
-pub enum JsUnitType {
+pub enum UnitType {
     Physical,
     Logical,
 }
 
-#[napi(object, js_name = "Position")]
-pub struct JsPosition {
-    pub r#type: JsUnitType,
+#[napi(object)]
+pub struct Position {
+    pub r#type: UnitType,
     pub x: f64,
     pub y: f64,
 }
 
-impl From<Position> for JsPosition {
-    fn from(value: Position) -> Self {
+impl From<WPosition> for Position {
+    fn from(value: WPosition) -> Self {
         match value {
-            Position::Physical(PhysicalPosition { x, y }) => Self {
-                r#type: JsUnitType::Physical,
+            WPosition::Physical(WPhysicalPosition { x, y }) => Self {
+                r#type: UnitType::Physical,
                 x: f64::from(x),
                 y: f64::from(y),
             },
-            Position::Logical(LogicalPosition { x, y }) => Self {
-                r#type: JsUnitType::Logical, x, y
+            WPosition::Logical(WLogicalPosition { x, y }) => Self {
+                r#type: UnitType::Logical, x, y
             },
         }
     }
 }
 
-impl Into<Position> for JsPosition {
-    fn into(self) -> Position {
+impl Into<WPosition> for Position {
+    fn into(self) -> WPosition {
         let Self { x, y, .. } = self;
 
         match self.r#type {
-            JsUnitType::Physical => Position::Physical(PhysicalPosition {
+            UnitType::Physical => WPosition::Physical(WPhysicalPosition {
                 x: i32::from_f64(x),
                 y: i32::from_f64(y),
             }),
-            JsUnitType::Logical => Position::Logical(LogicalPosition { x, y })
+            UnitType::Logical => WPosition::Logical(WLogicalPosition { x, y })
         }
     }
 }
 
-#[napi(object, js_name = "Size")]
-pub struct JsSize {
-    pub r#type: JsUnitType,
+#[napi(object)]
+pub struct Size {
+    pub r#type: UnitType,
     pub width: f64,
     pub height: f64,
 }
 
-impl From<Size> for JsSize {
-    fn from(value: Size) -> Self {
+impl From<WSize> for Size {
+    fn from(value: WSize) -> Self {
         match value {
-            Size::Physical(PhysicalSize { width, height }) => Self {
-                r#type: JsUnitType::Physical,
+            WSize::Physical(WPhysicalSize { width, height }) => Self {
+                r#type: UnitType::Physical,
                 width: f64::from(width),
                 height: f64::from(height),
             },
-            Size::Logical(LogicalSize { width, height }) => Self {
-                r#type: JsUnitType::Logical, width, height,
+            WSize::Logical(WLogicalSize { width, height }) => Self {
+                r#type: UnitType::Logical, width, height,
             },
         }
     }
 }
 
-impl Into<Size> for JsSize {
-    fn into(self) -> Size {
+impl Into<WSize> for Size {
+    fn into(self) -> WSize {
         let Self {width, height, .. } = self;
 
         match self.r#type {
-            JsUnitType::Physical => Size::Physical(PhysicalSize {
+            UnitType::Physical => WSize::Physical(WPhysicalSize {
                 width: u32::from_f64(width),
                 height: u32::from_f64(height),
             }),
-            JsUnitType::Logical => Size::Logical(LogicalSize { width, height })
+            UnitType::Logical => WSize::Logical(WLogicalSize { width, height })
         }
     }
 }
 
 #[napi(object, js_name = "PixelUnit")]
-pub struct JsPixelUnit {
-    pub r#type: JsUnitType,
+pub struct PixelUnit {
+    pub r#type: UnitType,
     pub count: f64,
 }
 
-impl From<PixelUnit> for JsPixelUnit {
-    fn from(value: PixelUnit) -> Self {
+impl From<WPixelUnit> for PixelUnit {
+    fn from(value: WPixelUnit) -> Self {
         match value {
-            PixelUnit::Physical(PhysicalUnit(count)) => Self {
-                r#type: JsUnitType::Physical,
+            WPixelUnit::Physical(WPhysicalUnit(count)) => Self {
+                r#type: UnitType::Physical,
                 count: f64::from(count),
             },
-            PixelUnit::Logical(LogicalUnit(count)) => Self {
-                r#type: JsUnitType::Logical, count,
+            WPixelUnit::Logical(WLogicalUnit(count)) => Self {
+                r#type: UnitType::Logical, count,
             },
         }
     }
 }
 
-impl Into<PixelUnit> for JsPixelUnit {
-    fn into(self) -> PixelUnit {
+impl Into<WPixelUnit> for PixelUnit {
+    fn into(self) -> WPixelUnit {
         let count = self.count;
 
         match self.r#type {
-            JsUnitType::Physical => PixelUnit::Physical(PhysicalUnit(i32::from_f64(count))),
-            JsUnitType::Logical => PixelUnit::Logical(LogicalUnit(count))
+            UnitType::Physical => WPixelUnit::Physical(WPhysicalUnit(i32::from_f64(count))),
+            UnitType::Logical => WPixelUnit::Logical(WLogicalUnit(count))
         }
     }
 }

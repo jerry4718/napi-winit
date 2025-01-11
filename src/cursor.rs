@@ -1,8 +1,13 @@
 use napi::bindgen_prelude::*;
-use winit::window::{Cursor, CursorIcon, CustomCursor, Icon};
+use winit::window::{
+    Cursor as WCursor,
+    CursorIcon as WCursorIcon,
+    CustomCursor as WCustomCursor,
+    Icon as WIcon
+};
 
-#[napi(js_name = "CursorIcon")]
-pub enum JsCursorIcon {
+#[napi]
+pub enum CursorIcon {
     Default,
     ContextMenu,
     Help,
@@ -39,76 +44,76 @@ pub enum JsCursorIcon {
     ZoomOut,
 }
 
-impl Default for JsCursorIcon {
+impl Default for CursorIcon {
     fn default() -> Self {
-        JsCursorIcon::Default
+        CursorIcon::Default
     }
 }
 
-impl Into<CursorIcon> for JsCursorIcon {
-    fn into(self) -> CursorIcon {
+impl Into<WCursorIcon> for CursorIcon {
+    fn into(self) -> WCursorIcon {
        match self {
-           JsCursorIcon::Default => CursorIcon::Default,
-           JsCursorIcon::ContextMenu => CursorIcon::ContextMenu,
-           JsCursorIcon::Help => CursorIcon::Help,
-           JsCursorIcon::Pointer => CursorIcon::Pointer,
-           JsCursorIcon::Progress => CursorIcon::Progress,
-           JsCursorIcon::Wait => CursorIcon::Wait,
-           JsCursorIcon::Cell => CursorIcon::Cell,
-           JsCursorIcon::Crosshair => CursorIcon::Crosshair,
-           JsCursorIcon::Text => CursorIcon::Text,
-           JsCursorIcon::VerticalText => CursorIcon::VerticalText,
-           JsCursorIcon::Alias => CursorIcon::Alias,
-           JsCursorIcon::Copy => CursorIcon::Copy,
-           JsCursorIcon::Move => CursorIcon::Move,
-           JsCursorIcon::NoDrop => CursorIcon::NoDrop,
-           JsCursorIcon::NotAllowed => CursorIcon::NotAllowed,
-           JsCursorIcon::Grab => CursorIcon::Grab,
-           JsCursorIcon::Grabbing => CursorIcon::Grabbing,
-           JsCursorIcon::EResize => CursorIcon::EResize,
-           JsCursorIcon::NResize => CursorIcon::NResize,
-           JsCursorIcon::NeResize => CursorIcon::NeResize,
-           JsCursorIcon::NwResize => CursorIcon::NwResize,
-           JsCursorIcon::SResize => CursorIcon::SResize,
-           JsCursorIcon::SeResize => CursorIcon::SeResize,
-           JsCursorIcon::SwResize => CursorIcon::SwResize,
-           JsCursorIcon::WResize => CursorIcon::WResize,
-           JsCursorIcon::EwResize => CursorIcon::EwResize,
-           JsCursorIcon::NsResize => CursorIcon::NsResize,
-           JsCursorIcon::NeswResize => CursorIcon::NeswResize,
-           JsCursorIcon::NwseResize => CursorIcon::NwseResize,
-           JsCursorIcon::ColResize => CursorIcon::ColResize,
-           JsCursorIcon::RowResize => CursorIcon::RowResize,
-           JsCursorIcon::AllScroll => CursorIcon::AllScroll,
-           JsCursorIcon::ZoomIn => CursorIcon::ZoomIn,
-           JsCursorIcon::ZoomOut => CursorIcon::ZoomOut,
+           CursorIcon::Default => WCursorIcon::Default,
+           CursorIcon::ContextMenu => WCursorIcon::ContextMenu,
+           CursorIcon::Help => WCursorIcon::Help,
+           CursorIcon::Pointer => WCursorIcon::Pointer,
+           CursorIcon::Progress => WCursorIcon::Progress,
+           CursorIcon::Wait => WCursorIcon::Wait,
+           CursorIcon::Cell => WCursorIcon::Cell,
+           CursorIcon::Crosshair => WCursorIcon::Crosshair,
+           CursorIcon::Text => WCursorIcon::Text,
+           CursorIcon::VerticalText => WCursorIcon::VerticalText,
+           CursorIcon::Alias => WCursorIcon::Alias,
+           CursorIcon::Copy => WCursorIcon::Copy,
+           CursorIcon::Move => WCursorIcon::Move,
+           CursorIcon::NoDrop => WCursorIcon::NoDrop,
+           CursorIcon::NotAllowed => WCursorIcon::NotAllowed,
+           CursorIcon::Grab => WCursorIcon::Grab,
+           CursorIcon::Grabbing => WCursorIcon::Grabbing,
+           CursorIcon::EResize => WCursorIcon::EResize,
+           CursorIcon::NResize => WCursorIcon::NResize,
+           CursorIcon::NeResize => WCursorIcon::NeResize,
+           CursorIcon::NwResize => WCursorIcon::NwResize,
+           CursorIcon::SResize => WCursorIcon::SResize,
+           CursorIcon::SeResize => WCursorIcon::SeResize,
+           CursorIcon::SwResize => WCursorIcon::SwResize,
+           CursorIcon::WResize => WCursorIcon::WResize,
+           CursorIcon::EwResize => WCursorIcon::EwResize,
+           CursorIcon::NsResize => WCursorIcon::NsResize,
+           CursorIcon::NeswResize => WCursorIcon::NeswResize,
+           CursorIcon::NwseResize => WCursorIcon::NwseResize,
+           CursorIcon::ColResize => WCursorIcon::ColResize,
+           CursorIcon::RowResize => WCursorIcon::RowResize,
+           CursorIcon::AllScroll => WCursorIcon::AllScroll,
+           CursorIcon::ZoomIn => WCursorIcon::ZoomIn,
+           CursorIcon::ZoomOut => WCursorIcon::ZoomOut,
        }
     }
 }
 
 
-#[napi(js_name = "Cursor")]
-pub struct JsCursor {
-    pub(crate) inner: Cursor
+#[napi]
+pub struct Cursor {
+    pub(crate) inner: WCursor
 }
 
-impl Into<Cursor> for JsCursor {
-    fn into(self) -> Cursor {
+impl Into<WCursor> for Cursor {
+    fn into(self) -> WCursor {
         self.inner
     }
 }
 
-impl Default for JsCursor {
+impl Default for Cursor {
     fn default() -> Self {
-        Self { inner: Cursor::default() }
+        Self { inner: WCursor::default() }
     }
 }
 
 #[napi]
-impl JsCursor {
+impl Cursor {
     #[napi(factory, ts_return_type = "Cursor")]
-    pub fn from_icon(#[napi(ts_arg_type = "CursorIcon")] icon: JsCursorIcon) -> Self {
-        Self { inner: Cursor::Icon(icon.into()) }
+    pub fn from_icon(#[napi(ts_arg_type = "CursorIcon")] icon: CursorIcon) -> Self {
+        Self { inner: WCursor::Icon(icon.into()) }
     }
     // #[napi(factory)]
     // pub fn from_rgba(

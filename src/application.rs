@@ -1,54 +1,59 @@
-use winit::application::ApplicationHandler;
-use winit::event::{DeviceEvent, DeviceId, StartCause, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
-use winit::window::WindowId;
+use winit::application::ApplicationHandler as WApplicationHandler;
+use winit::event::{
+    DeviceEvent as WDeviceEvent,
+    DeviceId as WDeviceId,
+    StartCause as WStartCause,
+    WindowEvent as WWindowEvent
+};
+use winit::event_loop::ActiveEventLoop as WActiveEventLoop;
+use winit::window::WindowId as WWindowId;
 
 pub struct Application {
-    pub new_events: Option<fn(&mut Application, event_loop: &ActiveEventLoop, cause: StartCause)>,
-    pub resumed: Option<fn(&mut Application, event_loop: &ActiveEventLoop)>,
-    pub user_event: Option<fn(&mut Application, event_loop: &ActiveEventLoop, event: ())>,
-    pub window_event: Option<fn(&mut Application, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent)>,
-    pub device_event: Option<fn(&mut Application, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent)>,
-    pub about_to_wait: Option<fn(&mut Application, event_loop: &ActiveEventLoop)>,
-    pub suspended: Option<fn(&mut Application, event_loop: &ActiveEventLoop)>,
-    pub exiting: Option<fn(&mut Application, event_loop: &ActiveEventLoop)>,
-    pub memory_warning: Option<fn(&mut Application, event_loop: &ActiveEventLoop)>,
+    pub new_events: Option<fn(&mut Application, event_loop: &WActiveEventLoop, cause: WStartCause)>,
+    pub resumed: Option<fn(&mut Application, event_loop: &WActiveEventLoop)>,
+    pub user_event: Option<fn(&mut Application, event_loop: &WActiveEventLoop, event: ())>,
+    pub window_event: Option<fn(&mut Application, event_loop: &WActiveEventLoop, window_id: WWindowId, event: WWindowEvent)>,
+    pub device_event: Option<fn(&mut Application, event_loop: &WActiveEventLoop, device_id: WDeviceId, event: WDeviceEvent)>,
+    pub about_to_wait: Option<fn(&mut Application, event_loop: &WActiveEventLoop)>,
+    pub suspended: Option<fn(&mut Application, event_loop: &WActiveEventLoop)>,
+    pub exiting: Option<fn(&mut Application, event_loop: &WActiveEventLoop)>,
+    pub memory_warning: Option<fn(&mut Application, event_loop: &WActiveEventLoop)>,
 }
 
-impl ApplicationHandler for Application {
-    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+impl WApplicationHandler for Application {
+    fn new_events(&mut self, event_loop: &WActiveEventLoop, cause: WStartCause) {
         todo!()
     }
 
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+    fn resumed(&mut self, event_loop: &WActiveEventLoop) {
         todo!()
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: ()) {
+    fn user_event(&mut self, event_loop: &WActiveEventLoop, event: ()) {
         todo!()
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+    fn window_event(&mut self, event_loop: &WActiveEventLoop, window_id: WWindowId, event: WWindowEvent) {
         todo!()
     }
 
-    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+    fn device_event(&mut self, event_loop: &WActiveEventLoop, device_id: WDeviceId, event: WDeviceEvent) {
         todo!()
     }
 
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &WActiveEventLoop) {
         todo!()
     }
 
-    fn suspended(&mut self, event_loop: &ActiveEventLoop) {
+    fn suspended(&mut self, event_loop: &WActiveEventLoop) {
         todo!()
     }
 
-    fn exiting(&mut self, event_loop: &ActiveEventLoop) {
+    fn exiting(&mut self, event_loop: &WActiveEventLoop) {
         todo!()
     }
 
-    fn memory_warning(&mut self, event_loop: &ActiveEventLoop) {
+    fn memory_warning(&mut self, event_loop: &WActiveEventLoop) {
         todo!()
     }
 }
