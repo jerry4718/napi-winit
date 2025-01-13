@@ -46,7 +46,7 @@ enum_to_mod!(
             token: ActivationToken,
         },
         Resized(#[conf_trans_type = Size] PhysicalSize<u32>),
-        Moved(#[conf_trans_type = Position<u32>] PhysicalPosition<i32>),
+        Moved(#[conf_trans_type = Position::<u32>] PhysicalPosition<i32>),
         CloseRequested,
         Destroyed,
         DroppedFile(PathBuf),

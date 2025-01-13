@@ -15,35 +15,54 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
     let origin_ident = format_ident!("Origin{}", ident);
     let mod_ident = format_ident!("js_{}", ident.to_string().to_snake());
 
-    let field_idents: Vec<_> = variants.iter()
-        .map(|v| format_ident!("{}", v.ident.to_string().to_snake()))
-        .collect();
-
     let get_field_idents: Vec<_> = variants.iter()
         .map(|v| format_ident!("get_{}", v.ident.to_string().to_snake()))
         .collect();
 
-    let sub_struct_idents: Vec<_> = variants.iter()
+    let variant_idents: Vec<_> = variants.iter()
         .map(|v| v.ident.clone())
+        .collect();
+
+    let variant_ignore_inners: Vec<_> = variants.iter()
+        .map(|v| {
+            match v.fields {
+                Fields::Named(_) => quote!({ .. }),
+                Fields::Unnamed(_) => quote!((_)),
+                Fields::Unit => quote!(),
+            }
+        })
         .collect();
 
     let type_quote = quote!(
         // #[napi]
         pub enum Type {
-            #(#sub_struct_idents),*
+            #(#variant_idents),*
         }
     );
 
-    let js = quote!(
+    let face_quote = quote!(
         // #[napi]
         pub struct #ident {
-            #(#field_idents: #sub_struct_idents),*
+            pub(crate) inner: #origin_ident,
         }
 
         impl #ident {
+            pub fn get_type(&self) -> Type {
+                match self.inner {
+                    #( #origin_ident::#variant_idents #variant_ignore_inners => Type::#variant_idents ),*
+                }
+            }
+            pub fn get_type_name(&self) -> String {
+                match self.inner {
+                    #( #origin_ident::#variant_idents #variant_ignore_inners => String::from(stringify!(#variant_idents)) ),*
+                }
+            }
             #(
-                pub fn #get_field_idents(&self) -> Option<#sub_struct_idents> {
-                    self.#field_idents.clone()
+                pub fn #get_field_idents(&self) -> Result<#variant_idents> {
+                    match &self.inner {
+                        #origin_ident::#variant_idents #variant_ignore_inners => Ok(#variant_idents::from(self.inner.clone())),
+                        _ => Err(napi::Error::from_reason("cannot access [{}] when type is [{}]", stringify!(#variant_idents), self.get_type_name())),
+                    }
                 }
             )*
         }
@@ -69,7 +88,7 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
             let sub_fields: Vec<_> = sub_fields.into_iter().map(|f| {
                 let Field { attrs, .. } = f.clone();
 
-                let cleared_attr: Vec<_> = attrs.iter()
+                let cleared_attrs: Vec<_> = attrs.iter()
                     .filter(|attr| {
                         let path_name = attr.meta.path().into_token_stream().to_string();
                         path_name != "conf_dirct_type" && path_name != "conf_trans_type"
@@ -84,7 +103,7 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
                 if let Some(_) = conf_dirct_type {
                     find_origin.insert(ty_to_string(&f.ty), f.ty.clone());
                     find_trans.insert(ty_to_string(&f.ty), f.ty.clone());
-                    return Field { attrs: cleared_attr, ..f };
+                    return Field { attrs: cleared_attrs, ..f };
                 }
 
                 let conf_trans_type = attrs.iter().find(
@@ -92,23 +111,19 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
                 );
 
                 if let Some(conf_trans_type) = conf_trans_type {
-                    match conf_trans_type.meta {
-                        Meta::NameValue(MetaNameValue { ref value, .. }) => {
-                            match value {
-                                Expr::Path(ty) => {
-                                    let trans_ty = syn::parse::<TypePath>(TokenStream::from(ty.into_token_stream())).unwrap();
-                                    let trans_ty = Type::Path(trans_ty);
+                    let Meta::NameValue(MetaNameValue { ref value, .. }) = conf_trans_type.meta
+                    else { panic!("#[conf_trans_type = xxx] that xxx must be specified") };
 
-                                    find_origin.insert(ty_to_string(&trans_ty), f.ty.clone());
-                                    find_trans.insert(ty_to_string(&f.ty), trans_ty.clone());
+                    let Expr::Path(ty) = value
+                    else { panic!("#[conf_trans_type = xxx] that xxx must be an simple type") };
 
-                                    return Field { attrs: cleared_attr, ty: trans_ty, ..f };
-                                },
-                                _ => panic!("#[conf_trans_type = xxx] that xxx must be an simple type"),
-                            }
-                        },
-                        _ => panic!("#[conf_trans_type = xxx] that xxx must be specified"),
-                    }
+                    let trans_ty = syn::parse::<TypePath>(TokenStream::from(ty.into_token_stream())).unwrap();
+                    let trans_ty = Type::Path(trans_ty);
+
+                    find_origin.insert(ty_to_string(&trans_ty), f.ty.clone());
+                    find_trans.insert(ty_to_string(&f.ty), trans_ty.clone());
+
+                    return Field { attrs: cleared_attrs, ty: trans_ty, ..f };
                 }
 
                 if let Type::Path(type_path) = f.ty.clone() {
@@ -121,7 +136,26 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
                     find_origin.insert(ty_to_string(&trans_ty), f.ty.clone());
                     find_trans.insert(ty_to_string(&f.ty), trans_ty.clone());
 
-                    return Field { attrs: cleared_attr, ty: trans_ty, ..f };
+                    return Field { attrs: cleared_attrs, ty: trans_ty, ..f };
+                }
+
+                match f.ty {
+                    Type::Array(_) => println!("Type::Array"),
+                    Type::BareFn(_) => println!("Type::BareFn"),
+                    Type::Group(_) => println!("Type::Group"),
+                    Type::ImplTrait(_) => println!("Type::ImplTrait"),
+                    Type::Infer(_) => println!("Type::Infer"),
+                    Type::Macro(_) => println!("Type::Macro"),
+                    Type::Never(_) => println!("Type::Never"),
+                    Type::Paren(_) => println!("Type::Paren"),
+                    Type::Path(_) => println!("Type::Path"),
+                    Type::Ptr(_) => println!("Type::Ptr"),
+                    Type::Reference(_) => println!("Type::Reference"),
+                    Type::Slice(_) => println!("Type::Slice"),
+                    Type::TraitObject(_) => println!("Type::TraitObject"),
+                    Type::Tuple(_) => println!("Type::Tuple"),
+                    Type::Verbatim(_) => println!("Type::Verbatim"),
+                    _ => {}
                 }
 
                 unimplemented!("here")
@@ -139,18 +173,20 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
             let reach = quote! { #origin_ident::#enum_ident };
             match v.fields {
                 Fields::Named(FieldsNamed { ref named, .. }) => {
-                    let fields: Vec<_> = named.iter().map(|f| f.ident.clone().unwrap()).collect();
+                    let fields: Vec<_> = named
+                        .iter()
+                        .map(|f| f.ident.clone().unwrap())
+                        .collect();
 
-                    quote!(
-                        #reach { #(#fields),* } => Self { #(#fields: #fields.into()),* }
-                    )
+                    quote!(#reach { #(#fields),* } => Self { #(#fields: #fields.into()),* })
                 },
                 Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => {
-                    let fields: Vec<_> = (0..unnamed.len()).into_iter().map(|i| { format_ident!("unnamed{:02}", i) }).collect();
+                    let fields: Vec<_> = (0..unnamed.len())
+                        .into_iter()
+                        .map(|i| { format_ident!("unnamed{:02}", i) })
+                        .collect();
 
-                    quote!(
-                        #reach( #(#fields),* ) => Self { #(#fields: #fields.into()),* }
-                    )
+                    quote!(#reach( #(#fields),* ) => Self { #(#fields: #fields.into()),* })
                 },
                 Fields::Unit => quote!(
                     #reach => Self { }
@@ -165,12 +201,12 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
 
             #type_quote
             #(
-                pub struct #sub_struct_idents {
+                pub struct #variant_idents {
                     #sub_fields_quote
                 }
             )*
             #(
-                impl From<#origin_ident> for #sub_struct_idents {
+                impl From<#origin_ident> for #variant_idents {
                     fn from(value: #origin_ident) -> Self {
                         match value {
                             #sub_fields_from_origin_reaches,
@@ -179,7 +215,7 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
                     }
                 }
             )*
-            #js
+            #face_quote
         }
     };
 
