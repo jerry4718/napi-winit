@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use std::collections::HashMap;
 use std::str::FromStr;
-use quote::{format_ident, quote, ToTokens};
-use syn::{parse_macro_input, parse_quote, Expr, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum, Meta, MetaNameValue, Type, TypePath};
+use syn::{parse_macro_input, Expr, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum, Meta, MetaNameValue, Type, TypePath};
 
 use case::CaseExt;
 
@@ -69,17 +69,19 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
     let sub_fields_quote: Vec<_> = variants.iter()
         .map(|v| {
             let sub_fields = match v.fields {
-                Fields::Named(FieldsNamed { ref named, .. }) => {
-                    named.iter().map(Clone::clone).collect()
-                },
-                Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => {
-                    (0..unnamed.len()).into_iter().map(|i| {
+                Fields::Named(FieldsNamed { ref named, .. }) => named.iter().map(Clone::clone).collect(),
+                Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => (0..unnamed.len())
+                    .into_iter()
+                    .map(|i| {
                         let local_ident = format_ident!("unnamed{:02}", i);
                         let unnamed_field = unnamed.get(i).unwrap().clone();
 
-                        Field { ident: Some(local_ident), ..unnamed_field }
-                    }).collect()
-                },
+                        Field {
+                            ident: Some(local_ident),
+                            ..unnamed_field
+                        }
+                    })
+                    .collect(),
                 Fields::Unit => vec![],
             };
 
@@ -159,9 +161,7 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
                 unimplemented!("here")
             }).collect();
 
-            quote!(
-                #(#sub_fields),*
-            )
+            quote!(#(#sub_fields),*)
         })
         .collect();
 
@@ -171,53 +171,46 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
             let reach = quote! { #origin_ident::#enum_ident };
             match v.fields {
                 Fields::Named(FieldsNamed { ref named, .. }) => {
-                    let fields: Vec<_> = named
-                        .iter()
-                        .map(|f| f.ident.clone().unwrap())
-                        .collect();
+                    let fields: Vec<_> = named.iter().map(|f| f.ident.clone().unwrap()).collect();
 
                     quote!(#reach { #(#fields),* } => Self { #(#fields: #fields.into()),* })
-                },
+                }
                 Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => {
                     let fields: Vec<_> = (0..unnamed.len())
                         .into_iter()
-                        .map(|i| { format_ident!("unnamed{:02}", i) })
+                        .map(|i| format_ident!("unnamed{:02}", i))
                         .collect();
 
                     quote!(#reach( #(#fields),* ) => Self { #(#fields: #fields.into()),* })
-                },
-                Fields::Unit => quote!(
-                    #reach => Self { }
-                ),
+                }
+                Fields::Unit => quote!(#reach => Self { }),
             }
         })
         .collect();
 
-    let mod_code = quote! {
-        pub mod #mod_ident {
-            use super::*;
+    TokenStream::from(quote!(
+      pub mod #mod_ident {
+          use super::*;
 
-            #type_quote
-            #(
-                pub struct #variant_idents {
-                    #sub_fields_quote
-                }
-            )*
-            #(
-                impl From<#origin_ident> for #variant_idents {
-                    fn from(value: #origin_ident) -> Self {
-                        match value {
-                            #sub_fields_from_origin_reaches,
-                            _ => unreachable!(" i hope "),
-                        }
-                    }
-                }
-            )*
-            #face_quote
-        }
-    };
-
-    TokenStream::from(mod_code)
+          #type_quote
+          #(
+              pub struct #variant_idents {
+                  #sub_fields_quote
+              }
+          )*
+          #(
+              impl From<#origin_ident> for #variant_idents {
+                  fn from(value: #origin_ident) -> Self {
+                      match value {
+                          #sub_fields_from_origin_reaches,
+                          _ => unreachable!(" i hope "),
+                      }
+                  }
+              }
+          )*
+          #face_quote
+      }
+    ))
 }
 
 #[inline]
