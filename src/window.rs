@@ -8,6 +8,7 @@ use winit::{
         Icon as WIcon,
         Theme as WTheme,
         Window as WWindow,
+        WindowId as WWindowId,
         WindowAttributes as WWindowAttributes,
         WindowButtons as WWindowButtons,
         WindowLevel as WWindowLevel
@@ -437,4 +438,8 @@ impl Icon {
             Err(bad_icon) => Err(Error::from_reason(format!("{}", bad_icon))),
         }
     }
+}
+
+pub struct WindowId {
+    pub(crate) inner: WWindowId,
 }

@@ -6,9 +6,13 @@ version = "0.0.0"
 [lib]
 crate-type = ["cdylib"]
 
+[workspace]
+members = [ "./proc" ]
+
 [dependencies]
 winit = { version = "0.30.8", features = [ "rwh_06" ] }
 rwh_06 = { package = "raw-window-handle", version = "0.6", features = [ "std" ], optional = true }
+proc = { path = "./proc" }
 
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
 napi = { version = "2.16.3", default-features = false, features = ["napi4"] }

@@ -38,6 +38,36 @@ export const enum StartCauseType {
   Poll = 2,
   Init = 3
 }
+export const enum WindowEventType {
+  ActivationTokenDone = 0,
+  Resized = 1,
+  Moved = 2,
+  CloseRequested = 3,
+  Destroyed = 4,
+  DroppedFile = 5,
+  HoveredFile = 6,
+  HoveredFileCancelled = 7,
+  Focused = 8,
+  KeyboardInput = 9,
+  ModifiersChanged = 10,
+  Ime = 11,
+  CursorMoved = 12,
+  CursorEntered = 13,
+  CursorLeft = 14,
+  MouseWheel = 15,
+  MouseInput = 16,
+  PinchGesture = 17,
+  PanGesture = 18,
+  DoubleTapGesture = 19,
+  RotationGesture = 20,
+  TouchpadPressure = 21,
+  AxisMotion = 22,
+  Touch = 23,
+  ScaleFactorChanged = 24,
+  ThemeChanged = 25,
+  Occluded = 26,
+  RedrawRequested = 27
+}
 export const enum Fullscreen {
   Exclusive = 0,
   Borderless = 1
@@ -89,8 +119,8 @@ export const enum CursorIcon {
 }
 export declare function sum(a: number, b: number): number
 export declare class TimeDuration {
-  tSecs: number
-  tNanos: number
+  t_secs: number
+  t_nanos: number
 }
 export declare class EventLoop {
   constructor()
@@ -106,6 +136,8 @@ export declare class StartCause {
 }
 export declare class WindowPayload { }
 export declare class DevicePayload { }
+export declare class WindowId { }
+export declare class WindowEvent { }
 export declare class WindowAttributes {
   constructor()
   withInnerSize(this: object, size: Size): this

@@ -2,7 +2,9 @@ use std::time::Instant;
 
 #[napi(js_name = "TimeDuration")]
 pub struct TimeDuration {
+    #[napi(js_name = "t_secs")]
     pub t_secs: u32,
+    #[napi(js_name = "t_nanos")]
     pub t_nanos: u32,
 }
 
