@@ -24,12 +24,10 @@ pub fn enum_to_mod(input: TokenStream) -> TokenStream {
         .collect();
 
     let variant_ignore_inners: Vec<_> = variants.iter()
-        .map(|v| {
-            match v.fields {
-                Fields::Named(_) => quote!({ .. }),
-                Fields::Unnamed(_) => quote!((_)),
-                Fields::Unit => quote!(),
-            }
+        .map(|v| match v.fields {
+            Fields::Named(_) => quote!({ .. }),
+            Fields::Unnamed(_) => quote!((_)),
+            Fields::Unit => quote!(),
         })
         .collect();
 
