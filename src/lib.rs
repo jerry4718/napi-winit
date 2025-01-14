@@ -6,13 +6,12 @@
 extern crate napi_derive;
 
 mod dpi;
-mod js;
+mod extra;
 mod application;
 mod event_loop;
 mod event;
 mod window;
 mod cursor;
-mod event2;
 mod event3;
 
 #[napi]

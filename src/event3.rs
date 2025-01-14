@@ -1,11 +1,46 @@
-use winit::event::DeviceId;
-use proc::enum_to_mod;
-use crate::window::WindowId;
+use winit::{
+    event::{
+        DeviceEvent as OriginDeviceEvent,
+        DeviceId as OriginDeviceId,
+        Event as OriginEvent,
+        StartCause as OriginStartCause,
+        WindowEvent as OriginWindowEvent,
+        KeyEvent as OriginKeyEvent,
+        Modifiers as OriginModifiers,
+        Ime as OriginIme,
+        MouseScrollDelta as OriginMouseScrollDelta,
+        TouchPhase as OriginTouchPhase,
+        ElementState as OriginElementState,
+        MouseButton as OriginMouseButton,
+        AxisId as OriginAxisId,
+        Touch as OriginTouch,
+        InnerSizeWriter as OriginInnerSizeWriter,
+        ButtonId as OriginButtonId,
+        RawKeyEvent as OriginRawKeyEvent,
+    },
+    window::{
+        WindowId as OriginWindowId,
+        ActivationToken as OriginActivationToken,
+        Theme as OriginTheme
+    },
+    event_loop::AsyncRequestSerial as OriginAsyncRequestSerial
+};
 
+use crate::window::WindowId;
+use crate::dpi::Size;
+use crate::dpi::Position;
+use crate::extra::TimeDuration;
+use crate::extra::convert::ExFrom;
+use crate::extra::convert::ExInto;
+
+use proc::mapping_enum;
+use napi::bindgen_prelude::*;
+
+#[derive(Clone)]
 pub struct UserPayload {}
 
-enum_to_mod!(
-    enum Event {
+mapping_enum!(
+    enum Event<UserPayload> {
         NewEvents(StartCause),
         WindowEvent {
             window_id: WindowId,
@@ -24,33 +59,33 @@ enum_to_mod!(
     }
 );
 
-enum_to_mod!(
+mapping_enum!(
     enum StartCause {
         ResumeTimeReached {
-            start: Instant,
-            requested_resume: Instant,
+            #[conf_trans_type = TimeDuration] start: Instant,
+            #[conf_trans_type = TimeDuration] requested_resume: Instant,
         },
         WaitCancelled {
-            start: Instant,
-            requested_resume: Option<Instant>,
+            #[conf_trans_type = TimeDuration] start: Instant,
+            #[conf_trans_type = Option::<TimeDuration>] requested_resume: Option<Instant>,
         },
         Poll,
         Init,
     }
 );
 
-enum_to_mod!(
+mapping_enum!(
     enum WindowEvent {
         ActivationTokenDone {
             serial: AsyncRequestSerial,
             token: ActivationToken,
         },
         Resized(#[conf_trans_type = Size] PhysicalSize<u32>),
-        Moved(#[conf_trans_type = Position::<u32>] PhysicalPosition<i32>),
+        Moved(#[conf_trans_type = Position] PhysicalPosition<i32>),
         CloseRequested,
         Destroyed,
-        DroppedFile(PathBuf),
-        HoveredFile(PathBuf),
+        DroppedFile(#[conf_trans_type = String] PathBuf),
+        HoveredFile(#[conf_trans_type = String] PathBuf),
         HoveredFileCancelled,
         Focused(bool),
         KeyboardInput {
@@ -119,12 +154,12 @@ enum_to_mod!(
     }
 );
 
-enum_to_mod!(
+mapping_enum!(
     enum DeviceEvent {
         Added,
         Removed,
         MouseMotion {
-            delta: (f64, f64),
+            #[conf_trans_type = Position] delta: (f64, f64),
         },
         MouseWheel {
             delta: MouseScrollDelta,

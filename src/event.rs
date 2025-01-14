@@ -1,4 +1,3 @@
-use std::time::Instant;
 use winit::event::{
     DeviceEvent as WDeviceEvent,
     DeviceId as WDeviceId,
@@ -8,8 +7,8 @@ use winit::event::{
 };
 use winit::window::WindowId as WWindowId;
 
+use crate::extra::TimeDuration;
 use napi::bindgen_prelude::*;
-use crate::js::TimeDuration;
 
 pub struct UserPayload {}
 

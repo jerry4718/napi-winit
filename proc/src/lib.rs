@@ -1,20 +1,15 @@
-mod enum_dsl;
-mod struct_dsl;
-mod enum_to_mod;
+mod mapping_struct;
+mod mapping_enum;
 
 use proc_macro::TokenStream;
 
+
 #[proc_macro]
-pub fn enum_dsl(input: TokenStream) -> TokenStream {
-    enum_dsl::enum_dsl(input)
+pub fn mapping_enum(input: TokenStream) -> TokenStream {
+    mapping_enum::mapping_enum(input)
 }
 
 #[proc_macro]
-pub fn enum_to_mod(input: TokenStream) -> TokenStream {
-    enum_to_mod::enum_to_mod(input)
-}
-
-#[proc_macro]
-pub fn struct_dsl(input: TokenStream) -> TokenStream {
-    struct_dsl::struct_dsl(input)
+pub fn mapping_struct(input: TokenStream) -> TokenStream {
+    mapping_struct::mapping_struct(input)
 }

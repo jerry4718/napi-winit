@@ -1,3 +1,7 @@
+pub mod convert;
+mod convert_impl;
+// mod convert2;
+
 use std::time::Instant;
 
 #[napi(js_name = "TimeDuration")]
