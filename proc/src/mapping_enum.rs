@@ -143,13 +143,17 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         .collect();
 
     let sub_fields_quote: Vec<_> = sub_fields.iter().map(|fields| {
-        let fields: Vec<_> = fields.iter().map(|(oty, f)| f.clone()).collect();
+        let fields: Vec<_> = fields.iter().map(|(oty, f)| {
+            let Field { ident, .. } = f;
+
+            quote!(pub(crate) #ident: #oty)
+        }).collect();
         quote!(#( #fields ),*)
     }).collect();
 
     let sub_fields_getter: Vec<_> = sub_fields.iter().map(|fields| {
         let getters: Vec<_> = fields.iter().map(|(oty, f)| {
-            let Field { ident, ty, .. } = f;
+            let Field { ident, .. } = f;
 
             let field_ident = ident.clone().unwrap();
             let field_ident_lit = to_lit_str(Box::new(field_ident.clone()));
@@ -158,12 +162,12 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
             quote!(
                 // #[napi(getter, js_name = #field_ident_lit)]
                 pub fn #field_getter_ident(&self) -> #oty {
-                    self.#ident.ex_into()
+                    self.#ident
                 }
             )
         }).collect();
 
-        quote!(#( #getters ),*)
+        quote!(#( #getters )*)
     }).collect();
 
     let sub_fields_from_origin_reaches: Vec<_> = variants.iter()

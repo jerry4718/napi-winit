@@ -50,7 +50,7 @@ mapping_enum!(
             device_id: DeviceId,
             event: DeviceEvent,
         },
-        UserEvent(#[conf_dirct_type] UserPayload),
+        UserEvent(#[conf_direct_type] UserPayload),
         Suspended,
         Resumed,
         AboutToWait,
