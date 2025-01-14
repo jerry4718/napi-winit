@@ -10,9 +10,9 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
     let ItemEnum { ident, variants, generics, .. } = parse_macro_input!(input as ItemEnum);
 
     let Ok(Type::Tuple(type_tuple)) = parse_str::<Type>(DIRCT_TYPES_STR) else {
-        unreachable!("dirct_type can only be derived for tuples");
+        unreachable!("direct_type can only be derived for tuples");
     };
-    let dirct_type_all: Vec<Type> = type_tuple.elems.iter().map(Clone::clone).collect();
+    let direct_type_all: Vec<Type> = type_tuple.elems.iter().map(Clone::clone).collect();
 
     let ident_lit = to_lit_str(Box::new(ident.clone()));
 
@@ -40,7 +40,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         })
         .collect();
 
-    let sub_fields_quote: Vec<_> = variants.iter()
+    let sub_fields: Vec<_> = variants.iter()
         .map(|v| {
             let sub_fields = match v.fields {
                 Fields::Named(FieldsNamed { ref named, .. }) => named.iter().map(Clone::clone).collect(),
@@ -65,23 +65,23 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                 let cleared_attrs: Vec<_> = attrs.iter()
                     .filter(|attr| {
                         let path_name = attr.meta.path().into_token_stream().to_string();
-                        path_name != "conf_dirct_type" && path_name != "conf_trans_type"
+                        path_name != "conf_direct_type" && path_name != "conf_trans_type"
                     })
                     .map(Clone::clone)
                     .collect();
 
-                if dirct_type_all.contains(&ty) {
-                    return Field { attrs: cleared_attrs, ..f };
+                if direct_type_all.contains(&ty) {
+                    return (ty, Field { attrs: cleared_attrs, ..f });
                 }
 
-                let conf_dirct_type = attrs.iter().find(
-                    |attr| attr.meta.path().into_token_stream().to_string() == "conf_dirct_type"
+                let conf_direct_type = attrs.iter().find(
+                    |attr| attr.meta.path().into_token_stream().to_string() == "conf_direct_type"
                 );
 
-                if let Some(_) = conf_dirct_type {
+                if let Some(_) = conf_direct_type {
                     // find_origin.insert(ty.clone(), ty.clone());
                     // find_trans.insert(ty.clone(), ty.clone());
-                    return Field { attrs: cleared_attrs, ..f };
+                    return (ty, Field { attrs: cleared_attrs, ..f });
                 }
 
                 let conf_trans_type = attrs.iter().find(
@@ -101,7 +101,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                     // find_origin.insert(trans_ty.clone(), ty.clone());
                     // find_trans.insert(ty.clone(), trans_ty.clone());
 
-                    return Field { attrs: cleared_attrs, ty: trans_ty, ..f };
+                    return (ty, Field { attrs: cleared_attrs, ty: trans_ty, ..f });
                 }
 
                 if let Type::Path(type_path) = ty.clone() {
@@ -113,7 +113,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                     // find_origin.insert(trans_ty.clone(), ty.clone());
                     // find_trans.insert(ty.clone(), trans_ty.clone());
 
-                    return Field { attrs: cleared_attrs, ty: trans_ty, ..f };
+                    return (ty, Field { attrs: cleared_attrs, ty: trans_ty, ..f });
                 }
 
                 match ty {
@@ -138,9 +138,33 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                 unimplemented!("here")
             }).collect();
 
-            quote!(#(#sub_fields),*)
+            sub_fields
         })
         .collect();
+
+    let sub_fields_quote: Vec<_> = sub_fields.iter().map(|fields| {
+        let fields: Vec<_> = fields.iter().map(|(oty, f)| f.clone()).collect();
+        quote!(#( #fields ),*)
+    }).collect();
+
+    let sub_fields_getter: Vec<_> = sub_fields.iter().map(|fields| {
+        let getters: Vec<_> = fields.iter().map(|(oty, f)| {
+            let Field { ident, ty, .. } = f;
+
+            let field_ident = ident.clone().unwrap();
+            let field_ident_lit = to_lit_str(Box::new(field_ident.clone()));
+            let field_getter_ident = format_ident!("get_{}", field_ident);
+
+            quote!(
+                // #[napi(getter, js_name = #field_ident_lit)]
+                pub fn #field_getter_ident(&self) -> #oty {
+                    self.#ident.ex_into()
+                }
+            )
+        }).collect();
+
+        quote!(#( #getters ),*)
+    }).collect();
 
     let sub_fields_from_origin_reaches: Vec<_> = variants.iter()
         .map(|v| {
@@ -192,9 +216,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
 
                 // #[napi]
                 impl #variant_idents {
-                    // pub fn #sub_fields_quote() {
-                    //
-                    // }
+                    #sub_fields_getter
                 }
             )*
 
