@@ -1,13 +1,15 @@
-use winit::dpi::{LogicalPosition as WLogicalPosition};
-use winit::dpi::LogicalSize as WLogicalSize;
-use winit::dpi::LogicalUnit as WLogicalUnit;
-use winit::dpi::PhysicalPosition as WPhysicalPosition;
-use winit::dpi::PhysicalSize as WPhysicalSize;
-use winit::dpi::PhysicalUnit as WPhysicalUnit;
-use winit::dpi::Pixel as WPixel;
-use winit::dpi::PixelUnit as WPixelUnit;
-use winit::dpi::Position as WPosition;
-use winit::dpi::Size as WSize;
+use winit::{
+    dpi::LogicalPosition as OriginLogicalPosition,
+    dpi::LogicalSize as OriginLogicalSize,
+    dpi::LogicalUnit as OriginLogicalUnit,
+    dpi::PhysicalPosition as OriginPhysicalPosition,
+    dpi::PhysicalSize as OriginPhysicalSize,
+    dpi::PhysicalUnit as OriginPhysicalUnit,
+    dpi::Pixel as OriginPixel,
+    dpi::PixelUnit as OriginPixelUnit,
+    dpi::Position as OriginPosition,
+    dpi::Size as OriginSize,
+};
 
 #[napi]
 #[repr(u8)]
@@ -25,16 +27,16 @@ pub struct Position {
 
 impl From<(f64, f64)> for Position {
     fn from((x, y): (f64, f64)) -> Self {
-        Self { r#type: UnitType::Logical, x, y }
+        Self { r#type: UnitType::Physical, x, y }
     }
 }
 
-impl<T> From<WPhysicalPosition<T>> for Position
+impl<T> From<OriginPhysicalPosition<T>> for Position
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WPhysicalPosition { x, y }: WPhysicalPosition<T>) -> Self {
+    fn from(OriginPhysicalPosition { x, y }: OriginPhysicalPosition<T>) -> Self {
         Self {
             r#type: UnitType::Physical,
             x: f64::from(x),
@@ -43,12 +45,12 @@ where
     }
 }
 
-impl<T> From<WLogicalPosition<T>> for Position
+impl<T> From<OriginLogicalPosition<T>> for Position
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WLogicalPosition { x, y }: WLogicalPosition<T>) -> Self {
+    fn from(OriginLogicalPosition { x, y }: OriginLogicalPosition<T>) -> Self {
         Self {
             r#type: UnitType::Logical,
             x: f64::from(x),
@@ -57,25 +59,25 @@ where
     }
 }
 
-impl From<WPosition> for Position {
-    fn from(value: WPosition) -> Self {
+impl From<OriginPosition> for Position {
+    fn from(value: OriginPosition) -> Self {
         match value {
-            WPosition::Physical(physical_position) => physical_position.into(),
-            WPosition::Logical(logical_position) => logical_position.into(),
+            OriginPosition::Physical(physical_position) => physical_position.into(),
+            OriginPosition::Logical(logical_position) => logical_position.into(),
         }
     }
 }
 
-impl Into<WPosition> for Position {
-    fn into(self) -> WPosition {
+impl Into<OriginPosition> for Position {
+    fn into(self) -> OriginPosition {
         let Self { x, y, .. } = self;
 
         match self.r#type {
-            UnitType::Physical => WPosition::Physical(WPhysicalPosition {
+            UnitType::Physical => OriginPosition::Physical(OriginPhysicalPosition {
                 x: i32::from_f64(x),
                 y: i32::from_f64(y),
             }),
-            UnitType::Logical => WPosition::Logical(WLogicalPosition { x, y })
+            UnitType::Logical => OriginPosition::Logical(OriginLogicalPosition { x, y })
         }
     }
 }
@@ -87,12 +89,12 @@ pub struct Size {
     pub height: f64,
 }
 
-impl<T> From<WPhysicalSize<T>> for Size
+impl<T> From<OriginPhysicalSize<T>> for Size
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WPhysicalSize { width, height }: WPhysicalSize<T>) -> Self {
+    fn from(OriginPhysicalSize { width, height }: OriginPhysicalSize<T>) -> Self {
         Self {
             r#type: UnitType::Physical,
             width: f64::from(width),
@@ -101,12 +103,12 @@ where
     }
 }
 
-impl<T> From<WLogicalSize<T>> for Size
+impl<T> From<OriginLogicalSize<T>> for Size
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WLogicalSize { width, height }: WLogicalSize<T>) -> Self {
+    fn from(OriginLogicalSize { width, height }: OriginLogicalSize<T>) -> Self {
         Self {
             r#type: UnitType::Logical,
             width: f64::from(width),
@@ -115,25 +117,25 @@ where
     }
 }
 
-impl From<WSize> for Size {
-    fn from(value: WSize) -> Self {
+impl From<OriginSize> for Size {
+    fn from(value: OriginSize) -> Self {
         match value {
-            WSize::Physical(physical_size) => physical_size.into(),
-            WSize::Logical(logical_size) => logical_size.into(),
+            OriginSize::Physical(physical_size) => physical_size.into(),
+            OriginSize::Logical(logical_size) => logical_size.into(),
         }
     }
 }
 
-impl Into<WSize> for Size {
-    fn into(self) -> WSize {
-        let Self {width, height, .. } = self;
+impl Into<OriginSize> for Size {
+    fn into(self) -> OriginSize {
+        let Self { width, height, .. } = self;
 
         match self.r#type {
-            UnitType::Physical => WSize::Physical(WPhysicalSize {
+            UnitType::Physical => OriginSize::Physical(OriginPhysicalSize {
                 width: u32::from_f64(width),
                 height: u32::from_f64(height),
             }),
-            UnitType::Logical => WSize::Logical(WLogicalSize { width, height })
+            UnitType::Logical => OriginSize::Logical(OriginLogicalSize { width, height })
         }
     }
 }
@@ -144,24 +146,24 @@ pub struct PixelUnit {
     pub count: f64,
 }
 
-impl<T> From<WPhysicalUnit<T>> for PixelUnit
+impl<T> From<OriginPhysicalUnit<T>> for PixelUnit
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WPhysicalUnit(count): WPhysicalUnit<T>) -> Self {
+    fn from(OriginPhysicalUnit(count): OriginPhysicalUnit<T>) -> Self {
         Self {
             r#type: UnitType::Physical,
             count: f64::from(count),
         }
     }
 }
-impl<T> From<WLogicalUnit<T>> for PixelUnit
+impl<T> From<OriginLogicalUnit<T>> for PixelUnit
 where
-    T: WPixel,
-    f64: From<T>
+    T: OriginPixel,
+    f64: From<T>,
 {
-    fn from(WLogicalUnit(count): WLogicalUnit<T>) -> Self {
+    fn from(OriginLogicalUnit(count): OriginLogicalUnit<T>) -> Self {
         Self {
             r#type: UnitType::Physical,
             count: f64::from(count),
@@ -169,22 +171,22 @@ where
     }
 }
 
-impl From<WPixelUnit> for PixelUnit {
-    fn from(value: WPixelUnit) -> Self {
+impl From<OriginPixelUnit> for PixelUnit {
+    fn from(value: OriginPixelUnit) -> Self {
         match value {
-            WPixelUnit::Physical(physical_unit) => physical_unit.into(),
-            WPixelUnit::Logical(logical_unit) => logical_unit.into(),
+            OriginPixelUnit::Physical(physical_unit) => physical_unit.into(),
+            OriginPixelUnit::Logical(logical_unit) => logical_unit.into(),
         }
     }
 }
 
-impl Into<WPixelUnit> for PixelUnit {
-    fn into(self) -> WPixelUnit {
+impl Into<OriginPixelUnit> for PixelUnit {
+    fn into(self) -> OriginPixelUnit {
         let count = self.count;
 
         match self.r#type {
-            UnitType::Physical => WPixelUnit::Physical(WPhysicalUnit(i32::from_f64(count))),
-            UnitType::Logical => WPixelUnit::Logical(WLogicalUnit(count))
+            UnitType::Physical => OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count))),
+            UnitType::Logical => OriginPixelUnit::Logical(OriginLogicalUnit(count))
         }
     }
 }

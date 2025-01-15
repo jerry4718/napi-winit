@@ -3,22 +3,24 @@ use crate::dpi::Size;
 
 use winit::{
     window::{
-        CursorIcon as WCursorIcon,
-        Fullscreen as WFullscreen,
-        Icon as WIcon,
-        Theme as WTheme,
-        Window as WWindow,
-        WindowId as WWindowId,
-        WindowAttributes as WWindowAttributes,
-        WindowButtons as WWindowButtons,
-        WindowLevel as WWindowLevel
+        CursorIcon as OriginCursorIcon,
+        Fullscreen as OriginFullscreen,
+        Icon as OriginIcon,
+        Theme as OriginTheme,
+        Window as OriginWindow,
+        WindowId as OriginWindowId,
+        WindowAttributes as OriginWindowAttributes,
+        WindowButtons as OriginWindowButtons,
+        WindowLevel as OriginWindowLevel
     }
 };
 
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
+use proc::{mapping_bitflags, mapping_enum, simple_enum};
 use crate::cursor::Cursor;
+use crate::extra::convert::{ExFrom, ExInto};
 
 #[napi]
 pub struct WindowAttributes {
@@ -66,7 +68,7 @@ impl Default for WindowAttributes {
             transparent: false,
             blur: false,
             decorations: true,
-            window_level: Default::default(),
+            window_level: WindowLevel::Normal,
             window_icon: None,
             preferred_theme: None,
             resize_increments: None,
@@ -80,9 +82,9 @@ impl Default for WindowAttributes {
     }
 }
 
-impl Into<WWindowAttributes> for WindowAttributes {
-    fn into(self) -> WWindowAttributes {
-        let attrs = WWindowAttributes::default()
+impl Into<OriginWindowAttributes> for WindowAttributes {
+    fn into(self) -> OriginWindowAttributes {
+        let attrs = OriginWindowAttributes::default()
             .with_resizable(self.resizable)
             .with_enabled_buttons(self.enabled_buttons.into())
             .with_title(self.title)
@@ -295,136 +297,39 @@ pub enum Fullscreen {
     Borderless
 }
 
-impl Into<WFullscreen> for Fullscreen {
-    fn into(self) -> WFullscreen {
+impl Into<OriginFullscreen> for Fullscreen {
+    fn into(self) -> OriginFullscreen {
         match self {
             Self::Exclusive => unimplemented!("Fullscreen::Exclusive has not implemented"),
-            Self::Borderless => WFullscreen::Borderless(None),
+            Self::Borderless => OriginFullscreen::Borderless(None),
         }
     }
 }
 
-#[napi(js_name = "WindowButtons")]
-#[derive(Copy, Clone)]
-pub struct WindowButtons {
-    pub(crate) close: bool,
-    pub(crate) minimize: bool,
-    pub(crate) maximize: bool,
-}
+mapping_bitflags!(WindowButtons: CLOSE; MINIMIZE; MAXIMIZE);
 
-impl Into<WWindowButtons> for WindowButtons {
-    fn into(self) -> WWindowButtons {
-        let mut buttons = WWindowButtons::empty();
-        let Self { close, minimize, maximize } = self;
-        if close { buttons.insert(WWindowButtons::CLOSE) }
-        if minimize { buttons.insert(WWindowButtons::MINIMIZE) }
-        if maximize { buttons.insert(WWindowButtons::MAXIMIZE) }
-        buttons
+simple_enum!(
+    enum WindowLevel {
+        AlwaysOnBottom,
+        Normal,
+        AlwaysOnTop,
     }
-}
+);
 
-#[napi]
-impl WindowButtons {
-    #[napi(factory)]
-    pub fn all() -> Self {
-        Self { close: true, minimize: true, maximize: true }
+simple_enum!(
+    enum Theme {
+        Light,
+        Dark,
     }
-    #[napi(factory)]
-    pub fn empty() -> Self {
-        Self { close: false, minimize: false, maximize: false }
-    }
-    #[napi(ts_return_type="this")]
-    pub fn toggle_close(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.close = !self.close;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn toggle_minimize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.minimize = !self.minimize;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn toggle_maximize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.maximize = !self.maximize;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn insert_close(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.close = true;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn insert_minimize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.minimize = true;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn insert_maximize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.maximize = true;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn remove_close(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.close = false;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn remove_minimize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.minimize = false;
-        this
-    }
-    #[napi(ts_return_type="this")]
-    pub fn remove_maximize(&mut self, this: This<JsObject>) -> This<JsObject> {
-        self.maximize = false;
-        this
-    }
-}
-
-#[napi(js_name = "WindowLevel")]
-pub enum WindowLevel {
-    AlwaysOnBottom,
-    Normal,
-    AlwaysOnTop,
-}
-
-impl Default for WindowLevel {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
-impl Into<WWindowLevel> for WindowLevel {
-    fn into(self) -> WWindowLevel {
-        match self {
-            WindowLevel::AlwaysOnBottom => WWindowLevel::AlwaysOnBottom,
-            WindowLevel::Normal => WWindowLevel::Normal,
-            WindowLevel::AlwaysOnTop => WWindowLevel::AlwaysOnTop,
-        }
-    }
-}
-
-#[napi(js_name = "Theme")]
-pub enum Theme {
-    Light,
-    Dark,
-}
-
-impl Into<WTheme> for Theme {
-    fn into(self) -> WTheme {
-        match self {
-            Theme::Light => WTheme::Light,
-            Theme::Dark => WTheme::Dark,
-        }
-    }
-}
+);
 
 #[napi(js_name = "Icon")]
 pub struct Icon {
-    pub(crate) inner: WIcon,
+    pub(crate) inner: OriginIcon,
 }
 
-impl Into<WIcon> for Icon {
-    fn into(self) -> WIcon {
+impl Into<OriginIcon> for Icon {
+    fn into(self) -> OriginIcon {
         self.inner
     }
 }
@@ -433,7 +338,7 @@ impl Into<WIcon> for Icon {
 impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
-        match WIcon::from_rgba(rgba.to_vec(), width, height) {
+        match OriginIcon::from_rgba(rgba.to_vec(), width, height) {
             Ok(icon) => Ok(Self { inner: icon }),
             Err(bad_icon) => Err(Error::from_reason(format!("{}", bad_icon))),
         }
@@ -441,5 +346,5 @@ impl Icon {
 }
 
 pub struct WindowId {
-    pub(crate) inner: WWindowId,
+    pub(crate) inner: OriginWindowId,
 }

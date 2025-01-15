@@ -162,7 +162,7 @@ mapping_enum!(
             #[conf_trans_type = Position] delta: (f64, f64),
         },
         MouseWheel {
-            delta: MouseScrollDelta,
+            #[conf_trans_type = MouseScrollDelta] delta: MouseScrollDelta,
         },
         Motion {
             axis: AxisId,
@@ -175,3 +175,39 @@ mapping_enum!(
         Key(RawKeyEvent),
     }
 );
+
+mapping_enum!(
+    enum ElementState {
+        Pressed,
+        Released,
+    }
+);
+
+pub enum MouseScrollDeltaType {
+    Line,
+    Pixel,
+}
+
+pub struct MouseScrollDelta {
+    delta_type: MouseScrollDeltaType,
+    delta: Position,
+}
+
+impl From<OriginMouseScrollDelta> for MouseScrollDelta {
+    fn from(value: OriginMouseScrollDelta) -> Self {
+        match value {
+            OriginMouseScrollDelta::LineDelta(x, y) => {
+                Self {
+                    delta_type: MouseScrollDeltaType::Line,
+                    delta: Position::from((f64::from(x), f64::from(y)))
+                }
+            }
+            OriginMouseScrollDelta::PixelDelta(position) => {
+                Self {
+                    delta_type: MouseScrollDeltaType::Pixel,
+                    delta: Position::from(position)
+                }
+            }
+        }
+    }
+}

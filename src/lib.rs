@@ -12,7 +12,8 @@ mod event_loop;
 mod event;
 mod window;
 mod cursor;
-mod event3;
+// mod keyboard;
+// mod event3;
 
 #[napi]
 pub fn sum(a: i32, b: i32) -> i32 {

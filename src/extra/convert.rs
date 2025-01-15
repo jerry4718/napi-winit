@@ -11,39 +11,19 @@ where
     }
 }
 
-impl<T, V> ExFrom<Option<T>, false> for Option<V>
-where
-    V: From<T>,
-{
-    fn ex_from(from: Option<T>) -> Option<V> {
-        match from {
-            None => None,
-            Some(from) => Some(V::ex_from(from)),
-        }
-    }
-}
-
 pub trait ExInto<T, const DENIED: bool = false /* why denied? f**k you! */> {
     fn ex_into(self) -> T;
 }
 
 impl<T, V> ExInto<T, true> for V
 where
-    T: ExFrom<V, true>,
+    V: Into<T>,
 {
     fn ex_into(self) -> T {
-        T::ex_from(self)
+        self.into()
     }
 }
 
-impl<T, V> ExInto<T, false> for V
-where
-    T: ExFrom<V, false>,
-{
-    fn ex_into(self) -> T {
-        T::ex_from(self)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -80,12 +60,6 @@ mod tests {
         assert_eq!(to, To { y: 8 });
     }
 
-    #[test]
-    fn test_ex_from_option() {
-        let fr = Some(Fr { x: 8 });
-        let to: Option<To> = Option::<To>::ex_from(fr);
-        assert_eq!(to, Some(To { y: 8 }));
-    }
 
     #[test]
     fn test_into() {
@@ -99,12 +73,5 @@ mod tests {
         let fr = Fr { x: 8 };
         let to: To = fr.ex_into();
         assert_eq!(to, To { y: 8 });
-    }
-
-    #[test]
-    fn test_ex_into_option() {
-        let fr = Some(Fr { x: 8 });
-        let to: Option<To> = Option::<Fr>::ex_into(fr);
-        assert_eq!(to, Some(To { y: 8 }));
     }
 }
