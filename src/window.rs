@@ -11,16 +11,18 @@ use winit::{
         WindowId as OriginWindowId,
         WindowAttributes as OriginWindowAttributes,
         WindowButtons as OriginWindowButtons,
-        WindowLevel as OriginWindowLevel
+        WindowLevel as OriginWindowLevel,
+        ActivationToken as OriginActivationToken,
     }
 };
 
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
-use proc::{mapping_bitflags, mapping_enum, simple_enum};
+use proc::{mapping_bitflags, mapping_enum, simple_enum, simple_struct};
 use crate::cursor::Cursor;
-use crate::extra::convert::{ExFrom, ExInto};
+use crate::extra::convert::{ExInto};
+use crate::mark_ex_into;
 
 #[napi]
 pub struct WindowAttributes {
@@ -290,8 +292,7 @@ impl WindowAttributes {
     // }
 }
 
-#[napi(js_name = "Fullscreen")]
-#[repr(u8)]
+#[napi(string_enum)]
 pub enum Fullscreen {
     Exclusive,
     Borderless
@@ -345,6 +346,14 @@ impl Icon {
     }
 }
 
-pub struct WindowId {
-    pub(crate) inner: OriginWindowId,
-}
+simple_struct!(WindowId);
+simple_struct!(ActivationToken);
+
+mark_ex_into!(
+    OriginWindowId,
+    OriginActivationToken,
+    // local
+    Theme,
+    WindowId,
+    ActivationToken
+);

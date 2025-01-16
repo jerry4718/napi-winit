@@ -1,5 +1,5 @@
 use proc::{mapping_bitflags, mapping_enum, simple_enum};
-use crate::extra::convert::{ExFrom, ExInto};
+use crate::extra::convert::{ExInto};
 
 use winit::keyboard:: {
     NativeKeyCode as OriginNativeKeyCode,
@@ -16,6 +16,7 @@ use winit::keyboard:: {
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
+use crate::mark_ex_into;
 
 mapping_enum!(
     enum NativeKeyCode {
@@ -71,4 +72,25 @@ simple_enum!(
         Pressed,
         Unknown,
     }
+);
+
+mark_ex_into!(
+    OriginNativeKeyCode,
+    OriginNativeKey,
+    OriginKey,
+    OriginKeyCode,
+    OriginNamedKey,
+    OriginKeyLocation,
+    OriginModifiersState,
+    OriginModifiersKeyState,
+    SmolStr,
+    // local
+    NativeKeyCode,
+    NativeKey,
+    Key,
+    KeyCode,
+    NamedKey,
+    KeyLocation,
+    ModifiersState,
+    ModifiersKeyState
 );

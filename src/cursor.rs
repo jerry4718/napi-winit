@@ -6,7 +6,7 @@ use winit::window::{
     Icon as WIcon
 };
 
-#[napi]
+#[napi(string_enum)]
 pub enum CursorIcon {
     Default,
     ContextMenu,

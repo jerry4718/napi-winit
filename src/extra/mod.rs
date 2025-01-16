@@ -1,10 +1,10 @@
 pub mod convert;
-mod convert_impl;
-// mod convert2;
 
 use std::time::Instant;
+use crate::mark_ex_into;
 
 #[napi(js_name = "TimeDuration")]
+#[derive(Clone)]
 pub struct TimeDuration {
     #[napi(js_name = "t_secs")]
     pub t_secs: u32,
@@ -21,3 +21,5 @@ impl From<Instant> for TimeDuration {
         Self { t_secs, t_nanos }
     }
 }
+
+mark_ex_into!(Instant, TimeDuration);

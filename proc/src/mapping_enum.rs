@@ -12,24 +12,17 @@ const DIRCT_TYPES_STR: &str = "(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128
 pub fn mapping_enum(input: TokenStream) -> TokenStream {
     let ItemEnum { attrs, ident, variants, generics, .. } = parse_macro_input!(input as ItemEnum);
 
-    let conf_skip_type_name = attrs
-        .iter()
-        .filter(|attr| matches!(attr.path().get_ident(), Some(ident) if ident == "conf_skip_type_name"))
-        .count();
-
     let Ok(Type::Tuple(type_tuple)) = parse_str::<Type>(DIRCT_TYPES_STR) else {
         unreachable!("direct_type can only be derived for tuples");
     };
     let direct_type_all: Vec<Type> = type_tuple.elems.iter().map(Clone::clone).collect();
 
-    let enum_ident = ident.clone();
-    let enum_ident_lit = to_lit_str(Box::new(enum_ident.clone()));
+    let export_ident = ident.clone();
+    let export_ident_lit = to_lit_str(Box::new(export_ident.clone()));
 
-    let mapped_ident = format_ident!("Origin{}", enum_ident);
+    let origin_ident = format_ident!("Origin{}", export_ident);
 
-    let mod_ident = format_ident!("js_{}", enum_ident.to_string().to_snake());
-
-    let enum_type_enum = format_ident!("{}Enum", enum_ident);
+    let enum_type_ident = format_ident!("{}Enum", export_ident);
     let enum_type_variant_idents: Vec<_> = variants.iter()
         .map(|v| v.ident.clone())
         .collect();
@@ -45,16 +38,16 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         .map(|v| v.ident.clone())
         .collect();
 
-    let struct_idents: Vec<_> = as_struct_variants.iter()
+    let struct_spec_idents: Vec<_> = as_struct_variants.iter()
         .map(|v| format_ident!("{}{}Spec", ident, v.ident.clone()))
         .collect();
 
-    let get_field_idents: Vec<_> = as_struct_variants.iter()
-        .map(|v| format_ident!("get_{}", v.ident.to_string().to_snake()))
+    let struct_spec_idents_lit: Vec<_> = as_struct_variants.iter()
+        .map(|v| to_lit_str(Box::new(v.ident.clone())))
         .collect();
 
-    let struct_ident_lit_strs: Vec<_> = as_struct_variants.iter()
-        .map(|v| to_lit_str(Box::new(v.ident.clone())))
+    let get_spec_idents: Vec<_> = as_struct_variants.iter()
+        .map(|v| format_ident!("get_{}", v.ident.to_string().to_snake()))
         .collect();
 
     let variant_ignore_inners: Vec<_> = as_struct_variants.iter()
@@ -153,38 +146,41 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         })
         .collect();
 
-    let spec_fields_quotes: Vec<_> = spec_fields_group.iter().map(|fields| {
-        let fields: Vec<_> = fields.iter().map(|(oty, f)| {
-            let Field { ident, ty, .. } = f;
+    let spec_fields_quotes: Vec<_> = spec_fields_group.iter()
+        .map(|fields| {
+            let fields: Vec<_> = fields.iter().map(|(oty, f)| {
+                let Field { ident, ty, .. } = f;
 
-            quote!(pub(crate) #ident: #ty)
-        }).collect();
-        quote!(#( #fields ),*)
-    }).collect();
-
-    let spec_fields_getters: Vec<_> = spec_fields_group.iter().map(|fields| {
-        let getters: Vec<_> = fields.iter().map(|(oty, f)| {
-            let Field { ident, ty, .. } = f;
-
-            let field_ident = ident.clone().unwrap();
-            let field_ident_lit = to_lit_str(Box::new(field_ident.clone()));
-            let field_getter_ident = format_ident!("get_{}", field_ident);
-
-            quote!(
-                // #[napi(getter, js_name = #field_ident_lit)]
-                pub fn #field_getter_ident(&self) -> #ty {
-                    self.#ident.ex_into()
-                }
-            )
+                quote!(pub(crate) #ident: #ty)
+            }).collect();
+            quote!(#( #fields ),*)
         }).collect();
 
-        quote!(#( #getters )*)
-    }).collect();
+    let spec_fields_getters: Vec<_> = spec_fields_group.iter()
+        .map(|fields| {
+            let getters: Vec<_> = fields.iter()
+                .map(|(oty, f)| {
+                    let Field { ident, ty, .. } = f;
+
+                    let field_ident = ident.clone().unwrap();
+                    let field_ident_lit = to_lit_str(Box::new(field_ident.clone()));
+                    let field_getter_ident = format_ident!("get_{}", field_ident);
+
+                    quote!(
+                        #[napi(getter, js_name = #field_ident_lit)]
+                        pub fn #field_getter_ident(&self) -> #ty {
+                            self.#ident.clone().ex_into()
+                        }
+                    )
+                }).collect();
+
+            quote!(#( #getters )*)
+        }).collect();
 
     let sub_fields_from_inner_reaches: Vec<_> = as_struct_variants.iter()
         .map(|v| {
             let variant_ident = &v.ident;
-            let reach = quote! { #mapped_ident::#variant_ident };
+            let reach = quote! { #origin_ident::#variant_ident };
             // v.attrs;
             match v.fields {
                 Fields::Named(FieldsNamed { ref named, .. }) => {
@@ -205,65 +201,75 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         })
         .collect();
 
-    let get_type_name = if conf_skip_type_name <= 0 { quote!(
-        // #[napi(getter, js_name = "typeName")]
-        pub fn get_type_name(&self) -> String {
-            match self.inner {
-                #( #mapped_ident::#enum_type_variant_idents #variant_ignore_inners_full => String::from(stringify!(#enum_type_variant_idents)) ),*
-            }
-        }
-    ) } else { quote!() };
-
     TokenStream::from(quote!(
-        // #[napi(string_enum)]
-        pub enum #enum_type_enum {
+        #[napi(string_enum)]
+        pub enum #enum_type_ident {
             #(#enum_type_variant_idents),*
         }
 
         #(
-            // #[napi]
-            pub struct #struct_idents {
+            #[napi]
+            #[derive(Clone)]
+            pub struct #struct_spec_idents {
                 #spec_fields_quotes
             }
 
-            impl From<#mapped_ident #generics> for #struct_idents {
-                fn from(value: #mapped_ident #generics) -> Self {
+            impl From<#origin_ident #generics> for #struct_spec_idents {
+                fn from(value: #origin_ident #generics) -> Self {
                     match value {
                         #sub_fields_from_inner_reaches,
-                        _ => unreachable!("no matched convert")
-                        // _ => unreachable!(format!("cannot convert [{}] from [{}]", stringify!(#struct_idents), value)),
+                        _ => unreachable!("cannot convert to [{}]: type not matched", #struct_spec_idents_lit),
                     }
                 }
             }
 
-            // #[napi]
-            impl #struct_idents {
+            #[napi]
+            impl #struct_spec_idents {
                 #spec_fields_getters
             }
         )*
 
-        // #[napi]
-        pub struct #enum_ident {
-            pub(crate) inner: #mapped_ident #generics,
+        #[napi]
+        #[derive(Clone)]
+        pub struct #export_ident {
+            pub(crate) inner: #origin_ident #generics,
         }
 
-        // #[napi]
-        impl #enum_ident {
-            // #[napi(getter, js_name = "type")]
-            pub fn get_type(&self) -> #enum_type_enum {
+        impl From<#origin_ident #generics> for #export_ident {
+            fn from(value: #origin_ident #generics) -> Self {
+                Self { inner: value }
+            }
+        }
+
+        impl Into<#origin_ident #generics> for #export_ident {
+            fn into(self) -> #origin_ident #generics {
+                let Self { inner } = self;
+                inner
+            }
+        }
+
+        #[napi]
+        impl #export_ident {
+            #[napi(getter, js_name = "type")]
+            pub fn get_type(&self) -> #enum_type_ident {
                 match self.inner {
-                    #( #mapped_ident::#enum_type_variant_idents #variant_ignore_inners_full => #enum_type_enum::#enum_type_variant_idents ),*
+                    #( #origin_ident::#enum_type_variant_idents #variant_ignore_inners_full => #enum_type_ident::#enum_type_variant_idents ),*
                 }
             }
 
-            #get_type_name
+            #[napi(getter, js_name = "typeName")]
+            pub fn get_type_name(&self) -> String {
+                match self.inner {
+                    #( #origin_ident::#enum_type_variant_idents #variant_ignore_inners_full => String::from(stringify!(#enum_type_variant_idents)) ),*
+                }
+            }
 
             #(
-                // #[napi(getter, js_name = #variant_idents_lit)]
-                pub fn #get_field_idents(&self) -> Result<#struct_idents> {
+                #[napi(getter, js_name = #struct_spec_idents_lit)]
+                pub fn #get_spec_idents(&self) -> Result<#struct_spec_idents> {
                     match &self.inner {
-                        #mapped_ident::#as_struct_enum_type_idents #variant_ignore_inners => Ok(#struct_idents::ex_from(self.inner.clone())),
-                        _ => Err(napi::Error::from_reason(format!("cannot access [{}] when type is [{}]", stringify!(#struct_idents), self.get_type_name()))),
+                        #origin_ident::#as_struct_enum_type_idents #variant_ignore_inners => Ok(self.inner.clone().ex_into()),
+                        _ => Err(napi::Error::from_reason(format!("cannot access [{}] when type is [{}]", #struct_spec_idents_lit, self.get_type_name()))),
                     }
                 }
             )*
@@ -275,13 +281,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
 fn ignore_inner(v: &Variant) -> proc_macro2::TokenStream {
     match v.fields {
         Fields::Named(_) => quote!({ .. }),
-        Fields::Unnamed(_) => quote!((_)),
+        Fields::Unnamed(_) => quote!(( .. )),
         Fields::Unit => quote!(),
     }
-}
-
-#[allow(dead_code)]
-#[inline]
-fn ty_to_string(ty: &Type) -> String {
-    ty.into_token_stream().to_string()
 }

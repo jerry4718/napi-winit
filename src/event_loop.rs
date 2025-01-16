@@ -1,16 +1,22 @@
-use winit::event_loop::{ActiveEventLoop as WActiveEventLoop, EventLoop as WEventLoop};
+use winit::event_loop::{
+    ActiveEventLoop as OriginActiveEventLoop,
+    EventLoop as OriginEventLoop,
+    AsyncRequestSerial as OriginAsyncRequestSerial
+};
+use proc::simple_struct;
 use crate::event::UserPayload;
+use crate::mark_ex_into;
 
 #[napi]
 pub struct EventLoop {
-    pub(crate) inner: WEventLoop<UserPayload>,
+    pub(crate) inner: OriginEventLoop<UserPayload>,
 }
 
 #[napi]
 impl EventLoop {
     #[napi(constructor)]
     pub fn new() -> Self {
-        let event_loop = WEventLoop::<UserPayload>::with_user_event().build().expect("Failed to build EventLoop");
+        let event_loop = OriginEventLoop::<UserPayload>::with_user_event().build().expect("Failed to build EventLoop");
         Self { inner: event_loop }
     }
     // with_user_event
@@ -24,13 +30,13 @@ impl EventLoop {
     // create_custom_cursor
 }
 
-// #[napi(js_name = "WActiveEventLoop")]
+// #[napi(js_name = "OriginActiveEventLoop")]
 // pub struct ActiveEventLoop {
-//     pub(crate) inner: WActiveEventLoop,
+//     pub(crate) inner: OriginActiveEventLoop,
 // }
 //
-// impl From<&WActiveEventLoop> for ActiveEventLoop {
-//     fn from(value: &WActiveEventLoop) -> Self {
+// impl From<&OriginActiveEventLoop> for ActiveEventLoop {
+//     fn from(value: &OriginActiveEventLoop) -> Self {
 //         Self { inner: value }
 //     }
 // }
@@ -44,5 +50,9 @@ impl ActiveEventLoop {
 }*/
 
 pub struct ActiveEventLoop {
-    pub(crate) inner: WActiveEventLoop,
+    pub(crate) inner: OriginActiveEventLoop,
 }
+
+simple_struct!(AsyncRequestSerial);
+
+mark_ex_into!(OriginAsyncRequestSerial, AsyncRequestSerial);

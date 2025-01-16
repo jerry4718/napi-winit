@@ -1,9 +1,9 @@
 mod mapping_struct;
 mod mapping_enum;
-mod warping_struct;
 mod mapping_bitflags;
 mod utils;
 mod simple_enum;
+mod simple_struct;
 
 use proc_macro::TokenStream;
 
@@ -23,9 +23,10 @@ pub fn mapping_struct(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn warping_struct(input: TokenStream) -> TokenStream {
-    warping_struct::warping_struct(input)
+pub fn simple_struct(input: TokenStream) -> TokenStream {
+    simple_struct::simple_struct(input)
 }
+
 #[proc_macro]
 pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
     mapping_bitflags::mapping_bitflags(input)

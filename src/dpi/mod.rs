@@ -10,15 +10,16 @@ use winit::{
     dpi::Position as OriginPosition,
     dpi::Size as OriginSize,
 };
+use crate::mark_ex_into;
 
-#[napi]
-#[repr(u8)]
+#[napi(string_enum)]
 pub enum UnitType {
     Physical,
     Logical,
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct Position {
     pub r#type: UnitType,
     pub x: f64,
@@ -28,6 +29,16 @@ pub struct Position {
 impl From<(f64, f64)> for Position {
     fn from((x, y): (f64, f64)) -> Self {
         Self { r#type: UnitType::Physical, x, y }
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    fn from((x, y): (usize, usize)) -> Self {
+        Self {
+            r#type: UnitType::Logical,
+            x: f64::from(x as u32),
+            y: f64::from(y as u32)
+        }
     }
 }
 
@@ -83,6 +94,7 @@ impl Into<OriginPosition> for Position {
 }
 
 #[napi(object)]
+#[derive(Clone)]
 pub struct Size {
     pub r#type: UnitType,
     pub width: f64,
@@ -140,7 +152,8 @@ impl Into<OriginSize> for Size {
     }
 }
 
-#[napi(object, js_name = "PixelUnit")]
+#[napi(object)]
+#[derive(Clone)]
 pub struct PixelUnit {
     pub r#type: UnitType,
     pub count: f64,
@@ -190,3 +203,21 @@ impl Into<OriginPixelUnit> for PixelUnit {
         }
     }
 }
+
+mark_ex_into!(
+    OriginPhysicalSize<u32>,
+    OriginPhysicalPosition<i32>,
+    OriginPhysicalPosition<f64>,
+    OriginPhysicalPosition<f32>,
+    // local
+    UnitType,
+    Position,
+    Size,
+    PixelUnit
+);
+
+mark_ex_into!(
+    // f**k
+    (usize, usize),
+    (f64, f64)
+);

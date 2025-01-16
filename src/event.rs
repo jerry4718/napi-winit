@@ -1,223 +1,300 @@
-use winit::event::{
-    DeviceEvent as WDeviceEvent,
-    DeviceId as WDeviceId,
-    Event as WEvent,
-    StartCause as WStartCause,
-    WindowEvent as WWindowEvent,
+use winit::{
+    event::{
+        DeviceEvent as OriginDeviceEvent,
+        DeviceId as OriginDeviceId,
+        Event as OriginEvent,
+        StartCause as OriginStartCause,
+        WindowEvent as OriginWindowEvent,
+        KeyEvent as OriginKeyEvent,
+        Modifiers as OriginModifiers,
+        Ime as OriginIme,
+        MouseScrollDelta as OriginMouseScrollDelta,
+        TouchPhase as OriginTouchPhase,
+        ElementState as OriginElementState,
+        MouseButton as OriginMouseButton,
+        Touch as OriginTouch,
+        InnerSizeWriter as OriginInnerSizeWriter,
+        RawKeyEvent as OriginRawKeyEvent,
+    },
+    window::{
+        WindowId as OriginWindowId,
+        ActivationToken as OriginActivationToken,
+        Theme as OriginTheme
+    },
+    event_loop::AsyncRequestSerial as OriginAsyncRequestSerial
 };
-use winit::window::WindowId as WWindowId;
 
-use crate::extra::TimeDuration;
+use crate::{
+    event_loop::AsyncRequestSerial,
+    extra::{
+        convert::ExInto,
+        TimeDuration,
+    },
+    dpi::{
+        Position,
+        Size,
+    },
+    window::{
+        WindowId,
+        Theme,
+        ActivationToken,
+    },
+    mark_ex_into,
+};
+
+use proc::{mapping_enum, simple_enum, simple_struct};
 use napi::bindgen_prelude::*;
 
+#[napi]
+#[derive(Clone)]
 pub struct UserPayload {}
 
-macro_rules! accessor_not_exist {
-    ($x: literal, $( $p: path ),*) => {
-        stringify!(accessor [$x] only exist on $( $p ) or *)
-    };
-}
-
-#[napi]
-#[repr(u8)]
-pub enum EventType {
-    NewEvents,
-    WindowEvent,
-    DeviceEvent,
-    UserEvent,
-    Suspended,
-    Resumed,
-    AboutToWait,
-    LoopExiting,
-    MemoryWarning,
-}
-
-#[napi]
-pub struct Event {
-    pub(crate) inner: WEvent<UserPayload>,
-}
-
-impl From<WEvent<UserPayload>> for Event {
-    fn from(value: WEvent<UserPayload>) -> Self {
-        Self { inner: value }
+mapping_enum!(
+    enum Event<UserPayload> {
+        NewEvents(StartCause),
+        WindowEvent {
+            window_id: WindowId,
+            event: WindowEvent,
+        },
+        DeviceEvent {
+            device_id: DeviceId,
+            event: DeviceEvent,
+        },
+        UserEvent(#[conf_direct_type] UserPayload),
+        Suspended,
+        Resumed,
+        AboutToWait,
+        LoopExiting,
+        MemoryWarning,
     }
+);
+
+mapping_enum!(
+    enum StartCause {
+        ResumeTimeReached {
+            #[conf_trans_type = TimeDuration] start: Instant,
+            #[conf_trans_type = TimeDuration] requested_resume: Instant,
+        },
+        WaitCancelled {
+            #[conf_trans_type = TimeDuration] start: Instant,
+            #[conf_trans_type = Option::<TimeDuration>] requested_resume: Option<Instant>,
+        },
+        Poll,
+        Init,
+    }
+);
+
+mapping_enum!(
+    enum WindowEvent {
+        ActivationTokenDone {
+            serial: AsyncRequestSerial,
+            token: ActivationToken,
+        },
+        Resized(#[conf_trans_type = Size] PhysicalSize<u32>),
+        Moved(#[conf_trans_type = Position] PhysicalPosition<i32>),
+        CloseRequested,
+        Destroyed,
+        DroppedFile(#[conf_trans_type = String] PathBuf),
+        HoveredFile(#[conf_trans_type = String] PathBuf),
+        HoveredFileCancelled,
+        Focused(bool),
+        KeyboardInput {
+            device_id: DeviceId,
+            event: KeyEvent,
+            is_synthetic: bool,
+        },
+        ModifiersChanged(Modifiers),
+        Ime(Ime),
+        CursorMoved {
+            device_id: DeviceId,
+            #[conf_trans_type = Position] position: PhysicalPosition<f64>,
+        },
+        CursorEntered {
+            device_id: DeviceId,
+        },
+        CursorLeft {
+            device_id: DeviceId,
+        },
+        MouseWheel {
+            device_id: DeviceId,
+            delta: MouseScrollDelta,
+            phase: TouchPhase,
+        },
+        MouseInput {
+            device_id: DeviceId,
+            state: ElementState,
+            button: MouseButton,
+        },
+        PinchGesture {
+            device_id: DeviceId,
+            delta: f64,
+            phase: TouchPhase,
+        },
+        PanGesture {
+            device_id: DeviceId,
+            #[conf_trans_type = Position] delta: PhysicalPosition<f32>,
+            phase: TouchPhase,
+        },
+        DoubleTapGesture {
+            device_id: DeviceId,
+        },
+        RotationGesture {
+            device_id: DeviceId,
+            delta: f32,
+            phase: TouchPhase,
+        },
+        TouchpadPressure {
+            device_id: DeviceId,
+            pressure: f32,
+            stage: i64,
+        },
+        AxisMotion {
+            device_id: DeviceId,
+            #[conf_trans_type = u32] axis: AxisId,
+            value: f64,
+        },
+        Touch(Touch),
+        ScaleFactorChanged {
+            scale_factor: f64,
+            inner_size_writer: InnerSizeWriter,
+        },
+        ThemeChanged(Theme),
+        Occluded(bool),
+        RedrawRequested,
+    }
+);
+
+simple_struct!(DeviceId);
+simple_struct!(RawKeyEvent);
+simple_struct!(KeyEvent);
+simple_struct!(Modifiers);
+
+mapping_enum!(
+    enum Ime {
+        Enabled,
+        Preedit(#[conf_direct_type] String, #[conf_trans_type = Option::<Position>] Option<(usize, usize)>),
+        Commit(#[conf_direct_type] String),
+        Disabled,
+    }
+);
+
+mapping_enum!(
+    enum MouseButton {
+        Left,
+        Right,
+        Middle,
+        Back,
+        Forward,
+        Other(u16),
+    }
+);
+
+#[napi(string_enum)]
+pub enum MouseScrollDeltaType {
+    Line,
+    Pixel,
 }
 
 #[napi]
-impl Event {
-    #[napi(getter, js_name = "type")]
-    pub fn event_type(&self) -> Result<EventType> {
-        match self.inner {
-            WEvent::NewEvents(_) => Ok(EventType::NewEvents),
-            WEvent::WindowEvent { .. } => Ok(EventType::WindowEvent),
-            WEvent::DeviceEvent { .. } => Ok(EventType::DeviceEvent),
-            WEvent::UserEvent(_) => Ok(EventType::UserEvent),
-            WEvent::Suspended => Ok(EventType::Suspended),
-            WEvent::Resumed => Ok(EventType::Resumed),
-            WEvent::AboutToWait => Ok(EventType::AboutToWait),
-            WEvent::LoopExiting => Ok(EventType::LoopExiting),
-            WEvent::MemoryWarning => Ok(EventType::MemoryWarning),
-        }
-    }
-
-    #[napi(getter)]
-    pub fn start_cause(&self) -> Result<StartCause> {
-        match self.inner {
-            WEvent::NewEvents(start_cause) => Ok(StartCause { inner: start_cause }),
-            _ => Err(Error::from_reason(accessor_not_exist!("start_cause", Event::NewEvents))),
-        }
-    }
+#[derive(Clone)]
+pub struct MouseScrollDelta {
+    delta_type: MouseScrollDeltaType,
+    delta: Position,
 }
 
-#[napi]
-#[repr(u8)]
-pub enum StartCauseType {
-    ResumeTimeReached,
-    WaitCancelled,
-    Poll,
-    Init,
-}
-
-#[napi]
-pub struct StartCause {
-    pub(crate) inner: WStartCause,
-}
-
-#[napi]
-impl StartCause {
-    #[napi(getter, js_name = "type")]
-    pub fn start_cause_type(&self) -> Result<StartCauseType> {
-        match self.inner {
-            WStartCause::ResumeTimeReached { .. } => Ok(StartCauseType::ResumeTimeReached),
-            WStartCause::WaitCancelled { .. } => Ok(StartCauseType::WaitCancelled),
-            WStartCause::Poll => Ok(StartCauseType::Poll),
-            WStartCause::Init => Ok(StartCauseType::Init),
-        }
-    }
-    #[napi(getter)]
-    pub fn start(&self) -> Result<TimeDuration> {
-        match self.inner {
-            WStartCause::ResumeTimeReached { start, .. } => Ok(TimeDuration::from(start)),
-            WStartCause::WaitCancelled { start, .. } => Ok(TimeDuration::from(start)),
-            _ => Err(Error::from_reason("accessor [start] only exist on start_cause::resume_time_reached or start_cause::wait_cancelled")),
-        }
-    }
-    #[napi(getter)]
-    pub fn requested_resume(&self) -> Result<Option<TimeDuration>> {
-        match self.inner {
-            WStartCause::ResumeTimeReached { requested_resume, .. } => {
-                Ok(Some(TimeDuration::from(requested_resume)))
-            }
-            WStartCause::WaitCancelled { requested_resume, .. } => {
-                match requested_resume {
-                    Some(requested_resume) => Ok(Some(TimeDuration::from(requested_resume))),
-                    None => Ok(None),
+impl From<OriginMouseScrollDelta> for MouseScrollDelta {
+    fn from(value: OriginMouseScrollDelta) -> Self {
+        match value {
+            OriginMouseScrollDelta::LineDelta(x, y) => {
+                Self {
+                    delta_type: MouseScrollDeltaType::Line,
+                    delta: Position::from((f64::from(x), f64::from(y)))
                 }
             }
-            _ => Err(Error::from_reason("accessor [requested_resume] only exist on start_cause::resume_time_reached or start_cause::wait_cancelled")),
+            OriginMouseScrollDelta::PixelDelta(position) => {
+                Self {
+                    delta_type: MouseScrollDeltaType::Pixel,
+                    delta: Position::from(position)
+                }
+            }
         }
     }
 }
 
-#[napi]
-pub struct WindowPayload {
-    pub(crate) window_id: WWindowId,
-    pub(crate) event: WWindowEvent,
-}
+simple_struct!(InnerSizeWriter);
 
-#[napi]
-pub struct DevicePayload {
-    pub(crate) device_id: WDeviceId,
-    pub(crate) event: WDeviceEvent,
-}
-
-#[napi]
-pub struct WindowId {
-    pub(crate) inner: WWindowId,
-}
-
-impl From<WWindowId> for WindowId {
-    fn from(value: WWindowId) -> Self {
-        Self { inner: value }
+mapping_enum!(
+    enum TouchPhase {
+        Started,
+        Moved,
+        Ended,
+        Cancelled,
     }
-}
+);
 
-#[napi]
-pub struct WindowEvent {
-    pub(crate) inner: WWindowEvent,
-}
+simple_struct!(Touch);
 
-#[napi]
-pub enum WindowEventType {
-    // ActivationTokenDone,
-    Resized,
-    Moved,
-    CloseRequested,
-    Destroyed,
-    DroppedFile,
-    HoveredFile,
-    HoveredFileCancelled,
-    Focused,
-    KeyboardInput,
-    ModifiersChanged,
+mapping_enum!(
+    enum DeviceEvent {
+        Added,
+        Removed,
+        MouseMotion {
+            #[conf_trans_type = Position] delta: (f64, f64),
+        },
+        MouseWheel {
+            #[conf_trans_type = MouseScrollDelta] delta: MouseScrollDelta,
+        },
+        Motion {
+            #[conf_trans_type = u32] axis: AxisId,
+            value: f64,
+        },
+        Button {
+            #[conf_trans_type = u32] button: ButtonId,
+            state: ElementState,
+        },
+        Key(RawKeyEvent),
+    }
+);
+
+simple_enum!(
+    enum ElementState {
+        Pressed,
+        Released,
+    }
+);
+
+mark_ex_into!(
+    OriginDeviceEvent,
+    OriginDeviceId,
+    OriginEvent<UserPayload>,
+    OriginStartCause,
+    OriginWindowEvent,
+    OriginKeyEvent,
+    OriginModifiers,
+    OriginIme,
+    OriginMouseScrollDelta,
+    OriginTouchPhase,
+    OriginElementState,
+    OriginMouseButton,
+    OriginTouch,
+    OriginInnerSizeWriter,
+    OriginRawKeyEvent,
+    OriginTheme,
+    // local
+    UserPayload,
+    Event,
+    StartCause,
+    WindowEvent,
+    DeviceId,
+    RawKeyEvent,
+    KeyEvent,
+    Modifiers,
     Ime,
-    CursorMoved,
-    CursorEntered,
-    CursorLeft,
-    MouseWheel,
-    MouseInput,
-    PinchGesture,
-    PanGesture,
-    DoubleTapGesture,
-    RotationGesture,
-    TouchpadPressure,
-    AxisMotion,
+    MouseButton,
+    MouseScrollDelta,
+    InnerSizeWriter,
+    TouchPhase,
     Touch,
-    ScaleFactorChanged,
-    ThemeChanged,
-    Occluded,
-    RedrawRequested,
-}
-
-impl From<WWindowEvent> for WindowEvent {
-    fn from(value: WWindowEvent) -> Self {
-        Self { inner: value }
-    }
-}
-
-impl WindowEvent {
-    pub fn get_type(&self) -> WindowEventType {
-        match self.inner {
-            WWindowEvent::ActivationTokenDone { .. } => unimplemented!("WindowEventType::ActivationTokenDone has not mapping"), // WindowEventType::ActivationTokenDone,
-            WWindowEvent::Resized(_) => WindowEventType::Resized,
-            WWindowEvent::Moved(_) => WindowEventType::Moved,
-            WWindowEvent::CloseRequested => WindowEventType::CloseRequested,
-            WWindowEvent::Destroyed => WindowEventType::Destroyed,
-            WWindowEvent::DroppedFile(_) => WindowEventType::DroppedFile,
-            WWindowEvent::HoveredFile(_) => WindowEventType::HoveredFile,
-            WWindowEvent::HoveredFileCancelled => WindowEventType::HoveredFileCancelled,
-            WWindowEvent::Focused(_) => WindowEventType::Focused,
-            WWindowEvent::KeyboardInput { .. } => WindowEventType::KeyboardInput,
-            WWindowEvent::ModifiersChanged(_) => WindowEventType::ModifiersChanged,
-            WWindowEvent::Ime(_) => WindowEventType::Ime,
-            WWindowEvent::CursorMoved { .. } => WindowEventType::CursorMoved,
-            WWindowEvent::CursorEntered { .. } => WindowEventType::CursorEntered,
-            WWindowEvent::CursorLeft { .. } => WindowEventType::CursorLeft,
-            WWindowEvent::MouseWheel { .. } => WindowEventType::MouseWheel,
-            WWindowEvent::MouseInput { .. } => WindowEventType::MouseInput,
-            WWindowEvent::PinchGesture { .. } => WindowEventType::PinchGesture,
-            WWindowEvent::PanGesture { .. } => WindowEventType::PanGesture,
-            WWindowEvent::DoubleTapGesture { .. } => WindowEventType::DoubleTapGesture,
-            WWindowEvent::RotationGesture { .. } => WindowEventType::RotationGesture,
-            WWindowEvent::TouchpadPressure { .. } => WindowEventType::TouchpadPressure,
-            WWindowEvent::AxisMotion { .. } => WindowEventType::AxisMotion,
-            WWindowEvent::Touch(_) => WindowEventType::Touch,
-            WWindowEvent::ScaleFactorChanged { .. } => WindowEventType::ScaleFactorChanged,
-            WWindowEvent::ThemeChanged(_) => WindowEventType::ThemeChanged,
-            WWindowEvent::Occluded(_) => WindowEventType::Occluded,
-            WWindowEvent::RedrawRequested => WindowEventType::RedrawRequested,
-        }
-    }
-}
-
-
+    DeviceEvent,
+    ElementState
+);

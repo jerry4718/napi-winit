@@ -10,14 +10,12 @@ struct FlagsInputSpec {
 }
 
 impl Parse for FlagsInputSpec {
-    #[rustfmt::skip]
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse::<Ident>()?;
         let _token_colon = input.parse::<Token![:]>()?;
 
         let mut flags = Vec::<Ident>::new();
 
-        // 形参列表：开始
         while let Some(flag) = input.parse::<Option<Ident>>()? {
             input.parse::<Option<Token![;]>>()?;
             flags.push(flag);
@@ -29,11 +27,14 @@ impl Parse for FlagsInputSpec {
 pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
     let FlagsInputSpec { name, flags } = parse_macro_input!(input as FlagsInputSpec);
 
+    let export_ident = name.clone();
+    let export_ident_lit = to_lit_str(Box::new(export_ident.clone()));
+
     let origin_ident = format_ident!("Origin{}", name);
-    let origin_ident_lit = to_lit_str(Box::new(origin_ident.clone()));
 
-    let lower_flags: Vec<_> = flags.iter().map(|flag| format_ident!("flag_{}", flag.to_string().to_lowercase())).collect();
+    let lower_flags: Vec<_> = flags.iter().map(|flag| format_ident!("{}", flag.to_string().to_lowercase())).collect();
 
+    let flag_idents: Vec<_> = lower_flags.iter().map(|flag| format_ident!("flag_{}", flag)).collect();
     let has_flags: Vec<_> = lower_flags.iter().map(|flag| format_ident!("has_{}", flag)).collect();
     let toggle_flags: Vec<_> = lower_flags.iter().map(|flag| format_ident!("toggle_{}", flag)).collect();
     let insert_flags: Vec<_> = lower_flags.iter().map(|flag| format_ident!("insert_{}", flag)).collect();
@@ -41,18 +42,18 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
 
 
     TokenStream::from(quote!(
-        #[napi(js_name = #origin_ident_lit)]
+        #[napi(js_name = #export_ident_lit)]
         #[derive(Copy, Clone)]
         pub struct #name {
-            #(pub(crate) #lower_flags: bool),*
+            #(pub(crate) #flag_idents: bool),*
         }
 
         impl Into<#origin_ident> for #name {
             fn into(self) -> #origin_ident {
                 let mut origin = #origin_ident::empty();
-                let Self { #( #lower_flags ),* } = self;
+                let Self { #( #flag_idents ),* } = self;
                 #(
-                    if #lower_flags { origin.insert(#origin_ident::#flags) }
+                    if #flag_idents { origin.insert(#origin_ident::#flags) }
                 )*
                 origin
             }
@@ -62,43 +63,47 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
         impl #name {
             #[napi(factory)]
             pub fn all() -> Self {
-                Self { #( #lower_flags: true ),* }
+                Self { #( #flag_idents: true ),* }
             }
             #[napi(factory)]
             pub fn empty() -> Self {
-                Self { #( #lower_flags: false ),* }
+                Self { #( #flag_idents: false ),* }
             }
             #[napi]
             pub fn is_all(&self) -> bool {
-                let Self { #( #lower_flags ),* } = self;
-                true #( && *#lower_flags )*
+                let Self { #( #flag_idents ),* } = self;
+                true #( && *#flag_idents )*
             }
             #[napi]
             pub fn is_empty(&self) -> bool {
-                let Self { #( #lower_flags ),* } = self;
-                !(false #( || *#lower_flags )*)
+                let Self { #( #flag_idents ),* } = self;
+                !(false #( || *#flag_idents )*)
             }
 
             #(
+                #[napi]
                 pub fn #has_flags(&self) -> bool {
-                    self.#lower_flags
+                    self.#flag_idents
                 }
-
+            )*
+            #(
                 #[napi(ts_return_type="this")]
                 pub fn #toggle_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
-                    self.#lower_flags = !self.#lower_flags;
+                    self.#flag_idents = !self.#flag_idents;
                     this
                 }
-
+            )*
+            #(
                 #[napi(ts_return_type="this")]
                 pub fn #insert_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
-                    self.#lower_flags = true;
+                    self.#flag_idents = true;
                     this
                 }
-
+            )*
+            #(
                 #[napi(ts_return_type="this")]
                 pub fn #remove_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
-                    self.#lower_flags = false;
+                    self.#flag_idents = false;
                     this
                 }
             )*
