@@ -21,27 +21,27 @@ use crate::{mark_ex_into, string_enum};
 mapping_enum!(
     enum NativeKeyCode {
         Unidentified,
-        Android(u32),
-        MacOS(u16),
-        Windows(u16),
-        Xkb(u32),
+        Android(#[conf_assign_name = "code"] u32),
+        MacOS(#[conf_assign_name = "code"] u16),
+        Windows(#[conf_assign_name = "code"] u16),
+        Xkb(#[conf_assign_name = "code"] u32),
     }
 );
 
 mapping_enum!(
     enum NativeKey {
         Unidentified,
-        Android(u32),
-        MacOS(u16),
-        Windows(u16),
-        Xkb(u32),
+        Android(#[conf_assign_name = "code"] u32),
+        MacOS(#[conf_assign_name = "code"] u16),
+        Windows(#[conf_assign_name = "code"] u16),
+        Xkb(#[conf_assign_name = "code"] u32),
         Web(#[conf_trans_type = String] SmolStr),
     }
 );
 
 mapping_enum!(
     enum Key<SmolStr> {
-        Named(NamedKey),
+        Named(#[conf_assign_name = "name"] NamedKey),
         Character(#[conf_trans_type = String] SmolStr),
         Unidentified(NativeKey),
         Dead(#[conf_trans_type = Option::<String>] Option<char>),
