@@ -19,10 +19,11 @@ use winit::{
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
-use proc::{mapping_bitflags, mapping_enum, simple_enum, simple_struct};
-use crate::cursor::Cursor;
+use proc::{mapping_bitflags, mapping_enum};
+use crate::cursor::{Cursor, CursorIcon};
 use crate::extra::convert::{ExInto};
-use crate::mark_ex_into;
+use crate::{mark_ex_into, string_enum, wrap_struct};
+use crate::monitor::MonitorHandle;
 
 #[napi]
 pub struct WindowAttributes {
@@ -183,7 +184,7 @@ impl WindowAttributes {
 
     #[napi(ts_return_type="this")]
     pub fn with_enabled_buttons(&mut self, this: This<JsObject>, buttons: &WindowButtons) -> This<JsObject> {
-        self.enabled_buttons = *buttons;
+        self.enabled_buttons = buttons.clone();
         this
     }
 
@@ -307,52 +308,356 @@ impl Into<OriginFullscreen> for Fullscreen {
     }
 }
 
+impl From<OriginFullscreen> for Fullscreen {
+    fn from(value: OriginFullscreen) -> Self {
+        match value {
+            OriginFullscreen::Exclusive(_) => Self::Exclusive,
+            OriginFullscreen::Borderless(_) => Self::Borderless,
+        }
+    }
+}
+
 mapping_bitflags!(WindowButtons: CLOSE; MINIMIZE; MAXIMIZE);
 
-simple_enum!(
-    enum WindowLevel {
+string_enum!(
+    enum WindowLevel => OriginWindowLevel {
         AlwaysOnBottom,
         Normal,
         AlwaysOnTop,
     }
 );
 
-simple_enum!(
-    enum Theme {
+string_enum!(
+    enum Theme => OriginTheme {
         Light,
         Dark,
     }
 );
 
-#[napi(js_name = "Icon")]
-pub struct Icon {
-    pub(crate) inner: OriginIcon,
-}
-
-impl Into<OriginIcon> for Icon {
-    fn into(self) -> OriginIcon {
-        self.inner
-    }
-}
+wrap_struct!(#[derive(Clone)] struct Icon { inner: OriginIcon });
 
 #[napi]
 impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
-        match OriginIcon::from_rgba(rgba.to_vec(), width, height) {
-            Ok(icon) => Ok(Self { inner: icon }),
-            Err(bad_icon) => Err(Error::from_reason(format!("{}", bad_icon))),
-        }
+        OriginIcon::from_rgba(rgba.to_vec(), width, height)
+        .map(Self::from)
+        .map_err(|e| Error::from_reason(format!("{}", e)))
     }
 }
 
-simple_struct!(WindowId);
-simple_struct!(ActivationToken);
+wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));
+wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
+wrap_struct!(struct Window { inner: OriginWindow });
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn default_attributes() -> WindowAttributes {
+        WindowAttributes::default()
+    }
+
+    #[napi]
+    pub fn id(&self) -> WindowId {
+        self.inner.id().into()
+    }
+
+    #[napi]
+    pub fn scale_factor(&self) -> f64 {
+        self.inner.scale_factor()
+    }
+
+    #[napi]
+    pub fn request_redraw(&self) {
+        self.inner.request_redraw();
+    }
+
+    #[napi]
+    pub fn pre_present_notify(&self) {
+        self.inner.pre_present_notify();
+    }
+
+    #[napi]
+    pub fn reset_dead_keys(&self) {
+        self.inner.reset_dead_keys();
+    }
+}
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn inner_position(&self) -> Result<Position> {
+        self.inner.inner_position()
+            .map(Position::from)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn outer_position(&self) -> Result<Position> {
+        self.inner.outer_position()
+            .map(Position::from)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn set_outer_position(&self, position: Position) {
+        self.inner.set_outer_position(position);
+    }
+
+    #[napi]
+    pub fn request_inner_size(&self, size: Size) -> Option<Size> {
+        self.inner.request_inner_size(size).map(Size::from)
+    }
+
+    #[napi]
+    pub fn outer_size(&self) -> Size {
+        self.inner.outer_size().into()
+    }
+
+    #[napi]
+    pub fn set_min_inner_size(&self, min_size: Option<Size>) {
+        self.inner.set_min_inner_size(min_size)
+    }
+
+    #[napi]
+    pub fn set_max_inner_size(&self, min_size: Option<Size>) {
+        self.inner.set_max_inner_size(min_size)
+    }
+
+    #[napi]
+    pub fn resize_increments(&self) -> Option<Size> {
+        self.inner.resize_increments().map(Size::from)
+    }
+
+    #[napi]
+    pub fn set_resize_increments(&self, increments: Option<Size>) {
+        self.inner.set_resize_increments(increments)
+    }
+}
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn set_title(&self, title: String) {
+        self.inner.set_title(title.as_str())
+    }
+    #[napi]
+    pub fn set_transparent(&self, transparent: bool) {
+        self.inner.set_transparent(transparent)
+    }
+    #[napi]
+    pub fn set_blur(&self, blur: bool) {
+        self.inner.set_blur(blur)
+    }
+    #[napi]
+    pub fn set_visible(&self, visible: bool) {
+        self.inner.set_visible(visible)
+    }
+    #[napi]
+    pub fn is_visible(&self) -> Option<bool> {
+        self.inner.is_visible()
+    }
+    #[napi]
+    pub fn set_resizable(&self, resizable: bool) {
+        self.inner.set_resizable(resizable)
+    }
+    #[napi]
+    pub fn is_resizable(&self) -> bool {
+        self.inner.is_resizable()
+    }
+    #[napi]
+    pub fn set_enabled_buttons(&self, buttons: &WindowButtons) {
+        self.inner.set_enabled_buttons(buttons.clone().into())
+    }
+    #[napi]
+    pub fn enabled_buttons(&self) -> WindowButtons {
+        self.inner.enabled_buttons().into()
+    }
+    #[napi]
+    pub fn set_minimized(&self, minimized: bool) {
+        self.inner.set_minimized(minimized)
+    }
+    #[napi]
+    pub fn is_minimized(&self) -> Option<bool> {
+        self.inner.is_minimized()
+    }
+    #[napi]
+    pub fn set_maximized(&self, maximized: bool) {
+        self.inner.set_maximized(maximized)
+    }
+    #[napi]
+    pub fn is_maximized(&self) -> bool {
+        self.inner.is_maximized()
+    }
+    #[napi]
+    pub fn set_fullscreen(&self, fullscreen: Option<Fullscreen>) {
+        self.inner.set_fullscreen(fullscreen.map(Into::into));
+    }
+    #[napi]
+    pub fn fullscreen(&self) -> Option<Fullscreen> {
+        self.inner.fullscreen().map(Fullscreen::from)
+    }
+    #[napi]
+    pub fn set_decorations(&self, decorations: bool) {
+        self.inner.set_decorations(decorations)
+    }
+    #[napi]
+    pub fn is_decorated(&self) -> bool {
+        self.inner.is_decorated()
+    }
+    #[napi]
+    pub fn set_window_level(&self, level: WindowLevel) {
+        self.inner.set_window_level(level.into())
+    }
+    #[napi]
+    pub fn set_window_icon(&self, window_icon: Option<&Icon>) {
+        self.inner.set_window_icon(window_icon.map(|icon| icon.clone().into()))
+    }
+    #[napi]
+    pub fn set_ime_cursor_area(&self, position: Position, size: Size) {
+        self.inner.set_ime_cursor_area(position, size)
+    }
+    #[napi]
+    pub fn set_ime_allowed(&self, allowed: bool) {
+        self.inner.set_ime_allowed(allowed)
+    }
+    #[napi]
+    pub fn set_ime_purpose(&self, purpose: ImePurpose) {
+        self.inner.set_ime_purpose(purpose.into())
+    }
+    #[napi]
+    pub fn focus_window(&self) {
+        self.inner.focus_window()
+    }
+    #[napi]
+    pub fn has_focus(&self) -> bool {
+        self.inner.has_focus()
+    }
+    #[napi]
+    pub fn request_user_attention(&self, request_type: Option<UserAttentionType>) {
+        self.inner.request_user_attention(request_type.map(Into::into))
+    }
+    #[napi]
+    pub fn set_theme(&self, theme: Option<Theme>) {
+        self.inner.set_theme(theme.map(Into::into))
+    }
+    #[napi]
+    pub fn theme(&self) -> Option<Theme> {
+        self.inner.theme().map(Into::into)
+    }
+    #[napi]
+    pub fn set_content_protected(&self, protected: bool) {
+        self.inner.set_content_protected(protected)
+    }
+    #[napi]
+    pub fn title(&self) -> String {
+        self.inner.title()
+    }
+}
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn set_cursor(&self, cursor: Cursor) {
+        self.inner.set_cursor(cursor)
+    }
+    #[napi]
+    pub fn set_cursor_icon(&self, icon: CursorIcon) {
+        self.inner.set_cursor_icon(icon.into())
+    }
+    #[napi]
+    pub fn set_cursor_position(&self, position: Position) -> Result<()> {
+        self.inner.set_cursor_position(position)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+    #[napi]
+    pub fn set_cursor_grab(&self, mode: CursorGrabMode) -> Result<()> {
+        self.inner.set_cursor_grab(mode.into())
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+    #[napi]
+    pub fn set_cursor_visible(&self, visible: bool) {
+        self.inner.set_cursor_visible(visible)
+    }
+    #[napi]
+    pub fn drag_window(&self) -> Result<()> {
+        self.inner.drag_window()
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+    #[napi]
+    pub fn drag_resize_window(&self, direction: ResizeDirection) -> Result<()> {
+        self.inner.drag_resize_window(direction.into())
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+    #[napi]
+    pub fn show_window_menu(&self, position: Position) {
+        self.inner.show_window_menu(position)
+    }
+    #[napi]
+    pub fn set_cursor_hittest(&self, hittest: bool) -> Result<()> {
+        self.inner.set_cursor_hittest(hittest)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+}
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn current_monitor(&self) -> Option<MonitorHandle> {
+        self.inner.current_monitor().map(|m| m.into())
+    }
+    #[napi]
+    pub fn available_monitors(&self) -> Vec<MonitorHandle> {
+        self.inner.available_monitors().map(|m| m.into()).collect()
+    }
+    #[napi]
+    pub fn primary_monitor(&self) -> Option<MonitorHandle> {
+        self.inner.primary_monitor().map(|m| m.into())
+    }
+}
+
+// #[cfg(feature = "rwh_06")]
+#[napi]
+impl Window {
+    #[napi]
+    pub fn window_handle(&self) -> Result<WindowHandle> {
+        let handle: &dyn rwh_06::HasWindowHandle = &self.inner as _;
+        handle.window_handle()
+            .map(Into::into)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+    #[napi]
+    pub fn display_handle(&self) -> Result<DisplayHandle> {
+        let handle: &dyn rwh_06::HasDisplayHandle = &self.inner as _;
+        handle.display_handle()
+            .map(Into::into)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+}
+
+wrap_struct!(struct WindowHandle { inner: rwh_06::WindowHandle<'_> });
+wrap_struct!(struct DisplayHandle { inner: rwh_06::DisplayHandle<'_> });
+
+string_enum!(enum ImePurpose => winit::window::ImePurpose { Normal, Password, Terminal } "never reach here");
+string_enum!(enum UserAttentionType => winit::window::UserAttentionType { Critical, Informational });
+string_enum!(enum CursorGrabMode => winit::window::CursorGrabMode { None, Confined, Locked });
+string_enum!(enum ResizeDirection => winit::window::ResizeDirection {
+    East,
+    North,
+    NorthEast,
+    NorthWest,
+    South,
+    SouthEast,
+    SouthWest,
+    West,
+});
 
 mark_ex_into!(
+    OriginWindow,
     OriginWindowId,
     OriginActivationToken,
     // local
+    Window,
     Theme,
     WindowId,
     ActivationToken

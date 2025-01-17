@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
 use syn::{parse_macro_input, Ident, Token};
 use syn::parse::{Parse, ParseStream};
 use crate::utils::to_lit_str;
@@ -32,6 +32,8 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
 
     let origin_ident = format_ident!("Origin{}", name);
 
+    let origin_ident = quote_spanned! { name.span() => #origin_ident };
+
     let lower_flags: Vec<_> = flags.iter().map(|flag| format_ident!("{}", flag.to_string().to_lowercase())).collect();
 
     let flag_idents: Vec<_> = lower_flags.iter().map(|flag| format_ident!("flag_{}", flag)).collect();
@@ -42,8 +44,8 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
 
 
     TokenStream::from(quote!(
-        #[napi(js_name = #export_ident_lit)]
-        #[derive(Copy, Clone)]
+        #[napi]
+        #[derive(Clone)]
         pub struct #name {
             #(pub(crate) #flag_idents: bool),*
         }
@@ -58,6 +60,16 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
                 origin
             }
         }
+
+        impl From<#origin_ident> for #name {
+            fn from(origin: #origin_ident) -> Self {
+                #(
+                    let #flag_idents = origin.contains(#origin_ident::#flags);
+                )*
+                Self { #( #flag_idents ),* }
+            }
+        }
+
 
         #[napi]
         impl #name {

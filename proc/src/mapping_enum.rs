@@ -2,10 +2,11 @@
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse_macro_input, parse_str, Expr, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum, Meta, MetaNameValue, Type, TypePath, Variant};
+use syn::{parse_macro_input, parse_str, Attribute, Expr, ExprLit, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum, Lit, Meta, MetaNameValue, Type, TypePath, Variant};
 
 use case::CaseExt;
-use crate::utils::to_lit_str;
+use syn::ext::IdentExt;
+use crate::utils::{find_attr_by_name, to_lit_str};
 
 const DIRCT_TYPES_STR: &str = "(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f32, f64, usize, isize, bool)";
 
@@ -62,8 +63,17 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                 Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => (0..unnamed.len())
                     .into_iter()
                     .map(|i| {
-                        let local_ident = format_ident!("elem{}", i);
                         let f = unnamed.get(i).unwrap().clone();
+
+                        let local_ident = match find_attr_by_name(&f.attrs, "conf_assign_name") {
+                            Some(Attribute { meta: Meta::NameValue(MetaNameValue { value: Expr::Lit(ExprLit { lit: Lit::Str(lit_str), .. }), .. }), ..  }) => {
+                                lit_str.parse_with(syn::Ident::parse_any).expect("#[conf_assign_name = \"xxx\"] that xxx cannot parse as Ident")
+                            }
+                            None => format_ident!("elem{}", i),
+                            _ => panic!("#[conf_assign_name = \"xxx\"] that xxx must be a name"),
+                        };
+
+                        let conf_assign_name = find_attr_by_name(&f.attrs, "conf_assign_name");
 
                         Field { ident: Some(local_ident), ..f }
                     })
@@ -181,7 +191,8 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
         .map(|v| {
             let variant_ident = &v.ident;
             let reach = quote! { #origin_ident::#variant_ident };
-            // v.attrs;
+            let conf_assign_name = find_attr_by_name(&v.attrs, "conf_assign_name");
+
             match v.fields {
                 Fields::Named(FieldsNamed { ref named, .. }) => {
                     let fields: Vec<_> = named.iter().map(|f| f.ident.clone().unwrap()).collect();
@@ -189,12 +200,22 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
                     quote!(#reach { #(#fields),* } => Self { #(#fields: #fields.ex_into()),* })
                 }
                 Fields::Unnamed(FieldsUnnamed { ref unnamed, .. }) => {
-                    let fields: Vec<_> = (0..unnamed.len())
+                    let field_idents: Vec<_> = (0..unnamed.len())
                         .into_iter()
-                        .map(|i| format_ident!("elem{}", i))
+                        .map(|i| {
+                            let f = unnamed.get(i).unwrap().clone();
+
+                            match find_attr_by_name(&f.attrs, "conf_assign_name") {
+                                Some(Attribute { meta: Meta::NameValue(MetaNameValue { value: Expr::Lit(ExprLit { lit: Lit::Str(lit_str), .. }), .. }), ..  }) => {
+                                    lit_str.parse_with(syn::Ident::parse_any).expect("#[conf_assign_name = \"xxx\"] that xxx cannot parse as Ident")
+                                }
+                                None => format_ident!("elem{}", i),
+                                _ => panic!("#[conf_assign_name = \"xxx\"] that xxx must be a name"),
+                            }
+                        })
                         .collect();
 
-                    quote!(#reach( #(#fields),* ) => Self { #(#fields: #fields.ex_into()),* })
+                    quote!(#reach( #(#field_idents),* ) => Self { #(#field_idents: #field_idents.ex_into()),* })
                 }
                 Fields::Unit => quote!(#reach => Self { }),
             }

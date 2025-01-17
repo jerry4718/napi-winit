@@ -40,9 +40,11 @@ use crate::{
         ActivationToken,
     },
     mark_ex_into,
+    string_enum,
+    wrap_struct
 };
 
-use proc::{mapping_enum, simple_enum, simple_struct};
+use proc::{mapping_enum};
 use napi::bindgen_prelude::*;
 
 #[napi]
@@ -164,10 +166,10 @@ mapping_enum!(
     }
 );
 
-simple_struct!(DeviceId);
-simple_struct!(RawKeyEvent);
-simple_struct!(KeyEvent);
-simple_struct!(Modifiers);
+wrap_struct!(#[derive(Clone)]struct DeviceId(OriginDeviceId));
+wrap_struct!(#[derive(Clone)] struct RawKeyEvent(OriginRawKeyEvent));
+wrap_struct!(#[derive(Clone)]struct KeyEvent(OriginKeyEvent));
+wrap_struct!(#[derive(Clone)]struct Modifiers(OriginModifiers));
 
 mapping_enum!(
     enum Ime {
@@ -221,7 +223,7 @@ impl From<OriginMouseScrollDelta> for MouseScrollDelta {
     }
 }
 
-simple_struct!(InnerSizeWriter);
+wrap_struct!(#[derive(Clone)]struct InnerSizeWriter(OriginInnerSizeWriter));
 
 mapping_enum!(
     enum TouchPhase {
@@ -232,7 +234,7 @@ mapping_enum!(
     }
 );
 
-simple_struct!(Touch);
+wrap_struct!(#[derive(Clone)]struct Touch(OriginTouch));
 
 mapping_enum!(
     enum DeviceEvent {
@@ -256,8 +258,8 @@ mapping_enum!(
     }
 );
 
-simple_enum!(
-    enum ElementState {
+string_enum!(
+    enum ElementState => OriginElementState {
         Pressed,
         Released,
     }
