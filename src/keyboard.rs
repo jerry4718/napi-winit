@@ -10,6 +10,7 @@ use winit::keyboard:: {
     KeyLocation as OriginKeyLocation,
     ModifiersState as OriginModifiersState,
     ModifiersKeyState as OriginModifiersKeyState,
+    PhysicalKey as OriginPhysicalKey,
     SmolStr,
 };
 
@@ -45,6 +46,13 @@ mapping_enum!(
         Character(#[conf_trans_type = String] SmolStr),
         Unidentified(NativeKey),
         Dead(#[conf_trans_type = Option::<String>] Option<char>),
+    }
+);
+
+mapping_enum!(
+    enum PhysicalKey {
+        Code(KeyCode),
+        Unidentified(NativeKeyCode),
     }
 );
 
@@ -151,6 +159,7 @@ mark_ex_into!(
     OriginKeyLocation,
     OriginModifiersState,
     OriginModifiersKeyState,
+    OriginPhysicalKey,
     SmolStr,
     // local
     NativeKeyCode,
@@ -160,5 +169,6 @@ mark_ex_into!(
     NamedKey,
     KeyLocation,
     ModifiersState,
-    ModifiersKeyState
+    ModifiersKeyState,
+    PhysicalKey
 );

@@ -19,7 +19,7 @@ pub fn mapping_enum(input: TokenStream) -> TokenStream {
     let direct_type_all: Vec<Type> = type_tuple.elems.iter().map(Clone::clone).collect();
 
     let export_ident = ident.clone();
-    let export_ident_lit = to_lit_str(Box::new(export_ident.clone()));
+    // let export_ident_lit = to_lit_str(Box::new(export_ident.clone()));
 
     let origin_ident = format_ident!("Origin{}", export_ident);
 

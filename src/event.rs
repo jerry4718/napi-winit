@@ -46,6 +46,7 @@ use crate::{
 
 use proc::{mapping_enum};
 use napi::bindgen_prelude::*;
+use crate::keyboard::{Key, KeyLocation, PhysicalKey};
 
 #[napi]
 #[derive(Clone)]
@@ -166,10 +167,38 @@ mapping_enum!(
     }
 );
 
-wrap_struct!(#[derive(Clone)]struct DeviceId(OriginDeviceId));
+wrap_struct!(#[derive(Clone)] struct DeviceId(OriginDeviceId));
 wrap_struct!(#[derive(Clone)] struct RawKeyEvent(OriginRawKeyEvent));
-wrap_struct!(#[derive(Clone)]struct KeyEvent(OriginKeyEvent));
-wrap_struct!(#[derive(Clone)]struct Modifiers(OriginModifiers));
+wrap_struct!(#[derive(Clone)] struct KeyEvent { origin: OriginKeyEvent });
+wrap_struct!(#[derive(Clone)] struct Modifiers(OriginModifiers));
+
+#[napi]
+impl KeyEvent {
+    #[napi(getter)]
+    pub fn physical_key(&self) -> PhysicalKey {
+        self.origin.physical_key.into()
+    }
+    #[napi(getter)]
+    pub fn logical_key(&self) -> Key {
+        self.origin.logical_key.clone().into()
+    }
+    #[napi(getter)]
+    pub fn text(&self) -> Option<String> {
+        self.origin.text.clone().map(|text| text.ex_into())
+    }
+    #[napi(getter)]
+    pub fn location(&self) -> KeyLocation {
+        self.origin.location.into()
+    }
+    #[napi(getter)]
+    pub fn state(&self) -> ElementState {
+        self.origin.state.into()
+    }
+    #[napi(getter)]
+    pub fn repeat(&self) -> bool {
+        self.origin.repeat
+    }
+}
 
 mapping_enum!(
     enum Ime {

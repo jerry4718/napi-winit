@@ -15,3 +15,13 @@ mod cursor;
 mod keyboard;
 mod monitor;
 mod r#macro;
+
+#[napi]
+pub fn thread_sleep(millis: f64) {
+    std::thread::sleep(std::time::Duration::from_millis(millis as u64));
+}
+
+#[napi]
+pub async fn tokio_sleep(millis: f64) {
+    tokio::time::sleep(std::time::Duration::from_millis(millis as u64)).await;
+}

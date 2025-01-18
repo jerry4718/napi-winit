@@ -21,7 +21,22 @@ export interface PixelUnit {
   type: UnitType
   count: number
 }
-export const enum DeviceEventsEnum {
+export interface Application {
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => void
+  onResumed: (eventLoop: ActiveEventLoop) => void
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => void
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => void
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => void
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => void
+  onSuspended?: (eventLoop: ActiveEventLoop) => void
+  onExiting?: (eventLoop: ActiveEventLoop) => void
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => void
+}
+export interface PumpStatus {
+  type: Type
+  code?: number
+}
+export const enum DeviceEvents {
   Always = 'Always',
   WhenFocused = 'WhenFocused',
   Never = 'Never'
@@ -137,6 +152,21 @@ export const enum UserAttentionType {
   Critical = 'Critical',
   Informational = 'Informational'
 }
+export const enum CursorGrabMode {
+  None = 'None',
+  Confined = 'Confined',
+  Locked = 'Locked'
+}
+export const enum ResizeDirection {
+  East = 'East',
+  North = 'North',
+  NorthEast = 'NorthEast',
+  NorthWest = 'NorthWest',
+  South = 'South',
+  SouthEast = 'SouthEast',
+  SouthWest = 'SouthWest',
+  West = 'West'
+}
 export const enum CursorIcon {
   Default = 'Default',
   ContextMenu = 'ContextMenu',
@@ -193,6 +223,10 @@ export const enum KeyEnum {
   Character = 'Character',
   Unidentified = 'Unidentified',
   Dead = 'Dead'
+}
+export const enum PhysicalKeyEnum {
+  Code = 'Code',
+  Unidentified = 'Unidentified'
 }
 export const enum KeyCode {
   Backquote = 'Backquote',
@@ -708,17 +742,31 @@ export const enum ModifiersKeyState {
   Pressed = 'Pressed',
   Unknown = 'Unknown'
 }
+export declare function threadSleep(millis: number): void
+export declare function tokioSleep(millis: number): Promise<void>
 export declare class TimeDuration {
   t_secs: number
   t_nanos: number
 }
 export declare class EventLoop {
   constructor()
+  runApp(app: Application): void
+  runAppOnDemand(app: Application): void
+  pumpAppEvents(millis: number, app: Application): PumpStatus
 }
-export declare class ActiveEventLoop { }
-export declare class DeviceEvents {
-  get type(): DeviceEventsEnum
-  get typeName(): string
+export declare class ActiveEventLoop {
+  createWindow(windowAttributes: WindowAttributes): Window
+  availableMonitors(): Array<MonitorHandle>
+  primaryMonitor(): MonitorHandle | null
+  listenDeviceEvents(allowed: DeviceEvents): void
+  systemTheme(): Theme | null
+  setControlFlowPoll(): void
+  setControlFlowWait(): void
+  setControlFlowWaitUntil(millis: number): void
+  controlFlow(): ControlFlow
+  exit(): void
+  exiting(): boolean
+  ownedDisplayHandle(): OwnedDisplayHandle
 }
 export declare class ControlFlowWaitUntilSpec {
   get time(): TimeDuration
@@ -888,7 +936,14 @@ export declare class WindowEvent {
 }
 export declare class DeviceId { }
 export declare class RawKeyEvent { }
-export declare class KeyEvent { }
+export declare class KeyEvent {
+  get physicalKey(): PhysicalKey
+  get logicalKey(): Key
+  get text(): string | null
+  get location(): KeyLocation
+  get state(): ElementState
+  get repeat(): boolean
+}
 export declare class Modifiers { }
 export declare class ImePreeditSpec {
   get elem0(): string
@@ -965,6 +1020,7 @@ export declare class WindowAttributes {
   withResizeIncrements(this: object, resizeIncrements: Size): this
   withContentProtected(this: object, protected: boolean): this
   withActive(this: object, active: boolean): this
+  withCursor(this: object, cursor: Cursor): this
 }
 export declare class WindowButtons {
   static all(): WindowButtons
@@ -1034,6 +1090,18 @@ export declare class Window {
   theme(): Theme | null
   setContentProtected(protected: boolean): void
   title(): string
+  setCursor(cursor: Cursor): void
+  setCursorPosition(position: Position): void
+  setCursorGrab(mode: CursorGrabMode): void
+  setCursorVisible(visible: boolean): void
+  dragWindow(): void
+  dragResizeWindow(direction: ResizeDirection): void
+  showWindowMenu(position: Position): void
+  setCursorHittest(hittest: boolean): void
+  currentMonitor(): MonitorHandle | null
+  availableMonitors(): Array<MonitorHandle>
+  primaryMonitor(): MonitorHandle | null
+  
 }
 export declare class Cursor {
   static fromIcon(icon: CursorIcon): Cursor
@@ -1044,17 +1112,17 @@ export declare class CustomCursor {
 }
 export declare class CustomCursorSource { }
 export declare class NativeKeyCodeAndroidSpec {
-  get elem0(): number
+  get code(): number
 }
 export type NativeKeyCodeMacOSSpec = NativeKeyCodeMacOsSpec
 export declare class NativeKeyCodeMacOsSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyCodeWindowsSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyCodeXkbSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyCode {
   get type(): NativeKeyCodeEnum
@@ -1065,17 +1133,17 @@ export declare class NativeKeyCode {
   get Xkb(): NativeKeyCodeXkbSpec
 }
 export declare class NativeKeyAndroidSpec {
-  get elem0(): number
+  get code(): number
 }
 export type NativeKeyMacOSSpec = NativeKeyMacOsSpec
 export declare class NativeKeyMacOsSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyWindowsSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyXkbSpec {
-  get elem0(): number
+  get code(): number
 }
 export declare class NativeKeyWebSpec {
   get elem0(): string
@@ -1090,7 +1158,7 @@ export declare class NativeKey {
   get Web(): NativeKeyWebSpec
 }
 export declare class KeyNamedSpec {
-  get elem0(): NamedKey
+  get name(): NamedKey
 }
 export declare class KeyCharacterSpec {
   get elem0(): string
@@ -1108,6 +1176,18 @@ export declare class Key {
   get Character(): KeyCharacterSpec
   get Unidentified(): KeyUnidentifiedSpec
   get Dead(): KeyDeadSpec
+}
+export declare class PhysicalKeyCodeSpec {
+  get elem0(): KeyCode
+}
+export declare class PhysicalKeyUnidentifiedSpec {
+  get elem0(): NativeKeyCode
+}
+export declare class PhysicalKey {
+  get type(): PhysicalKeyEnum
+  get typeName(): string
+  get Code(): PhysicalKeyCodeSpec
+  get Unidentified(): PhysicalKeyUnidentifiedSpec
 }
 export declare class ModifiersState {
   static all(): ModifiersState
@@ -1133,3 +1213,9 @@ export declare class ModifiersState {
 }
 export declare class VideoModeHandle { }
 export declare class MonitorHandle { }
+export declare namespace PumpStatus {
+  export const enum Type {
+    Continue = 'Continue',
+    Exit = 'Exit'
+  }
+}

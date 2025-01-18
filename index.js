@@ -310,13 +310,12 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { UnitType, TimeDuration, EventLoop, ActiveEventLoop, DeviceEventsEnum, DeviceEvents, ControlFlowEnum, ControlFlowWaitUntilSpec, ControlFlow, OwnedDisplayHandle, AsyncRequestSerial, UserPayload, EventEnum, EventNewEventsSpec, EventWindowEventSpec, EventDeviceEventSpec, EventUserEventSpec, Event, StartCauseEnum, StartCauseResumeTimeReachedSpec, StartCauseWaitCancelledSpec, StartCause, WindowEventEnum, WindowEventActivationTokenDoneSpec, WindowEventResizedSpec, WindowEventMovedSpec, WindowEventDroppedFileSpec, WindowEventHoveredFileSpec, WindowEventFocusedSpec, WindowEventKeyboardInputSpec, WindowEventModifiersChangedSpec, WindowEventImeSpec, WindowEventCursorMovedSpec, WindowEventCursorEnteredSpec, WindowEventCursorLeftSpec, WindowEventMouseWheelSpec, WindowEventMouseInputSpec, WindowEventPinchGestureSpec, WindowEventPanGestureSpec, WindowEventDoubleTapGestureSpec, WindowEventRotationGestureSpec, WindowEventTouchpadPressureSpec, WindowEventAxisMotionSpec, WindowEventTouchSpec, WindowEventScaleFactorChangedSpec, WindowEventThemeChangedSpec, WindowEventOccludedSpec, WindowEvent, DeviceId, RawKeyEvent, KeyEvent, Modifiers, ImeEnum, ImePreeditSpec, ImeCommitSpec, Ime, MouseButtonEnum, MouseButtonOtherSpec, MouseButton, MouseScrollDeltaType, MouseScrollDelta, InnerSizeWriter, TouchPhaseEnum, TouchPhase, Touch, DeviceEventEnum, DeviceEventMouseMotionSpec, DeviceEventMouseWheelSpec, DeviceEventMotionSpec, DeviceEventButtonSpec, DeviceEventKeySpec, DeviceEvent, ElementState, WindowAttributes, Fullscreen, WindowButtons, WindowLevel, Theme, Icon, WindowId, ActivationToken, Window, ImePurpose, UserAttentionType, CursorIcon, Cursor, CustomCursor, CustomCursorSource, NativeKeyCodeEnum, NativeKeyCodeAndroidSpec, NativeKeyCodeMacOsSpec, NativeKeyCodeWindowsSpec, NativeKeyCodeXkbSpec, NativeKeyCode, NativeKeyEnum, NativeKeyAndroidSpec, NativeKeyMacOsSpec, NativeKeyWindowsSpec, NativeKeyXkbSpec, NativeKeyWebSpec, NativeKey, KeyEnum, KeyNamedSpec, KeyCharacterSpec, KeyUnidentifiedSpec, KeyDeadSpec, Key, KeyCode, NamedKey, KeyLocation, ModifiersState, ModifiersKeyState, VideoModeHandle, MonitorHandle } = nativeBinding
+const { UnitType, TimeDuration, EventLoop, ActiveEventLoop, DeviceEvents, ControlFlowEnum, ControlFlowWaitUntilSpec, ControlFlow, OwnedDisplayHandle, AsyncRequestSerial, UserPayload, EventEnum, EventNewEventsSpec, EventWindowEventSpec, EventDeviceEventSpec, EventUserEventSpec, Event, StartCauseEnum, StartCauseResumeTimeReachedSpec, StartCauseWaitCancelledSpec, StartCause, WindowEventEnum, WindowEventActivationTokenDoneSpec, WindowEventResizedSpec, WindowEventMovedSpec, WindowEventDroppedFileSpec, WindowEventHoveredFileSpec, WindowEventFocusedSpec, WindowEventKeyboardInputSpec, WindowEventModifiersChangedSpec, WindowEventImeSpec, WindowEventCursorMovedSpec, WindowEventCursorEnteredSpec, WindowEventCursorLeftSpec, WindowEventMouseWheelSpec, WindowEventMouseInputSpec, WindowEventPinchGestureSpec, WindowEventPanGestureSpec, WindowEventDoubleTapGestureSpec, WindowEventRotationGestureSpec, WindowEventTouchpadPressureSpec, WindowEventAxisMotionSpec, WindowEventTouchSpec, WindowEventScaleFactorChangedSpec, WindowEventThemeChangedSpec, WindowEventOccludedSpec, WindowEvent, DeviceId, RawKeyEvent, KeyEvent, Modifiers, ImeEnum, ImePreeditSpec, ImeCommitSpec, Ime, MouseButtonEnum, MouseButtonOtherSpec, MouseButton, MouseScrollDeltaType, MouseScrollDelta, InnerSizeWriter, TouchPhaseEnum, TouchPhase, Touch, DeviceEventEnum, DeviceEventMouseMotionSpec, DeviceEventMouseWheelSpec, DeviceEventMotionSpec, DeviceEventButtonSpec, DeviceEventKeySpec, DeviceEvent, ElementState, WindowAttributes, Fullscreen, WindowButtons, WindowLevel, Theme, Icon, WindowId, ActivationToken, Window, ImePurpose, UserAttentionType, CursorGrabMode, ResizeDirection, CursorIcon, Cursor, CustomCursor, CustomCursorSource, NativeKeyCodeEnum, NativeKeyCodeAndroidSpec, NativeKeyCodeMacOsSpec, NativeKeyCodeWindowsSpec, NativeKeyCodeXkbSpec, NativeKeyCode, NativeKeyEnum, NativeKeyAndroidSpec, NativeKeyMacOsSpec, NativeKeyWindowsSpec, NativeKeyXkbSpec, NativeKeyWebSpec, NativeKey, KeyEnum, KeyNamedSpec, KeyCharacterSpec, KeyUnidentifiedSpec, KeyDeadSpec, Key, PhysicalKeyEnum, PhysicalKeyCodeSpec, PhysicalKeyUnidentifiedSpec, PhysicalKey, KeyCode, NamedKey, KeyLocation, ModifiersState, ModifiersKeyState, VideoModeHandle, MonitorHandle, threadSleep, tokioSleep, PumpStatus } = nativeBinding
 
 module.exports.UnitType = UnitType
 module.exports.TimeDuration = TimeDuration
 module.exports.EventLoop = EventLoop
 module.exports.ActiveEventLoop = ActiveEventLoop
-module.exports.DeviceEventsEnum = DeviceEventsEnum
 module.exports.DeviceEvents = DeviceEvents
 module.exports.ControlFlowEnum = ControlFlowEnum
 module.exports.ControlFlowWaitUntilSpec = ControlFlowWaitUntilSpec
@@ -396,6 +395,8 @@ module.exports.ActivationToken = ActivationToken
 module.exports.Window = Window
 module.exports.ImePurpose = ImePurpose
 module.exports.UserAttentionType = UserAttentionType
+module.exports.CursorGrabMode = CursorGrabMode
+module.exports.ResizeDirection = ResizeDirection
 module.exports.CursorIcon = CursorIcon
 module.exports.Cursor = Cursor
 module.exports.CustomCursor = CustomCursor
@@ -419,6 +420,10 @@ module.exports.KeyCharacterSpec = KeyCharacterSpec
 module.exports.KeyUnidentifiedSpec = KeyUnidentifiedSpec
 module.exports.KeyDeadSpec = KeyDeadSpec
 module.exports.Key = Key
+module.exports.PhysicalKeyEnum = PhysicalKeyEnum
+module.exports.PhysicalKeyCodeSpec = PhysicalKeyCodeSpec
+module.exports.PhysicalKeyUnidentifiedSpec = PhysicalKeyUnidentifiedSpec
+module.exports.PhysicalKey = PhysicalKey
 module.exports.KeyCode = KeyCode
 module.exports.NamedKey = NamedKey
 module.exports.KeyLocation = KeyLocation
@@ -426,3 +431,6 @@ module.exports.ModifiersState = ModifiersState
 module.exports.ModifiersKeyState = ModifiersKeyState
 module.exports.VideoModeHandle = VideoModeHandle
 module.exports.MonitorHandle = MonitorHandle
+module.exports.threadSleep = threadSleep
+module.exports.tokioSleep = tokioSleep
+module.exports.PumpStatus = PumpStatus

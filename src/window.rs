@@ -26,6 +26,7 @@ use crate::{mark_ex_into, string_enum, wrap_struct};
 use crate::monitor::MonitorHandle;
 
 #[napi]
+#[derive(Clone)]
 pub struct WindowAttributes {
     pub(crate) inner_size: Option<Size>,
     pub(crate) min_inner_size: Option<Size>,
@@ -97,7 +98,8 @@ impl Into<OriginWindowAttributes> for WindowAttributes {
             .with_blur(self.blur)
             .with_decorations(self.decorations)
             .with_window_level(self.window_level.into())
-            .with_content_protected(self.content_protected);
+            .with_content_protected(self.content_protected)
+            .with_cursor(self.cursor);
 
         let attrs = match self.inner_size {
             Some(inner_size) => attrs.with_inner_size(inner_size),
@@ -138,8 +140,6 @@ impl Into<OriginWindowAttributes> for WindowAttributes {
             Some(resize_increments) => attrs.with_resize_increments(resize_increments),
             None => attrs,
         };
-
-        let cursor = self.cursor;
 
         attrs
     }
@@ -271,11 +271,11 @@ impl WindowAttributes {
         this
     }
 
-    // #[inline]
-    // pub fn with_cursor(&mut self, cursor: impl Into<Cursor>) -> Self {
-    //     self.cursor = cursor.into();
-    //     self
-    // }
+    #[napi(ts_return_type="this")]
+    pub fn with_cursor(&mut self, this: This<JsObject>, cursor: &Cursor) -> This<JsObject> {
+        self.cursor = cursor.clone();
+        this
+    }
 
     // #[cfg(feature = "rwh_06")]
     // #[inline]
@@ -558,13 +558,13 @@ impl Window {
 #[napi]
 impl Window {
     #[napi]
-    pub fn set_cursor(&self, cursor: Cursor) {
-        self.inner.set_cursor(cursor)
+    pub fn set_cursor(&self, cursor: &Cursor) {
+        self.inner.set_cursor(cursor.clone())
     }
-    #[napi]
-    pub fn set_cursor_icon(&self, icon: CursorIcon) {
-        self.inner.set_cursor_icon(icon.into())
-    }
+    // #[napi]
+    // pub fn set_cursor_icon(&self, icon: CursorIcon) {
+    //     self.inner.set_cursor_icon(icon.into())
+    // }
     #[napi]
     pub fn set_cursor_position(&self, position: Position) -> Result<()> {
         self.inner.set_cursor_position(position)
@@ -619,24 +619,24 @@ impl Window {
 // #[cfg(feature = "rwh_06")]
 #[napi]
 impl Window {
-    #[napi]
-    pub fn window_handle(&self) -> Result<WindowHandle> {
-        let handle: &dyn rwh_06::HasWindowHandle = &self.inner as _;
-        handle.window_handle()
-            .map(Into::into)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
-    }
-    #[napi]
-    pub fn display_handle(&self) -> Result<DisplayHandle> {
-        let handle: &dyn rwh_06::HasDisplayHandle = &self.inner as _;
-        handle.display_handle()
-            .map(Into::into)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
-    }
+    // #[napi]
+    // pub fn window_handle(&self) -> Result<WindowHandle> {
+    //     let handle: &dyn rwh_06::HasWindowHandle<'_> = &self.inner as _;
+    //     handle.window_handle()
+    //         .map(Into::into)
+    //         .map_err(|e| Error::from_reason(format!("{}", e)))
+    // }
+    // #[napi]
+    // pub fn display_handle(&self) -> Result<DisplayHandle> {
+    //     let handle: &dyn rwh_06::HasDisplayHandle<'_> = &self.inner as _;
+    //     handle.display_handle()
+    //         .map(Into::into)
+    //         .map_err(|e| Error::from_reason(format!("{}", e)))
+    // }
 }
 
-wrap_struct!(struct WindowHandle { inner: rwh_06::WindowHandle<'_> });
-wrap_struct!(struct DisplayHandle { inner: rwh_06::DisplayHandle<'_> });
+// wrap_struct!(struct WindowHandle { inner: rwh_06::WindowHandle<'_> });
+// wrap_struct!(struct DisplayHandle { inner: rwh_06::DisplayHandle<'_> });
 
 string_enum!(enum ImePurpose => winit::window::ImePurpose { Normal, Password, Terminal } "never reach here");
 string_enum!(enum UserAttentionType => winit::window::UserAttentionType { Critical, Informational });
