@@ -48,7 +48,8 @@ impl EventLoop {
 
 #[napi(object)]
 pub struct PumpStatus {
-    pub r#type:pump_status::Type,
+    #[napi(ts_type = "PumpStatus.Type")]
+    pub r#type: pump_status::Type,
     pub code: Option<i32>
 }
 
