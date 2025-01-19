@@ -33,7 +33,7 @@ export interface Application {
   onMemoryWarning?: (eventLoop: ActiveEventLoop) => void
 }
 export interface PumpStatus {
-  type: Type
+  type: PumpStatus.Type
   code?: number
 }
 export const enum DeviceEvents {
@@ -142,6 +142,17 @@ export const enum WindowLevel {
 export const enum Theme {
   Light = 'Light',
   Dark = 'Dark'
+}
+export const enum SurfaceSystem {
+  Win32 = 'Win32',
+  Cocoa = 'Cocoa',
+  X11 = 'X11',
+  Wayland = 'Wayland'
+}
+export interface SurfaceOptions {
+  system: SurfaceSystem
+  windowHandle: bigint
+  displayHandle: bigint
 }
 export const enum ImePurpose {
   Normal = 'Normal',
@@ -1101,7 +1112,7 @@ export declare class Window {
   currentMonitor(): MonitorHandle | null
   availableMonitors(): Array<MonitorHandle>
   primaryMonitor(): MonitorHandle | null
-  
+  getSurfaceOptions(): SurfaceOptions
 }
 export declare class Cursor {
   static fromIcon(icon: CursorIcon): Cursor

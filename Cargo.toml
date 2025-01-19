@@ -10,13 +10,13 @@ crate-type = ["cdylib"]
 members = [ "./proc" ]
 
 [dependencies]
-winit = { version = "0.30.8", features = [ "rwh_06" ] }
-rwh_06 = { package = "raw-window-handle", version = "0.6", features = [ "std" ] }
+winit = { version = "0.30.8", features = [ "rwh_05" ] }
+rwh_05 = { package = "raw-window-handle", version = "0.5.2", features = [ "std" ] }
 proc = { path = "./proc" }
 tokio = { version = "1.43.0", features = [ "time" ] }
 
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.16.3", default-features = false, features = ["napi4", "async", "tokio_rt"] }
+napi = { version = "2.16.3", default-features = false, features = ["napi6", "async", "tokio_rt"] }
 napi-derive = "2.16.3"
 
 [build-dependencies]

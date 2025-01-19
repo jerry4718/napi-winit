@@ -19,6 +19,8 @@ use winit::{
 use napi::bindgen_prelude::*;
 use napi::{JsObject, NapiRaw, NapiValue};
 use napi::sys::{napi_env, napi_value};
+use rwh_05::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
+// use rwh_06::{HandleError, HasRawWindowHandle, HasWindowHandle, RawWindowHandle};
 use proc::{mapping_bitflags, mapping_enum};
 use crate::cursor::{Cursor, CursorIcon};
 use crate::extra::convert::{ExInto};
@@ -616,23 +618,66 @@ impl Window {
     }
 }
 
-// #[cfg(feature = "rwh_06")]
+#[napi(string_enum)]
+pub enum SurfaceSystem {
+    Win32,
+    Cocoa,
+    X11,
+    Wayland,
+}
+
+#[napi(object)]
+pub struct SurfaceOptions {
+    pub system: SurfaceSystem,
+    pub window_handle: BigInt,
+    pub display_handle: BigInt,
+}
+
 #[napi]
 impl Window {
-    // #[napi]
-    // pub fn window_handle(&self) -> Result<WindowHandle> {
-    //     let handle: &dyn rwh_06::HasWindowHandle<'_> = &self.inner as _;
-    //     handle.window_handle()
-    //         .map(Into::into)
-    //         .map_err(|e| Error::from_reason(format!("{}", e)))
-    // }
-    // #[napi]
-    // pub fn display_handle(&self) -> Result<DisplayHandle> {
-    //     let handle: &dyn rwh_06::HasDisplayHandle<'_> = &self.inner as _;
-    //     handle.display_handle()
-    //         .map(Into::into)
-    //         .map_err(|e| Error::from_reason(format!("{}", e)))
-    // }
+    #[napi]
+    pub fn get_surface_options(&self) -> Result<SurfaceOptions> {
+        let raw_window_handle = self.inner.raw_window_handle();
+        let raw_display_handle = self.inner.raw_display_handle();
+
+        match (raw_window_handle, raw_display_handle) {
+            (RawWindowHandle::Win32(window), _) => {
+                Ok(SurfaceOptions {
+                    system: SurfaceSystem::Win32,
+                    window_handle: BigInt::from(window.hwnd as u64),
+                    display_handle: BigInt::from(window.hinstance as u64),
+                })
+            }
+            (RawWindowHandle::AppKit(window), _) => {
+                Ok(SurfaceOptions {
+                    system: SurfaceSystem::Cocoa,
+                    window_handle: BigInt::from(window.ns_window as u64),
+                    display_handle: BigInt::from(window.ns_view as u64),
+                })
+            }
+            (
+                RawWindowHandle::Xlib(window),
+                RawDisplayHandle::Xlib(display)
+            ) => {
+                Ok(SurfaceOptions {
+                    system: SurfaceSystem::X11,
+                    window_handle: BigInt::from(window.window as u64),
+                    display_handle: BigInt::from(display.display as u64),
+                })
+            }
+            (
+                RawWindowHandle::Wayland(window),
+                RawDisplayHandle::Wayland(display)
+            ) => {
+                Ok(SurfaceOptions {
+                    system: SurfaceSystem::Wayland,
+                    window_handle: BigInt::from(window.surface as u64),
+                    display_handle: BigInt::from(display.display as u64),
+                })
+            }
+            _ => Err(Error::from_reason("unimplemented for this platform")),
+        }
+    }
 }
 
 // wrap_struct!(struct WindowHandle { inner: rwh_06::WindowHandle<'_> });
