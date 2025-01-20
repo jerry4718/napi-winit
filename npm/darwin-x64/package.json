@@ -1,5 +1,5 @@
 {
-  "name": "napi-winit-darwin-x64",
+  "name": "@ylcc/napi-winit-darwin-x64",
   "version": "0.0.0",
   "os": [
     "darwin"

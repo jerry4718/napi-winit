@@ -1,5 +1,5 @@
 {
-  "name": "napi-winit-win32-x64-msvc",
+  "name": "@ylcc/napi-winit-win32-x64-msvc",
   "version": "0.0.0",
   "os": [
     "win32"
