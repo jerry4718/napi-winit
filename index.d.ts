@@ -111,6 +111,10 @@ export const enum MouseScrollDeltaType {
   Line = 'Line',
   Pixel = 'Pixel'
 }
+export interface MouseScrollDelta {
+  deltaType: MouseScrollDeltaType
+  delta: Position
+}
 export const enum TouchPhaseEnum {
   Started = 'Started',
   Moved = 'Moved',
@@ -955,7 +959,9 @@ export declare class KeyEvent {
   get state(): ElementState
   get repeat(): boolean
 }
-export declare class Modifiers { }
+export declare class Modifiers {
+  get state(): ModifiersState
+}
 export declare class ImePreeditSpec {
   get elem0(): string
   get elem1(): Position | null
@@ -977,7 +983,6 @@ export declare class MouseButton {
   get typeName(): string
   get Other(): MouseButtonOtherSpec
 }
-export declare class MouseScrollDelta { }
 export declare class InnerSizeWriter { }
 export declare class TouchPhase {
   get type(): TouchPhaseEnum

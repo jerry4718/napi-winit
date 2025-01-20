@@ -46,7 +46,7 @@ use crate::{
 
 use proc::{mapping_enum};
 use napi::bindgen_prelude::*;
-use crate::keyboard::{Key, KeyLocation, PhysicalKey};
+use crate::keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey};
 
 #[napi]
 #[derive(Clone)]
@@ -170,7 +170,6 @@ mapping_enum!(
 wrap_struct!(#[derive(Clone)] struct DeviceId(OriginDeviceId));
 wrap_struct!(#[derive(Clone)] struct RawKeyEvent(OriginRawKeyEvent));
 wrap_struct!(#[derive(Clone)] struct KeyEvent { origin: OriginKeyEvent });
-wrap_struct!(#[derive(Clone)] struct Modifiers(OriginModifiers));
 
 #[napi]
 impl KeyEvent {
@@ -197,6 +196,15 @@ impl KeyEvent {
     #[napi(getter)]
     pub fn repeat(&self) -> bool {
         self.origin.repeat
+    }
+}
+wrap_struct!(#[derive(Clone)] struct Modifiers(OriginModifiers));
+
+#[napi]
+impl Modifiers {
+    #[napi(getter)]
+    pub fn state(&self) -> ModifiersState {
+        self.0.state().into()
     }
 }
 
@@ -226,11 +234,11 @@ pub enum MouseScrollDeltaType {
     Pixel,
 }
 
-#[napi]
+#[napi(object)]
 #[derive(Clone)]
 pub struct MouseScrollDelta {
-    delta_type: MouseScrollDeltaType,
-    delta: Position,
+    pub delta_type: MouseScrollDeltaType,
+    pub delta: Position,
 }
 
 impl From<OriginMouseScrollDelta> for MouseScrollDelta {
@@ -252,7 +260,7 @@ impl From<OriginMouseScrollDelta> for MouseScrollDelta {
     }
 }
 
-wrap_struct!(#[derive(Clone)]struct InnerSizeWriter(OriginInnerSizeWriter));
+wrap_struct!(#[derive(Clone)] struct InnerSizeWriter(OriginInnerSizeWriter));
 
 mapping_enum!(
     enum TouchPhase {
@@ -263,7 +271,7 @@ mapping_enum!(
     }
 );
 
-wrap_struct!(#[derive(Clone)]struct Touch(OriginTouch));
+wrap_struct!(#[derive(Clone)] struct Touch(OriginTouch));
 
 mapping_enum!(
     enum DeviceEvent {
