@@ -1,9 +1,12 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.0.102",
+  "version": "0.0.103",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "commonjs",
+  "repository": {
+    "url": "https://github.com/jerry4718/napi-winit"
+  },
   "napi": {
     "name": "napi-winit",
     "triples": {}

@@ -1,6 +1,9 @@
 {
   "name": "@ylcc/napi-winit-darwin-x64",
   "version": "0.0.102",
+  "repository": {
+    "url": "https://github.com/jerry4718/napi-winit"
+  },
   "os": [
     "darwin"
   ],
