@@ -1,6 +1,6 @@
 {
   "name": "@ylcc/napi-winit-linux-x64-gnu",
-  "version": "0.0.0",
+  "version": "0.0.102",
   "os": [
     "linux"
   ],
