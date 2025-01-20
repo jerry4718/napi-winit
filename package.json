@@ -27,10 +27,5 @@
     "test": "ava",
     "universal": "napi universal",
     "version": "napi version"
-  },
-  "optionalDependencies": {
-    "@ylcc/napi-winit-win32-x64-msvc": "0.0.0",
-    "@ylcc/napi-winit-darwin-x64": "0.0.0",
-    "@ylcc/napi-winit-linux-x64-gnu": "0.0.0"
   }
 }
