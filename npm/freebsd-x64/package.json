@@ -1,0 +1,20 @@
+{
+  "name": "@ylcc/napi-winit-freebsd-x64",
+  "repository": {
+    "url": "git+https://github.com/jerry4718/napi-winit.git"
+  },
+  "os": [
+    "freebsd"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "napi-winit.freebsd-x64.node",
+  "files": [
+    "napi-winit.freebsd-x64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
