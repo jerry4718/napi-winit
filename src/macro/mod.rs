@@ -24,8 +24,8 @@
         }
 
         impl From<$origin> for $name {
-            fn from(origin: $origin) -> Self {
-                Self { $inner: origin }
+            fn from($inner: $origin) -> Self {
+                Self { $inner }
             }
         }
 
@@ -62,4 +62,47 @@
             }
         }
     }
+}
+
+#[macro_export] macro_rules! flat_rop {
+    ($result: ident: Some($promise: ident) => $($tt: tt)*) => {
+        match $result {
+            Ok(Some($promise)) => { $($tt)* },
+            Ok(None) => Ok(()),
+            Err(err) => Err(err)
+        }
+    };
+}
+
+#[macro_export] macro_rules! handle_res {
+    ($result: ident) => {
+        match $result {
+            Ok(_) => (),
+            Err(napi::bindgen_prelude::Error { status, reason, .. }) => {
+                println!("status: {}, reason: {}", status, reason);
+            }
+        }
+    };
+}
+
+#[macro_export] macro_rules! handle_rop {
+    ($run: ident ( Some($promise: ident) @ $result: ident)) => {
+        match $result {
+            Ok(Some($promise)) => napi::bindgen_prelude::$run(async {
+                let result = $promise.await;
+                $crate::handle_res!(result);
+            }),
+            Ok(None) => return,
+            Err(err) => { println!("handle_result error {:?}", err); return },
+        }
+    };
+}
+
+#[macro_export] macro_rules! pool_rop {
+    ($result: ident) => {
+        $crate::THREAD_POOL.execute(move || {
+            let result = $crate::flat_rop!($result: Some(promise) => pollster::block_on(promise));
+            $crate::handle_res!(result);
+        })
+    };
 }

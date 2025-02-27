@@ -5,9 +5,13 @@
 #[macro_use]
 extern crate napi_derive;
 
+use std::ptr::NonNull;
+use napi::bindgen_prelude::*;
+use napi::{JsUndefined, JsUnknown};
+use once_cell::sync::Lazy;
+
 mod dpi;
 mod extra;
-mod application;
 mod event_loop;
 mod event;
 mod window;
@@ -15,13 +19,9 @@ mod cursor;
 mod keyboard;
 mod monitor;
 mod r#macro;
+mod async_helper;
+mod application;
 
-#[napi]
-pub fn thread_sleep(millis: f64) {
-    std::thread::sleep(std::time::Duration::from_millis(millis as u64));
-}
-
-#[napi]
-pub async fn tokio_sleep(millis: f64) {
-    tokio::time::sleep(std::time::Duration::from_millis(millis as u64)).await;
-}
+pub static THREAD_POOL: Lazy<threadpool::ThreadPool> = Lazy::new(|| {
+    threadpool::ThreadPool::default()
+});

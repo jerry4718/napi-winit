@@ -3,8 +3,9 @@ use winit::window::{
     CursorIcon as OriginCursorIcon,
     CustomCursor as OriginCustomCursor,
     CustomCursorSource as OriginCustomCursorSource,
-    Icon as OriginIcon};
-use proc::{mapping_enum};
+    Icon as OriginIcon
+};
+
 use crate::{mark_ex_into, string_enum, wrap_struct};
 
 use napi::bindgen_prelude::*;
@@ -25,13 +26,7 @@ impl Default for CursorIcon {
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct Cursor ( OriginCursor ));
-
-impl Default for Cursor {
-    fn default() -> Self {
-        Self(OriginCursor::default())
-    }
-}
+wrap_struct!(#[derive(Clone, Default)] struct Cursor ( OriginCursor ));
 
 #[napi]
 impl Cursor {

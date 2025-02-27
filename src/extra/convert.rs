@@ -73,7 +73,12 @@ mod local_impl {
 
     mark_ex_into!(String);
 
-    mark_ex_into!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool);
+    mark_ex_into!(
+        u8, u16, u32, u64, u128, usize,
+        i8, i16, i32, i64, i128, isize,
+        f32, f64,
+        bool
+    );
 }
 
 #[cfg(test)]
@@ -98,7 +103,8 @@ mod tests {
             Self { y: x }
         }
     }
-    impl ExIntoTag<To> for Fr {}
+
+    mark_ex_into!(Fr);
 
     #[test]
     fn test_from() {

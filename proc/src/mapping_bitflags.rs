@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
-use syn::{parse_macro_input, Ident, Token};
+use syn::{parse_macro_input, Ident, Token, braced};
 use syn::parse::{Parse, ParseStream};
 use crate::utils::to_lit_str;
 
@@ -11,13 +11,16 @@ struct FlagsInputSpec {
 
 impl Parse for FlagsInputSpec {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let _struct = input.parse::<Token![struct]>()?;
         let name = input.parse::<Ident>()?;
-        let _token_colon = input.parse::<Token![:]>()?;
+
+        let content;
+        let _brace_token = braced!(content in input);
 
         let mut flags = Vec::<Ident>::new();
 
-        while let Some(flag) = input.parse::<Option<Ident>>()? {
-            input.parse::<Option<Token![;]>>()?;
+        while let Some(flag) = content.parse::<Option<Ident>>()? {
+            content.parse::<Option<Token![;]>>()?;
             flags.push(flag);
         }
         Ok(Self { name, flags })
@@ -50,6 +53,15 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
             #(pub(crate) #flag_idents: bool),*
         }
 
+        impl From<#origin_ident> for #name {
+            fn from(origin: #origin_ident) -> Self {
+                #(
+                    let #flag_idents = origin.contains(#origin_ident::#flags);
+                )*
+                Self { #( #flag_idents ),* }
+            }
+        }
+
         impl Into<#origin_ident> for #name {
             fn into(self) -> #origin_ident {
                 let mut origin = #origin_ident::empty();
@@ -60,16 +72,6 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
                 origin
             }
         }
-
-        impl From<#origin_ident> for #name {
-            fn from(origin: #origin_ident) -> Self {
-                #(
-                    let #flag_idents = origin.contains(#origin_ident::#flags);
-                )*
-                Self { #( #flag_idents ),* }
-            }
-        }
-
 
         #[napi]
         impl #name {
@@ -100,21 +102,21 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
             )*
             #(
                 #[napi(ts_return_type="this")]
-                pub fn #toggle_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
+                pub fn #toggle_flags<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
                     self.#flag_idents = !self.#flag_idents;
                     this
                 }
             )*
             #(
                 #[napi(ts_return_type="this")]
-                pub fn #insert_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
+                pub fn #insert_flags<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
                     self.#flag_idents = true;
                     this
                 }
             )*
             #(
                 #[napi(ts_return_type="this")]
-                pub fn #remove_flags(&mut self, this: This<JsObject>) -> This<JsObject> {
+                pub fn #remove_flags<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
                     self.#flag_idents = false;
                     this
                 }

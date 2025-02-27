@@ -1,31 +1,40 @@
-use crate::dpi::Position;
-use crate::dpi::Size;
-
-use winit::{
-    window::{
-        CursorIcon as OriginCursorIcon,
-        Fullscreen as OriginFullscreen,
-        Icon as OriginIcon,
-        Theme as OriginTheme,
-        Window as OriginWindow,
-        WindowId as OriginWindowId,
-        WindowAttributes as OriginWindowAttributes,
-        WindowButtons as OriginWindowButtons,
-        WindowLevel as OriginWindowLevel,
-        ActivationToken as OriginActivationToken,
-    }
+use winit::window::{
+    ActivationToken as OriginActivationToken,
+    CursorIcon as OriginCursorIcon,
+    Fullscreen as OriginFullscreen,
+    Icon as OriginIcon,
+    Theme as OriginTheme,
+    Window as OriginWindow,
+    WindowAttributes as OriginWindowAttributes,
+    WindowButtons as OriginWindowButtons,
+    WindowId as OriginWindowId,
+    WindowLevel as OriginWindowLevel,
 };
 
-use napi::bindgen_prelude::*;
-use napi::{JsObject, NapiRaw, NapiValue};
-use napi::sys::{napi_env, napi_value};
-use rwh_05::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
-// use rwh_06::{HandleError, HasRawWindowHandle, HasWindowHandle, RawWindowHandle};
-use proc::{mapping_bitflags, mapping_enum};
-use crate::cursor::{Cursor, CursorIcon};
-use crate::extra::convert::{ExInto};
-use crate::{mark_ex_into, string_enum, wrap_struct};
-use crate::monitor::MonitorHandle;
+use crate::{
+    cursor::{Cursor, CursorIcon},
+    dpi::Position,
+    dpi::Size,
+    extra::convert::ExInto,
+    mark_ex_into,
+    monitor::MonitorHandle,
+    string_enum,
+    wrap_struct,
+};
+
+use napi::{
+    bindgen_prelude::*,
+    sys::{napi_env, napi_value},
+    JsObject,
+    JsString,
+};
+use proc::proxy_flags;
+use rwh_05::{
+    HasRawDisplayHandle,
+    HasRawWindowHandle,
+    RawDisplayHandle,
+    RawWindowHandle,
+};
 
 #[napi]
 #[derive(Clone)]
@@ -155,67 +164,67 @@ impl WindowAttributes {
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_inner_size(&mut self, this: This<JsObject>, size: Size) -> This<JsObject> {
+    pub fn with_inner_size<'a>(&mut self, this: This<'a, JsObject>, size: Size) -> This<'a, JsObject> {
         self.inner_size = Some(size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_min_inner_size(&mut self, this: This<JsObject>, min_size: Size) -> This<JsObject> {
+    pub fn with_min_inner_size<'a>(&mut self, this: This<'a, JsObject>, min_size: Size) -> This<'a, JsObject> {
         self.min_inner_size = Some(min_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_max_inner_size(&mut self, this: This<JsObject>, max_size: Size) -> This<JsObject> {
+    pub fn with_max_inner_size<'a>(&mut self, this: This<'a, JsObject>, max_size: Size) -> This<'a, JsObject> {
         self.max_inner_size = Some(max_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_position(&mut self, this: This<JsObject>, position: Position) -> This<JsObject> {
+    pub fn with_position<'a>(&mut self, this: This<'a, JsObject>, position: Position) -> This<'a, JsObject> {
         self.position = Some(position);
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_resizable(&mut self, this: This<JsObject>, resizable: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_resizable<'a>(&mut self, this: This<'a, JsObject>, resizable: bool) -> This<'a, JsObject> {
         self.resizable = resizable;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_enabled_buttons(&mut self, this: This<JsObject>, buttons: &WindowButtons) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_enabled_buttons<'a>(&mut self, this: This<'a, JsObject>, buttons: &WindowButtons) -> This<'a, JsObject> {
         self.enabled_buttons = buttons.clone();
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_title(&mut self, this: This<JsObject>, title: String) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_title<'a>(&mut self, this: This<'a, JsObject>, title: String) -> This<'a, JsObject> {
         self.title = title;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_fullscreen(&mut self, this: This<JsObject>, fullscreen: Option<Fullscreen>) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_fullscreen<'a>(&mut self, this: This<'a, JsObject>, fullscreen: Option<Fullscreen>) -> This<'a, JsObject> {
         self.fullscreen = fullscreen;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_maximized(&mut self, this: This<JsObject>, maximized: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_maximized<'a>(&mut self, this: This<'a, JsObject>, maximized: bool) -> This<'a, JsObject> {
         self.maximized = maximized;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_visible(&mut self, this: This<JsObject>, visible: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_visible<'a>(&mut self, this: This<'a, JsObject>, visible: bool) -> This<'a, JsObject> {
         self.visible = visible;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_transparent(&mut self, this: This<JsObject>, transparent: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_transparent<'a>(&mut self, this: This<'a, JsObject>, transparent: bool) -> This<'a, JsObject> {
         self.transparent = transparent;
         this
     }
@@ -225,56 +234,56 @@ impl WindowAttributes {
         self.transparent
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_blur(&mut self, this: This<JsObject>, blur: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_blur<'a>(&mut self, this: This<'a, JsObject>, blur: bool) -> This<'a, JsObject> {
         self.blur = blur;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_decorations(&mut self, this: This<JsObject>, decorations: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_decorations<'a>(&mut self, this: This<'a, JsObject>, decorations: bool) -> This<'a, JsObject> {
         self.decorations = decorations;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_window_level(&mut self, this: This<JsObject>, level: WindowLevel) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_window_level<'a>(&mut self, this: This<'a, JsObject>, level: WindowLevel) -> This<'a, JsObject> {
         self.window_level = level;
         this
     }
 
     // #[inline]
-    pub fn with_window_icon(&mut self, this: This<JsObject>, window_icon: Option<Icon>) -> This<JsObject> {
+    pub fn with_window_icon<'a>(&mut self, this: This<'a, JsObject>, window_icon: Option<Icon>) -> This<'a, JsObject> {
         self.window_icon = window_icon;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_theme(&mut self, this: This<JsObject>, theme: Option<Theme>) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_theme<'a>(&mut self, this: This<'a, JsObject>, theme: Option<Theme>) -> This<'a, JsObject> {
         self.preferred_theme = theme;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_resize_increments(&mut self, this: This<JsObject>, resize_increments: Size) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_resize_increments<'a>(&mut self, this: This<'a, JsObject>, resize_increments: Size) -> This<'a, JsObject> {
         self.resize_increments = Some(resize_increments.into());
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_content_protected(&mut self, this: This<JsObject>, protected: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_content_protected<'a>(&mut self, this: This<'a, JsObject>, protected: bool) -> This<'a, JsObject> {
         self.content_protected = protected;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_active(&mut self, this: This<JsObject>, active: bool) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_active<'a>(&mut self, this: This<'a, JsObject>, active: bool) -> This<'a, JsObject> {
         self.active = active;
         this
     }
 
-    #[napi(ts_return_type="this")]
-    pub fn with_cursor(&mut self, this: This<JsObject>, cursor: &Cursor) -> This<JsObject> {
+    #[napi(ts_return_type = "this")]
+    pub fn with_cursor<'a>(&mut self, this: This<'a, JsObject>, cursor: &Cursor) -> This<'a, JsObject> {
         self.cursor = cursor.clone();
         this
     }
@@ -295,10 +304,11 @@ impl WindowAttributes {
     // }
 }
 
-#[napi(string_enum)]
+#[napi]
+#[derive(Clone)]
 pub enum Fullscreen {
     Exclusive,
-    Borderless
+    Borderless,
 }
 
 impl Into<OriginFullscreen> for Fullscreen {
@@ -319,9 +329,12 @@ impl From<OriginFullscreen> for Fullscreen {
     }
 }
 
-mapping_bitflags!(WindowButtons: CLOSE; MINIMIZE; MAXIMIZE);
+#[proxy_flags(origin = winit::window::WindowButtons, flags = (CLOSE, MINIMIZE, MAXIMIZE))]
+#[derive(Clone)]
+pub struct WindowButtons;
 
 string_enum!(
+    #[derive(Clone)]
     enum WindowLevel => OriginWindowLevel {
         AlwaysOnBottom,
         Normal,
@@ -330,6 +343,7 @@ string_enum!(
 );
 
 string_enum!(
+    #[derive(Clone)]
     enum Theme => OriginTheme {
         Light,
         Dark,
@@ -343,13 +357,12 @@ impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
         OriginIcon::from_rgba(rgba.to_vec(), width, height)
-        .map(Self::from)
-        .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map(Self::from)
+            .map_err(|e| Error::from_reason(format!("{}", e)))
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));
-wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
+wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
 wrap_struct!(struct Window { inner: OriginWindow });
 
 #[napi]
@@ -618,7 +631,7 @@ impl Window {
     }
 }
 
-#[napi(string_enum)]
+#[napi(string_enum = "lowercase")]
 pub enum SurfaceSystem {
     Win32,
     Cocoa,

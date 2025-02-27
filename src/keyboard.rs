@@ -1,5 +1,9 @@
-use proc::{mapping_bitflags, mapping_enum};
-use crate::extra::convert::{ExInto};
+use proc::{proxy_enum, proxy_flags};
+use crate::{
+    extra::convert::{ExInto},
+    mark_ex_into,
+    string_enum
+};
 
 use winit::keyboard:: {
     NativeKeyCode as OriginNativeKeyCode,
@@ -14,49 +18,49 @@ use winit::keyboard:: {
     SmolStr,
 };
 
-use napi::bindgen_prelude::*;
-use napi::{JsObject, NapiRaw, NapiValue};
-use napi::sys::{napi_env, napi_value};
-use crate::{mark_ex_into, string_enum};
+use napi::{
+    bindgen_prelude::*,
+    JsObject,
+    NapiRaw,
+    NapiValue,
+    sys::{napi_env, napi_value}
+};
 
-mapping_enum!(
-    enum NativeKeyCode {
-        Unidentified,
-        Android(#[conf_assign_name = "code"] u32),
-        MacOS(#[conf_assign_name = "code"] u16),
-        Windows(#[conf_assign_name = "code"] u16),
-        Xkb(#[conf_assign_name = "code"] u32),
-    }
-);
+#[proxy_enum(origin_enum = winit::keyboard::NativeKeyCode, skip_backward)]
+pub enum NativeKeyCode {
+    Unidentified,
+    Android(#[proxy_enum(field_name = "code")] u32),
+    MacOS(#[proxy_enum(field_name = "code")] u16),
+    Windows(#[proxy_enum(field_name = "code")] u16),
+    Xkb(#[proxy_enum(field_name = "code")] u32),
+}
 
-mapping_enum!(
-    enum NativeKey {
-        Unidentified,
-        Android(#[conf_assign_name = "code"] u32),
-        MacOS(#[conf_assign_name = "code"] u16),
-        Windows(#[conf_assign_name = "code"] u16),
-        Xkb(#[conf_assign_name = "code"] u32),
-        Web(#[conf_trans_type = String] SmolStr),
-    }
-);
+#[proxy_enum(origin_enum = winit::keyboard::NativeKey, skip_backward)]
+pub enum NativeKey {
+    Unidentified,
+    Android(#[proxy_enum(field_name = "code")] u32),
+    MacOS(#[proxy_enum(field_name = "code")] u16),
+    Windows(#[proxy_enum(field_name = "code")] u16),
+    Xkb(#[proxy_enum(field_name = "code")] u32),
+    Web(#[proxy_enum(field_name = "code")] String),
+}
 
-mapping_enum!(
-    enum Key<SmolStr> {
-        Named(#[conf_assign_name = "name"] NamedKey),
-        Character(#[conf_trans_type = String] SmolStr),
-        Unidentified(NativeKey),
-        Dead(#[conf_trans_type = Option::<String>] Option<char>),
-    }
-);
+#[proxy_enum(origin_enum = winit::keyboard::Key::<SmolStr>, skip_backward)]
+pub enum Key {
+    Named(#[proxy_enum(field_name = "name")] NamedKey),
+    Character(#[proxy_enum(field_name = "ch")] String),
+    Unidentified(#[proxy_enum(field_name = "ch")] NativeKey),
+    Dead(#[proxy_enum(field_name = "ch", from_origin = { ch.map(|x| x.to_string()) })] Option<String>),
+}
 
-mapping_enum!(
-    enum PhysicalKey {
-        Code(KeyCode),
-        Unidentified(NativeKeyCode),
-    }
-);
+#[proxy_enum(origin_enum = winit::keyboard::PhysicalKey, skip_backward)]
+pub enum PhysicalKey {
+    Code(KeyCode),
+    Unidentified(NativeKeyCode),
+}
 
 string_enum!(
+    #[derive(Clone)]
     enum KeyCode => OriginKeyCode {
         Backquote, Backslash, BracketLeft, BracketRight, Comma,
         Digit0, Digit1, Digit2, Digit3, Digit4, Digit5, Digit6, Digit7, Digit8, Digit9,
@@ -88,6 +92,7 @@ string_enum!(
 );
 
 string_enum!(
+    #[derive(Clone)]
     enum NamedKey => OriginNamedKey {
         Alt, AltGraph, CapsLock, Control, Fn, FnLock, NumLock, ScrollLock, Shift, Symbol, SymbolLock,
         Meta, Hyper, Super, Enter, Tab, Space, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, End, Home,
@@ -141,7 +146,8 @@ string_enum!(
     }
 );
 
-mapping_bitflags!(ModifiersState: SHIFT; CONTROL; ALT; SUPER);
+#[proxy_flags(origin = winit::keyboard::ModifiersState, flags = (SHIFT, CONTROL, ALT, SUPER))]
+pub struct ModifiersState;
 
 string_enum!(
     enum ModifiersKeyState => OriginModifiersKeyState {

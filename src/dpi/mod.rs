@@ -12,30 +12,22 @@ use winit::{
 };
 use crate::mark_ex_into;
 
-#[napi(string_enum)]
-pub enum UnitType {
-    Physical,
-    Logical,
-}
-
-#[napi(object)]
+#[napi]
 #[derive(Clone)]
-pub struct Position {
-    pub r#type: UnitType,
-    pub x: f64,
-    pub y: f64,
+pub enum Position {
+    Physical { x: f64, y: f64 },
+    Logical { x: f64, y: f64 },
 }
 
 impl From<(f64, f64)> for Position {
     fn from((x, y): (f64, f64)) -> Self {
-        Self { r#type: UnitType::Physical, x, y }
+        Self::Physical { x, y }
     }
 }
 
 impl From<(usize, usize)> for Position {
     fn from((x, y): (usize, usize)) -> Self {
-        Self {
-            r#type: UnitType::Logical,
+        Self::Logical {
             x: f64::from(x as u32),
             y: f64::from(y as u32)
         }
@@ -48,8 +40,7 @@ where
     f64: From<T>,
 {
     fn from(OriginPhysicalPosition { x, y }: OriginPhysicalPosition<T>) -> Self {
-        Self {
-            r#type: UnitType::Physical,
+        Self::Physical {
             x: f64::from(x),
             y: f64::from(y),
         }
@@ -62,8 +53,7 @@ where
     f64: From<T>,
 {
     fn from(OriginLogicalPosition { x, y }: OriginLogicalPosition<T>) -> Self {
-        Self {
-            r#type: UnitType::Logical,
+        Self::Logical {
             x: f64::from(x),
             y: f64::from(y),
         }
@@ -73,32 +63,29 @@ where
 impl From<OriginPosition> for Position {
     fn from(value: OriginPosition) -> Self {
         match value {
-            OriginPosition::Physical(physical_position) => physical_position.into(),
-            OriginPosition::Logical(logical_position) => logical_position.into(),
+            OriginPosition::Physical(physical_position) => Self::from(physical_position),
+            OriginPosition::Logical(logical_position) => Self::from(logical_position),
         }
     }
 }
 
 impl Into<OriginPosition> for Position {
     fn into(self) -> OriginPosition {
-        let Self { x, y, .. } = self;
-
-        match self.r#type {
-            UnitType::Physical => OriginPosition::Physical(OriginPhysicalPosition {
+        match self {
+            Position::Physical { x, y } => OriginPosition::Physical(OriginPhysicalPosition {
                 x: i32::from_f64(x),
                 y: i32::from_f64(y),
             }),
-            UnitType::Logical => OriginPosition::Logical(OriginLogicalPosition { x, y })
+            Position::Logical { x, y } => OriginPosition::Logical(OriginLogicalPosition { x, y })
         }
     }
 }
 
-#[napi(object)]
+#[napi]
 #[derive(Clone)]
-pub struct Size {
-    pub r#type: UnitType,
-    pub width: f64,
-    pub height: f64,
+pub enum Size {
+    Physical { width: f64, height: f64 },
+    Logical { width: f64, height: f64 },
 }
 
 impl<T> From<OriginPhysicalSize<T>> for Size
@@ -107,8 +94,7 @@ where
     f64: From<T>,
 {
     fn from(OriginPhysicalSize { width, height }: OriginPhysicalSize<T>) -> Self {
-        Self {
-            r#type: UnitType::Physical,
+        Self::Physical {
             width: f64::from(width),
             height: f64::from(height),
         }
@@ -121,8 +107,7 @@ where
     f64: From<T>,
 {
     fn from(OriginLogicalSize { width, height }: OriginLogicalSize<T>) -> Self {
-        Self {
-            r#type: UnitType::Logical,
+        Self::Logical {
             width: f64::from(width),
             height: f64::from(height),
         }
@@ -132,31 +117,28 @@ where
 impl From<OriginSize> for Size {
     fn from(value: OriginSize) -> Self {
         match value {
-            OriginSize::Physical(physical_size) => physical_size.into(),
-            OriginSize::Logical(logical_size) => logical_size.into(),
+            OriginSize::Physical(physical_size) => Self::from(physical_size),
+            OriginSize::Logical(logical_size) => Self::from(logical_size),
         }
     }
 }
 
 impl Into<OriginSize> for Size {
     fn into(self) -> OriginSize {
-        let Self { width, height, .. } = self;
-
-        match self.r#type {
-            UnitType::Physical => OriginSize::Physical(OriginPhysicalSize {
+        match self {
+            Size::Physical { width, height } => OriginSize::Physical(OriginPhysicalSize {
                 width: u32::from_f64(width),
                 height: u32::from_f64(height),
             }),
-            UnitType::Logical => OriginSize::Logical(OriginLogicalSize { width, height })
+            Size::Logical { width, height } => OriginSize::Logical(OriginLogicalSize { width, height })
         }
     }
 }
 
-#[napi(object)]
-#[derive(Clone)]
-pub struct PixelUnit {
-    pub r#type: UnitType,
-    pub count: f64,
+#[napi]
+pub enum PixelUnit {
+    Physical { count: f64 },
+    Logical { count: f64 },
 }
 
 impl<T> From<OriginPhysicalUnit<T>> for PixelUnit
@@ -165,10 +147,7 @@ where
     f64: From<T>,
 {
     fn from(OriginPhysicalUnit(count): OriginPhysicalUnit<T>) -> Self {
-        Self {
-            r#type: UnitType::Physical,
-            count: f64::from(count),
-        }
+        Self::Physical { count: f64::from(count) }
     }
 }
 impl<T> From<OriginLogicalUnit<T>> for PixelUnit
@@ -177,29 +156,24 @@ where
     f64: From<T>,
 {
     fn from(OriginLogicalUnit(count): OriginLogicalUnit<T>) -> Self {
-        Self {
-            r#type: UnitType::Physical,
-            count: f64::from(count),
-        }
+        Self::Physical { count: f64::from(count) }
     }
 }
 
 impl From<OriginPixelUnit> for PixelUnit {
     fn from(value: OriginPixelUnit) -> Self {
         match value {
-            OriginPixelUnit::Physical(physical_unit) => physical_unit.into(),
-            OriginPixelUnit::Logical(logical_unit) => logical_unit.into(),
+            OriginPixelUnit::Physical(physical_unit) => Self::from(physical_unit),
+            OriginPixelUnit::Logical(logical_unit) => Self::from(logical_unit),
         }
     }
 }
 
 impl Into<OriginPixelUnit> for PixelUnit {
     fn into(self) -> OriginPixelUnit {
-        let count = self.count;
-
-        match self.r#type {
-            UnitType::Physical => OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count))),
-            UnitType::Logical => OriginPixelUnit::Logical(OriginLogicalUnit(count))
+        match self {
+            PixelUnit::Physical { count } => OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count))),
+            PixelUnit::Logical { count } => OriginPixelUnit::Logical(OriginLogicalUnit(count))
         }
     }
 }
@@ -210,7 +184,6 @@ mark_ex_into!(
     OriginPhysicalPosition<f64>,
     OriginPhysicalPosition<f32>,
     // local
-    UnitType,
     Position,
     Size,
     PixelUnit

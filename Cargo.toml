@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "napi-winit"
-version = "0.0.0"
+version = "0.0.106"
 
 [lib]
 crate-type = ["cdylib"]
@@ -10,14 +10,35 @@ crate-type = ["cdylib"]
 members = [ "./proc" ]
 
 [dependencies]
-winit = { version = "0.30.8", features = [ "rwh_05" ] }
-rwh_05 = { package = "raw-window-handle", version = "0.5.2", features = [ "std" ] }
 proc = { path = "./proc" }
-tokio = { version = "1.43.0", features = [ "time" ] }
+pollster = "0.4.0"
+threadpool = "1.8.1"
+once_cell = "1.20.3"
+ctor = "0.3.4"
 
-# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.16.3", default-features = false, features = ["napi6", "async", "tokio_rt"] }
-napi-derive = "2.16.3"
+[dependencies.winit]
+version = "0.30.9"
+features = [ "rwh_05" ]
+
+[dependencies.tokio]
+version = "1.43.0"
+features = [ "time" ]
+# features = [ "rt", "rt-multi-thread","time" ]
+
+[dependencies.rwh_05]
+package = "raw-window-handle"
+version = "0.5.2"
+features = [ "std" ]
+
+[dependencies.napi]
+version = "3.0.0-alpha.28"
+default-features = false
+# see https://nodejs.org/api/n-api.html#node-api-version-matrix
+features = ["napi6", "async"]
+
+[dependencies.napi-derive]
+version = "3.0.0-alpha.26"
+features = ["type-def"]
 
 [build-dependencies]
 napi-build = "2.1.4"

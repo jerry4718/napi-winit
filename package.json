@@ -1,43 +1,45 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.0.105",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "type": "commonjs",
+  "version": "0.0.106",
+  "license": "MIT",
   "repository": {
     "url": "git+https://github.com/jerry4718/napi-winit.git"
   },
+  "engines": {
+    "node": ">= 10.20.0 < 11 || >= 12.17.0 < 13 || >= 14.0.0"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "browser": "browser.js",
   "napi": {
-    "name": "napi-winit",
-    "triples": {}
+    "binaryName": "napi-winit",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "x86_64-unknown-freebsd"
+    ]
   },
   "files": [
     "./index.js",
     "./index.d.ts"
   ],
-  "license": "MIT",
   "devDependencies": {
-    "@napi-rs/cli": "^2.18.4",
-    "ava": "^6.0.1"
-  },
-  "ava": {
-    "timeout": "3m"
-  },
-  "engines": {
-    "node": ">= 10"
+    "@napi-rs/cli": "^3.0.0-alpha.70",
+    "ava": "^6.2.0"
   },
   "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
-    "universal": "napi universal",
+    "build": "napi build --release --platform --strip",
+    "build:debug": "napi build",
+    "prepublishOnly": "napi prepublish -t npm",
+    "artifacts": "napi artifacts",
     "version": "napi version"
   },
-  "optionalDependencies": {
-    "@ylcc/napi-winit-darwin-x64": "~0.0.0",
-    "@ylcc/napi-winit-linux-x64-gnu": "~0.0.0",
-    "@ylcc/napi-winit-win32-x64-msvc": "~0.0.0"
+  "ava": {
+    "timeout": "1m"
   }
 }

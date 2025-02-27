@@ -1,41 +1,45 @@
-use std::process::ExitCode;
-use std::ptr::NonNull;
-use std::rc::Rc;
-use std::time;
-use std::time::{Duration, Instant};
-use winit::event_loop::{
-    ActiveEventLoop as OriginActiveEventLoop,
-    EventLoop as OriginEventLoop,
-    AsyncRequestSerial as OriginAsyncRequestSerial,
-    ControlFlow as OriginControlFlow,
-    DeviceEvents as OriginDeviceEvents,
-    OwnedDisplayHandle as OriginOwnedDisplayHandle,
+use std::{
+    ptr::NonNull,
+    process::ExitCode,
+    time::{Duration, Instant}
 };
-use winit::platform::run_on_demand::EventLoopExtRunOnDemand;
 
-
-use proc::{mapping_enum};
-use crate::event::UserPayload;
-use crate::{mark_ex_into, string_enum, wrap_struct};
-use crate::cursor::{CustomCursor, CustomCursorSource};
-use crate::extra::{
-    TimeDuration,
-    convert::ExInto
+use winit::{
+    event_loop::{
+        ActiveEventLoop as OriginActiveEventLoop,
+        EventLoop as OriginEventLoop,
+        AsyncRequestSerial as OriginAsyncRequestSerial,
+        ControlFlow as OriginControlFlow,
+        DeviceEvents as OriginDeviceEvents,
+        OwnedDisplayHandle as OriginOwnedDisplayHandle,
+    },
+    platform::run_on_demand::EventLoopExtRunOnDemand,
+    platform::pump_events::EventLoopExtPumpEvents,
 };
-use crate::window::{Theme, Window, WindowAttributes};
-use crate::monitor::MonitorHandle;
 
+use crate::{
+    monitor::MonitorHandle,
+    window::{Theme, Window, WindowAttributes},
+    extra::{
+        TimeDuration,
+        convert::ExInto
+    },
+    cursor::{CustomCursor, CustomCursorSource},
+    mark_ex_into,
+    string_enum,
+    wrap_struct,
+    event::UserPayload,
+    application::{
+        public::ApplicationOptions,
+        type1::{ApplicationT1, ApplicationT1Runner},
+        type2::{ApplicationT2}
+    }
+};
+
+use proc::proxy_enum;
 use napi::bindgen_prelude::*;
-use winit::platform::pump_events::{
-    EventLoopExtPumpEvents,
-    PumpStatus as OriginPumpStatus,
-};
-use crate::application::Application;
 
-#[napi]
-pub struct EventLoop {
-    pub(crate) inner: OriginEventLoop<UserPayload>,
-}
+wrap_struct!(struct EventLoop { inner: OriginEventLoop<UserPayload> });
 
 #[napi]
 impl EventLoop {
@@ -46,51 +50,84 @@ impl EventLoop {
     }
 }
 
-#[napi(object)]
-pub struct PumpStatus {
-    #[napi(ts_type = "PumpStatus.Type")]
-    pub r#type: pump_status::Type,
-    pub code: Option<i32>
+#[proxy_enum(origin_enum = winit::platform::pump_events::PumpStatus)]
+pub enum PumpStatus {
+    Continue,
+    Exit(#[proxy_enum(field_name = "code")] i32),
 }
 
-impl From<OriginPumpStatus> for PumpStatus {
-    fn from(status: OriginPumpStatus) -> Self {
-        match status {
-            OriginPumpStatus::Continue => Self { r#type:pump_status::Type::Continue, code: None },
-            OriginPumpStatus::Exit(code) => Self { r#type:pump_status::Type::Exit, code: Some(code) },
+macro_rules! borrow_back {
+    ($from: ident { $name: ident? @ $env: ident }) => {
+        if let Some(callback) = &$from.$name {
+            Some(callback.borrow_back(&$env).unwrap())
+        } else {
+            None
         }
-    }
-}
-
-#[napi(js_name = "PumpStatus")]
-pub mod pump_status {
-    #[napi(string_enum)]
-    pub enum Type {
-        Continue,
-        Exit,
-    }
+    };
+    ($from: ident { $name: ident @ $env: ident }) => {
+        (&$from.$name).borrow_back(&$env).unwrap()
+    };
+    ($from: ident @ $env: ident) => {
+        ApplicationT1Runner {
+            on_new_events: borrow_back!($from { on_new_events ? @ $env }),
+            on_resumed: borrow_back!($from { on_resumed @ $env }),
+            on_user_event: borrow_back!($from { on_user_event ? @ $env }),
+            on_window_event: borrow_back!($from { on_window_event @ $env }),
+            on_device_event: borrow_back!($from { on_device_event ? @ $env }),
+            on_about_to_wait: borrow_back!($from { on_about_to_wait ? @ $env }),
+            on_suspended: borrow_back!($from { on_suspended ? @ $env }),
+            on_exiting: borrow_back!($from { on_exiting ? @ $env }),
+            on_memory_warning: borrow_back!($from { on_memory_warning ? @ $env }),
+        }
+    };
 }
 
 #[napi]
 impl EventLoop {
     // with_user_event
     #[napi]
-    pub fn run_app(&self, app: Application) -> Result<()> {
-        let mut ptr = NonNull::new(&app as *const _ as *mut Application).unwrap();
+    pub fn run_app(&self, env: Env, app: &ApplicationT1) -> Result<()> {
+        let mut application = borrow_back!(app @ env);
         let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
-        this.inner.run_app(unsafe { ptr.as_mut() }).map_err(|e| Error::from_reason(format!("{}", e)))
+        this.inner.run_app(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
     }
+
     #[napi]
-    pub fn run_app_on_demand(&mut self, app: Application) -> Result<()> {
-        let mut ptr = NonNull::new(&app as *const _ as *mut Application).unwrap();
-        self.inner.run_app_on_demand(unsafe { ptr.as_mut() }).map_err(|e| Error::from_reason(format!("{}", e)))
+    pub fn run_app_on_demand(&mut self, env: Env, app: &ApplicationT1) -> Result<()> {
+        let mut application = borrow_back!(app @ env);
+        self.inner.run_app_on_demand(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
     }
+
     #[napi]
-    pub fn pump_app_events(&mut self, millis: f64, app: Application) -> PumpStatus {
-        let mut ptr = NonNull::new(&app as *const _ as *mut Application).unwrap();
+    pub fn pump_app_events(&mut self, env: Env, millis: f64, app: &ApplicationT1) -> PumpStatus {
+        let on_resumed = borrow_back!(app { on_resumed @ env });
+        let mut application = borrow_back!(app @ env);
         let timeout = Some(Duration::from_millis(millis as u64));
-        self.inner.pump_app_events(timeout, unsafe { ptr.as_mut() }).into()
+        PumpStatus::from(self.inner.pump_app_events(timeout, &mut application))
     }
+
+    #[napi]
+    pub fn run_app2(&self, env: Env, app: &mut ApplicationT2) -> Result<()> {
+        let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
+        this.inner.run_app(app).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn run_app2_on_demand(&mut self, env: Env, app: &mut ApplicationT2) -> Result<()> {
+        self.inner.run_app_on_demand(app).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn pump_app2_events(&mut self, env: Env, millis: f64, app: &mut ApplicationT2) -> PumpStatus {
+        let timeout = Some(Duration::from_millis(millis as u64));
+        PumpStatus::from(self.inner.pump_app_events(timeout, app))
+    }
+    /*#[napi]
+    pub fn pump_app_events(&mut self, millis: f64, app: Application) -> PumpStatus {
+        let application = unsafe { NonNull::new(&app as *const _ as *mut Application).unwrap().as_mut() };
+        let timeout = Some(Duration::from_millis(millis as u64));
+        self.inner.pump_app_events(timeout, application).into()
+    }*/
     // create_proxy
     // owned_display_handle
     // listen_device_events
@@ -98,17 +135,22 @@ impl EventLoop {
     // create_custom_cursor
 }
 
-// wrap_struct!();
 #[napi]
 pub struct ActiveEventLoop {
-    pub(crate) inner: Rc<OriginActiveEventLoop>
+    pub(crate) inner_non_null: NonNull<OriginActiveEventLoop>
+}
+
+macro_rules! inner_ref {
+    ($self: ident) => {
+        unsafe { $self.inner_non_null.as_ref() }
+    };
 }
 
 #[napi]
 impl ActiveEventLoop {
     #[napi]
     pub fn create_window(&self, window_attributes: &WindowAttributes) -> Result<Window> {
-        self.inner.create_window(window_attributes.clone().into())
+        inner_ref!(self).create_window(window_attributes.clone().into())
             .map(Window::from)
             .map_err(|e| Error::from_reason(format!("{}", e)))
     }
@@ -118,19 +160,19 @@ impl ActiveEventLoop {
     // }
     #[napi]
     pub fn available_monitors(&self) -> Vec<MonitorHandle> {
-        self.inner.available_monitors().map(|m| m.into()).collect()
+        inner_ref!(self).available_monitors().map(|m| m.into()).collect()
     }
     #[napi]
     pub fn primary_monitor(&self) -> Option<MonitorHandle> {
-        self.inner.primary_monitor().map(|m| m.into())
+        inner_ref!(self).primary_monitor().map(|m| m.into())
     }
     #[napi]
     pub fn listen_device_events(&self, allowed: DeviceEvents) {
-        self.inner.listen_device_events(allowed.into())
+        inner_ref!(self).listen_device_events(allowed.into())
     }
     #[napi]
     pub fn system_theme(&self) -> Option<Theme> {
-        self.inner.system_theme().map(|theme| theme.into())
+        inner_ref!(self).system_theme().map(|theme| theme.into())
     }
     // #[napi]
     // pub fn set_control_flow(&self, control_flow: &ControlFlow) {
@@ -139,32 +181,32 @@ impl ActiveEventLoop {
 
     #[napi]
     pub fn set_control_flow_poll(&self) {
-        self.inner.set_control_flow(OriginControlFlow::Poll)
+        inner_ref!(self).set_control_flow(OriginControlFlow::Poll)
     }
     #[napi]
     pub fn set_control_flow_wait(&self) {
-        self.inner.set_control_flow(OriginControlFlow::Wait)
+        inner_ref!(self).set_control_flow(OriginControlFlow::Wait)
     }
     #[napi]
     pub fn set_control_flow_wait_until(&self, millis: f64) {
-        self.inner.set_control_flow(OriginControlFlow::WaitUntil(Instant::now() + Duration::from_millis(millis as u64)))
+        inner_ref!(self).set_control_flow(OriginControlFlow::WaitUntil(Instant::now() + Duration::from_millis(millis as u64)))
     }
 
     #[napi]
     pub fn control_flow(&self) -> ControlFlow {
-        self.inner.control_flow().into()
+        inner_ref!(self).control_flow().into()
     }
     #[napi]
     pub fn exit(&self) {
-        self.inner.exit()
+        inner_ref!(self).exit()
     }
     #[napi]
     pub fn exiting(&self) -> bool {
-        self.inner.exiting()
+        inner_ref!(self).exiting()
     }
     #[napi]
     pub fn owned_display_handle(&self) -> OwnedDisplayHandle {
-        self.inner.owned_display_handle().into()
+        inner_ref!(self).owned_display_handle().into()
     }
 }
 
@@ -176,18 +218,12 @@ string_enum!(
     }
 );
 
-
-mapping_enum!(
-    enum ControlFlow {
-        Poll,
-        Wait,
-        WaitUntil(
-            #[conf_trans_type = TimeDuration]
-            #[conf_assign_name = "time"]
-            Instant
-        ),
-    }
-);
+#[proxy_enum(origin_enum = winit::event_loop::ControlFlow, skip_backward)]
+pub enum ControlFlow {
+    Poll,
+    Wait,
+    WaitUntil(TimeDuration),
+}
 
 wrap_struct!(#[derive(Clone)]struct OwnedDisplayHandle(OriginOwnedDisplayHandle));
 wrap_struct!(#[derive(Clone)]struct AsyncRequestSerial(OriginAsyncRequestSerial));

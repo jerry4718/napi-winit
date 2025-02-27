@@ -1,175 +1,181 @@
-use winit::{
-    event::{
-        DeviceEvent as OriginDeviceEvent,
-        DeviceId as OriginDeviceId,
-        Event as OriginEvent,
-        StartCause as OriginStartCause,
-        WindowEvent as OriginWindowEvent,
-        KeyEvent as OriginKeyEvent,
-        Modifiers as OriginModifiers,
-        Ime as OriginIme,
-        MouseScrollDelta as OriginMouseScrollDelta,
-        TouchPhase as OriginTouchPhase,
-        ElementState as OriginElementState,
-        MouseButton as OriginMouseButton,
-        Touch as OriginTouch,
-        InnerSizeWriter as OriginInnerSizeWriter,
-        RawKeyEvent as OriginRawKeyEvent,
-    },
-    window::{
-        WindowId as OriginWindowId,
-        ActivationToken as OriginActivationToken,
-        Theme as OriginTheme
-    },
-    event_loop::AsyncRequestSerial as OriginAsyncRequestSerial
-};
+use winit::{event::{
+    DeviceEvent as OriginDeviceEvent,
+    DeviceId as OriginDeviceId,
+    ElementState as OriginElementState,
+    Event as OriginEvent,
+    Ime as OriginIme,
+    InnerSizeWriter as OriginInnerSizeWriter,
+    KeyEvent as OriginKeyEvent,
+    Modifiers as OriginModifiers,
+    MouseButton as OriginMouseButton,
+    MouseScrollDelta as OriginMouseScrollDelta,
+    RawKeyEvent as OriginRawKeyEvent,
+    StartCause as OriginStartCause,
+    Touch as OriginTouch,
+    TouchPhase as OriginTouchPhase,
+    WindowEvent as OriginWindowEvent,
+}, keyboard, window::Theme as OriginTheme};
 
 use crate::{
+    dpi::{
+        Position,
+        Size,
+    },
     event_loop::AsyncRequestSerial,
     extra::{
         convert::ExInto,
         TimeDuration,
     },
-    dpi::{
-        Position,
-        Size,
-    },
-    window::{
-        WindowId,
-        Theme,
-        ActivationToken,
-    },
+    keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     mark_ex_into,
     string_enum,
-    wrap_struct
+    window::{
+        ActivationToken,
+        Theme,
+        WindowId,
+    },
+    wrap_struct,
 };
 
-use proc::{mapping_enum};
 use napi::bindgen_prelude::*;
-use crate::keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey};
+use proc::proxy_enum;
 
 #[napi]
 #[derive(Clone)]
 pub struct UserPayload {}
 
-mapping_enum!(
-    enum Event<UserPayload> {
-        NewEvents(StartCause),
-        WindowEvent {
-            window_id: WindowId,
-            event: WindowEvent,
-        },
-        DeviceEvent {
-            device_id: DeviceId,
-            event: DeviceEvent,
-        },
-        UserEvent(#[conf_direct_type] UserPayload),
-        Suspended,
-        Resumed,
-        AboutToWait,
-        LoopExiting,
-        MemoryWarning,
-    }
-);
+#[proxy_enum(origin_enum = winit::event::Event::<UserPayload>, skip_backward)]
+pub enum Event {
+    NewEvents(#[proxy_enum(field_name = "cause")] StartCause),
+    WindowEvent {
+        window_id: WindowId,
+        event: WindowEvent,
+    },
+    DeviceEvent {
+        device_id: DeviceId,
+        event: DeviceEvent,
+    },
+    UserEvent(#[proxy_enum(field_name = "payload")] UserPayload),
+    Suspended,
+    Resumed,
+    AboutToWait,
+    LoopExiting,
+    MemoryWarning,
+}
 
-mapping_enum!(
-    enum StartCause {
-        ResumeTimeReached {
-            #[conf_trans_type = TimeDuration] start: Instant,
-            #[conf_trans_type = TimeDuration] requested_resume: Instant,
-        },
-        WaitCancelled {
-            #[conf_trans_type = TimeDuration] start: Instant,
-            #[conf_trans_type = Option::<TimeDuration>] requested_resume: Option<Instant>,
-        },
-        Poll,
-        Init,
-    }
-);
+#[proxy_enum(origin_enum = winit::event::StartCause, skip_backward)]
+pub enum StartCause {
+    ResumeTimeReached {
+        start: TimeDuration,
+        requested_resume: TimeDuration,
+    },
+    WaitCancelled {
+        start: TimeDuration,
+        #[proxy_enum(from_origin = { requested_resume.map(|x| x.into()) })]
+        requested_resume: Option<TimeDuration>,
+    },
+    Poll,
+    Init,
+}
 
-mapping_enum!(
-    enum WindowEvent {
-        ActivationTokenDone {
-            serial: AsyncRequestSerial,
-            token: ActivationToken,
-        },
-        Resized(#[conf_trans_type = Size] PhysicalSize<u32>),
-        Moved(#[conf_trans_type = Position] PhysicalPosition<i32>),
-        CloseRequested,
-        Destroyed,
-        DroppedFile(#[conf_trans_type = String] PathBuf),
-        HoveredFile(#[conf_trans_type = String] PathBuf),
-        HoveredFileCancelled,
-        Focused(bool),
-        KeyboardInput {
-            device_id: DeviceId,
-            event: KeyEvent,
-            is_synthetic: bool,
-        },
-        ModifiersChanged(Modifiers),
-        Ime(Ime),
-        CursorMoved {
-            device_id: DeviceId,
-            #[conf_trans_type = Position] position: PhysicalPosition<f64>,
-        },
-        CursorEntered {
-            device_id: DeviceId,
-        },
-        CursorLeft {
-            device_id: DeviceId,
-        },
-        MouseWheel {
-            device_id: DeviceId,
-            delta: MouseScrollDelta,
-            phase: TouchPhase,
-        },
-        MouseInput {
-            device_id: DeviceId,
-            state: ElementState,
-            button: MouseButton,
-        },
-        PinchGesture {
-            device_id: DeviceId,
-            delta: f64,
-            phase: TouchPhase,
-        },
-        PanGesture {
-            device_id: DeviceId,
-            #[conf_trans_type = Position] delta: PhysicalPosition<f32>,
-            phase: TouchPhase,
-        },
-        DoubleTapGesture {
-            device_id: DeviceId,
-        },
-        RotationGesture {
-            device_id: DeviceId,
-            delta: f32,
-            phase: TouchPhase,
-        },
-        TouchpadPressure {
-            device_id: DeviceId,
-            pressure: f32,
-            stage: i64,
-        },
-        AxisMotion {
-            device_id: DeviceId,
-            #[conf_trans_type = u32] axis: AxisId,
-            value: f64,
-        },
-        Touch(Touch),
-        ScaleFactorChanged {
-            scale_factor: f64,
-            inner_size_writer: InnerSizeWriter,
-        },
-        ThemeChanged(Theme),
-        Occluded(bool),
-        RedrawRequested,
-    }
-);
+#[proxy_enum(origin_enum = winit::event::WindowEvent, skip_backward)]
+pub enum WindowEvent {
+    ActivationTokenDone {
+        serial: AsyncRequestSerial,
+        token: ActivationToken,
+    },
+    Resized(#[proxy_enum(field_name = "size")] Size),
+    Moved(#[proxy_enum(field_name = "position")] Position),
+    CloseRequested,
+    Destroyed,
+    DroppedFile(#[proxy_enum(field_name = "path", from_origin = { path.to_str().unwrap().into() })] String),
+    HoveredFile(#[proxy_enum(field_name = "path", from_origin = { path.to_str().unwrap().into() })] String),
+    HoveredFileCancelled,
+    Focused(bool),
+    KeyboardInput {
+        device_id: DeviceId,
+        event: KeyEvent,
+        is_synthetic: bool,
+    },
+    ModifiersChanged(#[proxy_enum(field_name = "modifiers")] Modifiers),
+    Ime(#[proxy_enum(field_name = "ime")] Ime),
+    CursorMoved {
+        device_id: DeviceId,
+        position: Position,
+    },
+    CursorEntered {
+        device_id: DeviceId,
+    },
+    CursorLeft {
+        device_id: DeviceId,
+    },
+    MouseWheel {
+        device_id: DeviceId,
+        delta: MouseScrollDelta,
+        phase: TouchPhase,
+    },
+    MouseInput {
+        device_id: DeviceId,
+        state: ElementState,
+        button: MouseButton,
+    },
+    PinchGesture {
+        device_id: DeviceId,
+        delta: f64,
+        phase: TouchPhase,
+    },
+    PanGesture {
+        device_id: DeviceId,
+        delta: Position,
+        phase: TouchPhase,
+    },
+    DoubleTapGesture {
+        device_id: DeviceId,
+    },
+    RotationGesture {
+        device_id: DeviceId,
+        delta: f32,
+        phase: TouchPhase,
+    },
+    TouchpadPressure {
+        device_id: DeviceId,
+        pressure: f32,
+        stage: i64,
+    },
+    AxisMotion {
+        device_id: DeviceId,
+        axis: u32,
+        value: f64,
+    },
+    Touch(#[proxy_enum(field_name = "touch")] Touch),
+    ScaleFactorChanged {
+        scale_factor: f64,
+        inner_size_writer: InnerSizeWriter,
+    },
+    ThemeChanged(#[proxy_enum(field_name = "theme")] Theme),
+    Occluded(#[proxy_enum(field_name = "occluded")] bool),
+    RedrawRequested,
+}
 
-wrap_struct!(#[derive(Clone)] struct DeviceId(OriginDeviceId));
-wrap_struct!(#[derive(Clone)] struct RawKeyEvent(OriginRawKeyEvent));
-wrap_struct!(#[derive(Clone)] struct KeyEvent { origin: OriginKeyEvent });
+wrap_struct!(#[derive(Clone)] struct DeviceId(winit::event::DeviceId));
+
+#[napi(object, object_from_js = false)]
+pub struct RawKeyEvent {
+    pub physical_key: PhysicalKey,
+    pub state: ElementState,
+}
+
+impl From<winit::event::RawKeyEvent> for RawKeyEvent {
+    fn from(raw: winit::event::RawKeyEvent) -> Self {
+        let winit::event::RawKeyEvent { physical_key, state } = raw;
+        Self {
+            physical_key: physical_key.into(),
+            state: state.into(),
+        }
+    }
+}
+
+wrap_struct!(#[derive(Clone)] struct KeyEvent { origin: winit::event::KeyEvent });
 
 #[napi]
 impl KeyEvent {
@@ -198,6 +204,7 @@ impl KeyEvent {
         self.origin.repeat
     }
 }
+
 wrap_struct!(#[derive(Clone)] struct Modifiers(OriginModifiers));
 
 #[napi]
@@ -208,94 +215,68 @@ impl Modifiers {
     }
 }
 
-mapping_enum!(
-    enum Ime {
-        Enabled,
-        Preedit(#[conf_direct_type] String, #[conf_trans_type = Option::<Position>] Option<(usize, usize)>),
-        Commit(#[conf_direct_type] String),
-        Disabled,
-    }
-);
-
-mapping_enum!(
-    enum MouseButton {
-        Left,
-        Right,
-        Middle,
-        Back,
-        Forward,
-        Other(u16),
-    }
-);
-
-#[napi(string_enum)]
-pub enum MouseScrollDeltaType {
-    Line,
-    Pixel,
+#[proxy_enum(origin_enum = winit::event::Ime, skip_backward)]
+pub enum Ime {
+    Enabled,
+    Preedit(
+        #[proxy_enum(field_name = "preedit")] String,
+        #[proxy_enum(field_name = "position", from_origin = { position.map(|x| x.into()) })] Option<Position>
+    ),
+    Commit(#[proxy_enum(field_name = "commit")] String),
+    Disabled,
 }
 
-#[napi(object)]
-#[derive(Clone)]
-pub struct MouseScrollDelta {
-    pub delta_type: MouseScrollDeltaType,
-    pub delta: Position,
+#[proxy_enum(origin_enum = winit::event::MouseButton, skip_backward)]
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle,
+    Back,
+    Forward,
+    Other(u16),
 }
 
-impl From<OriginMouseScrollDelta> for MouseScrollDelta {
-    fn from(value: OriginMouseScrollDelta) -> Self {
-        match value {
-            OriginMouseScrollDelta::LineDelta(x, y) => {
-                Self {
-                    delta_type: MouseScrollDeltaType::Line,
-                    delta: Position::from((f64::from(x), f64::from(y)))
-                }
-            }
-            OriginMouseScrollDelta::PixelDelta(position) => {
-                Self {
-                    delta_type: MouseScrollDeltaType::Pixel,
-                    delta: Position::from(position)
-                }
-            }
-        }
-    }
+#[proxy_enum(origin_enum = winit::event::MouseScrollDelta, skip_backward)]
+pub enum MouseScrollDelta {
+    LineDelta(#[proxy_enum(field_name = "x")] f64, #[proxy_enum(field_name = "y")] f64),
+    PixelDelta(#[proxy_enum(field_name = "delta")] Position),
 }
 
 wrap_struct!(#[derive(Clone)] struct InnerSizeWriter(OriginInnerSizeWriter));
 
-mapping_enum!(
-    enum TouchPhase {
-        Started,
-        Moved,
-        Ended,
-        Cancelled,
-    }
-);
+#[proxy_enum(origin_enum = winit::event::TouchPhase, skip_backward)]
+pub enum TouchPhase {
+    Started,
+    Moved,
+    Ended,
+    Cancelled,
+}
 
 wrap_struct!(#[derive(Clone)] struct Touch(OriginTouch));
 
-mapping_enum!(
-    enum DeviceEvent {
-        Added,
-        Removed,
-        MouseMotion {
-            #[conf_trans_type = Position] delta: (f64, f64),
-        },
-        MouseWheel {
-            #[conf_trans_type = MouseScrollDelta] delta: MouseScrollDelta,
-        },
-        Motion {
-            #[conf_trans_type = u32] axis: AxisId,
-            value: f64,
-        },
-        Button {
-            #[conf_trans_type = u32] button: ButtonId,
-            state: ElementState,
-        },
-        Key(RawKeyEvent),
-    }
-);
+#[proxy_enum(origin_enum = winit::event::DeviceEvent, skip_backward)]
+pub enum DeviceEvent {
+    Added,
+    Removed,
+    MouseMotion {
+        delta: Position,
+    },
+    MouseWheel {
+        delta: MouseScrollDelta,
+    },
+    Motion {
+        axis: u32,
+        value: f64,
+    },
+    Button {
+        button: u32,
+        state: ElementState,
+    },
+    Key(#[proxy_enum(field_name = "raw")] RawKeyEvent),
+}
 
 string_enum!(
+    #[derive(Clone)]
     enum ElementState => OriginElementState {
         Pressed,
         Released,
