@@ -21,7 +21,7 @@ use crate::{
     monitor::MonitorHandle,
     window::{Theme, Window, WindowAttributes},
     extra::{
-        TimeDuration,
+        time::TimeDuration,
         convert::ExInto
     },
     cursor::{CustomCursor, CustomCursorSource},
@@ -30,14 +30,16 @@ use crate::{
     wrap_struct,
     event::UserPayload,
     application::{
-        public::ApplicationOptions,
         type1::{ApplicationT1, ApplicationT1Runner},
-        type2::{ApplicationT2}
+        type2::ApplicationT2,
+        type3::{ApplicationT3, ApplicationT3Runner},
+        type4::ApplicationT4
     }
 };
 
 use proc::proxy_enum;
 use napi::bindgen_prelude::*;
+use winit::application::ApplicationHandler;
 
 wrap_struct!(struct EventLoop { inner: OriginEventLoop<UserPayload> });
 
@@ -57,28 +59,28 @@ pub enum PumpStatus {
 }
 
 macro_rules! borrow_back {
-    ($from: ident { $name: ident? @ $env: ident }) => {
+    ($ty: ident { $from: ident @ $env: ident }) => {
+        $ty {
+            on_new_events: borrow_back!($from ( on_new_events ? @ $env )),
+            on_resumed: borrow_back!($from ( on_resumed @ $env )),
+            on_user_event: borrow_back!($from ( on_user_event ? @ $env )),
+            on_window_event: borrow_back!($from ( on_window_event @ $env )),
+            on_device_event: borrow_back!($from ( on_device_event ? @ $env )),
+            on_about_to_wait: borrow_back!($from ( on_about_to_wait ? @ $env )),
+            on_suspended: borrow_back!($from ( on_suspended ? @ $env )),
+            on_exiting: borrow_back!($from ( on_exiting ? @ $env )),
+            on_memory_warning: borrow_back!($from ( on_memory_warning ? @ $env )),
+        }
+    };
+    ($from: ident ($name: ident? @ $env: ident)) => {
         if let Some(callback) = &$from.$name {
             Some(callback.borrow_back(&$env).unwrap())
         } else {
             None
         }
     };
-    ($from: ident { $name: ident @ $env: ident }) => {
+    ($from: ident ($name: ident @ $env: ident)) => {
         (&$from.$name).borrow_back(&$env).unwrap()
-    };
-    ($from: ident @ $env: ident) => {
-        ApplicationT1Runner {
-            on_new_events: borrow_back!($from { on_new_events ? @ $env }),
-            on_resumed: borrow_back!($from { on_resumed @ $env }),
-            on_user_event: borrow_back!($from { on_user_event ? @ $env }),
-            on_window_event: borrow_back!($from { on_window_event @ $env }),
-            on_device_event: borrow_back!($from { on_device_event ? @ $env }),
-            on_about_to_wait: borrow_back!($from { on_about_to_wait ? @ $env }),
-            on_suspended: borrow_back!($from { on_suspended ? @ $env }),
-            on_exiting: borrow_back!($from { on_exiting ? @ $env }),
-            on_memory_warning: borrow_back!($from { on_memory_warning ? @ $env }),
-        }
     };
 }
 
@@ -87,38 +89,74 @@ impl EventLoop {
     // with_user_event
     #[napi]
     pub fn run_app(&self, env: Env, app: &ApplicationT1) -> Result<()> {
-        let mut application = borrow_back!(app @ env);
+        let mut application = borrow_back!(ApplicationT1Runner { app @ env });
         let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
         this.inner.run_app(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
     pub fn run_app_on_demand(&mut self, env: Env, app: &ApplicationT1) -> Result<()> {
-        let mut application = borrow_back!(app @ env);
+        let mut application = borrow_back!(ApplicationT1Runner { app @ env });
         self.inner.run_app_on_demand(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
     pub fn pump_app_events(&mut self, env: Env, millis: f64, app: &ApplicationT1) -> PumpStatus {
-        let on_resumed = borrow_back!(app { on_resumed @ env });
-        let mut application = borrow_back!(app @ env);
+        let mut application = borrow_back!(ApplicationT1Runner { app @ env });
         let timeout = Some(Duration::from_millis(millis as u64));
         PumpStatus::from(self.inner.pump_app_events(timeout, &mut application))
     }
 
     #[napi]
-    pub fn run_app2(&self, env: Env, app: &mut ApplicationT2) -> Result<()> {
+    pub fn run_app2(&self, app: &mut ApplicationT2) -> Result<()> {
         let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
         this.inner.run_app(app).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
-    pub fn run_app2_on_demand(&mut self, env: Env, app: &mut ApplicationT2) -> Result<()> {
+    pub fn run_app2_on_demand(&mut self, app: &mut ApplicationT2) -> Result<()> {
         self.inner.run_app_on_demand(app).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
-    pub fn pump_app2_events(&mut self, env: Env, millis: f64, app: &mut ApplicationT2) -> PumpStatus {
+    pub fn pump_app2_events(&mut self, millis: f64, app: &mut ApplicationT2) -> PumpStatus {
+        let timeout = Some(Duration::from_millis(millis as u64));
+        PumpStatus::from(self.inner.pump_app_events(timeout, app))
+    }
+
+    #[napi]
+    pub fn run_app3(&self, env: Env, app: &ApplicationT3) -> Result<()> {
+        let mut application = borrow_back!(ApplicationT3Runner { app @ env });
+        let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
+        this.inner.run_app(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn run_app3_on_demand(&mut self, env: Env, app: &ApplicationT3) -> Result<()> {
+        let mut application = borrow_back!(ApplicationT3Runner { app @ env });
+        self.inner.run_app_on_demand(&mut application).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn pump_app3_events(&mut self, env: Env, millis: f64, app: &ApplicationT3) -> PumpStatus {
+        let mut application = borrow_back!(ApplicationT3Runner { app @ env });
+        let timeout = Some(Duration::from_millis(millis as u64));
+        PumpStatus::from(self.inner.pump_app_events(timeout, &mut application))
+    }
+
+    #[napi]
+    pub fn run_app4(&self, app: &mut ApplicationT4) -> Result<()> {
+        let this = unsafe { Box::from_raw(self as * const _ as *mut EventLoop) };
+        this.inner.run_app(app).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn run_app4_on_demand(&mut self, app: &mut ApplicationT4) -> Result<()> {
+        self.inner.run_app_on_demand(app).map_err(|e| Error::from_reason(format!("{}", e)))
+    }
+
+    #[napi]
+    pub fn pump_app4_events(&mut self, millis: f64, app: &mut ApplicationT4) -> PumpStatus {
         let timeout = Some(Duration::from_millis(millis as u64));
         PumpStatus::from(self.inner.pump_app_events(timeout, app))
     }

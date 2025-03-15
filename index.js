@@ -60,7 +60,13 @@ const isMuslFromChildProcess = () => {
 }
 
 function requireNative() {
-  if (process.platform === 'android') {
+  if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
+    try {
+      nativeBinding = require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+    } catch (err) {
+      loadErrors.push(err);
+    }
+  } else if (process.platform === 'android') {
     if (process.arch === 'arm64') {
       try {
         return require('./napi-winit.android-arm64.node')
@@ -368,6 +374,8 @@ module.exports.ActivationToken = nativeBinding.ActivationToken
 module.exports.ActiveEventLoop = nativeBinding.ActiveEventLoop
 module.exports.ApplicationT1 = nativeBinding.ApplicationT1
 module.exports.ApplicationT2 = nativeBinding.ApplicationT2
+module.exports.ApplicationT3 = nativeBinding.ApplicationT3
+module.exports.ApplicationT4 = nativeBinding.ApplicationT4
 module.exports.AsyncRequestSerial = nativeBinding.AsyncRequestSerial
 module.exports.Cursor = nativeBinding.Cursor
 module.exports.CustomCursor = nativeBinding.CustomCursor
@@ -381,8 +389,10 @@ module.exports.Modifiers = nativeBinding.Modifiers
 module.exports.ModifiersState = nativeBinding.ModifiersState
 module.exports.MonitorHandle = nativeBinding.MonitorHandle
 module.exports.OwnedDisplayHandle = nativeBinding.OwnedDisplayHandle
+module.exports.SoftSurface = nativeBinding.SoftSurface
 module.exports.ThreadPool = nativeBinding.ThreadPool
 module.exports.TimeDuration = nativeBinding.TimeDuration
+module.exports.Timeout = nativeBinding.Timeout
 module.exports.Touch = nativeBinding.Touch
 module.exports.UserPayload = nativeBinding.UserPayload
 module.exports.VideoModeHandle = nativeBinding.VideoModeHandle
@@ -404,11 +414,8 @@ module.exports.NamedKey = nativeBinding.NamedKey
 module.exports.ResizeDirection = nativeBinding.ResizeDirection
 module.exports.SurfaceSystem = nativeBinding.SurfaceSystem
 module.exports.Theme = nativeBinding.Theme
-module.exports.threadSleep = nativeBinding.threadSleep
-module.exports.tokioBlockOn = nativeBinding.tokioBlockOn
-module.exports.tokioCallBlockOn = nativeBinding.tokioCallBlockOn
 module.exports.tokioCallSpawn = nativeBinding.tokioCallSpawn
+module.exports.tokioInterval = nativeBinding.tokioInterval
 module.exports.tokioSleep = nativeBinding.tokioSleep
-module.exports.tokioSpawn = nativeBinding.tokioSpawn
 module.exports.UserAttentionType = nativeBinding.UserAttentionType
 module.exports.WindowLevel = nativeBinding.WindowLevel

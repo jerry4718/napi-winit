@@ -24,7 +24,7 @@ use crate::{
     event_loop::AsyncRequestSerial,
     extra::{
         convert::ExInto,
-        TimeDuration,
+        time::TimeDuration,
     },
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     mark_ex_into,

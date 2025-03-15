@@ -29,6 +29,16 @@ export declare class ApplicationT2 {
   static fromRefs(callbacks: ApplicationOptionRefs): ApplicationT2
 }
 
+export declare class ApplicationT3 {
+  constructor(callbacks: ApplicationSyncOptions)
+  static fromRefs(callbacks: ApplicationSyncOptionRefs): ApplicationT3
+}
+
+export declare class ApplicationT4 {
+  constructor(callbacks: ApplicationSyncOptions)
+  static fromRefs(callbacks: ApplicationSyncOptionRefs): ApplicationT4
+}
+
 export declare class AsyncRequestSerial {
 
 }
@@ -58,6 +68,12 @@ export declare class EventLoop {
   runApp2(app: ApplicationT2): void
   runApp2OnDemand(app: ApplicationT2): void
   pumpApp2Events(millis: number, app: ApplicationT2): PumpStatus
+  runApp3(app: ApplicationT3): void
+  runApp3OnDemand(app: ApplicationT3): void
+  pumpApp3Events(millis: number, app: ApplicationT3): PumpStatus
+  runApp4(app: ApplicationT4): void
+  runApp4OnDemand(app: ApplicationT4): void
+  pumpApp4Events(millis: number, app: ApplicationT4): PumpStatus
 }
 
 export declare class Icon {
@@ -112,6 +128,11 @@ export declare class OwnedDisplayHandle {
 
 }
 
+export declare class SoftSurface {
+  constructor(window: Window)
+  present(input: Uint32Array): void
+}
+
 export declare class ThreadPool {
   constructor(numThreads: number)
   static default(): ThreadPool
@@ -122,6 +143,12 @@ export declare class ThreadPool {
 export declare class TimeDuration {
   t_secs: number
   t_nanos: number
+}
+
+export declare class Timeout {
+  static fromMillis(millis: number): Timeout
+  static fromMicros(micros: number): Timeout
+  static fromNanos(nanos: number): Timeout
 }
 
 export declare class Touch {
@@ -146,6 +173,7 @@ export declare class Window {
   innerPosition(): Position
   outerPosition(): Position
   setOuterPosition(position: Position): void
+  innerSize(): Size
   requestInnerSize(size: Size): Size | null
   outerSize(): Size
   setMinInnerSize(minSize?: Size | undefined | null): void
@@ -243,6 +271,30 @@ export declare class WindowId {
 }
 
 export interface ApplicationOptionRefs {
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => Promise<void>
+  onResumed: (eventLoop: ActiveEventLoop) => Promise<void>
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => Promise<void>
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => Promise<void>
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => Promise<void>
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onSuspended?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onExiting?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => Promise<void>
+}
+
+export interface ApplicationOptions {
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => Promise<void>
+  onResumed: (eventLoop: ActiveEventLoop) => Promise<void>
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => Promise<void>
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => Promise<void>
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => Promise<void>
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onSuspended?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onExiting?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => Promise<void>
+}
+
+export interface ApplicationSyncOptionRefs {
   onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => void
   onResumed: (eventLoop: ActiveEventLoop) => void
   onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => void
@@ -254,7 +306,7 @@ export interface ApplicationOptionRefs {
   onMemoryWarning?: (eventLoop: ActiveEventLoop) => void
 }
 
-export interface ApplicationOptions {
+export interface ApplicationSyncOptions {
   onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => void
   onResumed: (eventLoop: ActiveEventLoop) => void
   onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => void
@@ -975,17 +1027,11 @@ export declare const enum Theme {
   Dark = 'Dark'
 }
 
-export declare function threadSleep(millis: number): void
-
-export declare function tokioBlockOn(promise: Promise<undefined>): void
-
-export declare function tokioCallBlockOn(callback: () => (Promise<void> | void)): void
-
 export declare function tokioCallSpawn(callback: () => void): void
 
-export declare function tokioSleep(millis: number): Promise<void>
+export declare function tokioInterval(timeout: Timeout, exec: () => (Promise<void> | void)): void
 
-export declare function tokioSpawn(promise: Promise<undefined>): void
+export declare function tokioSleep(timeout: Timeout): Promise<void>
 
 export type TouchPhase =
   | { type: 'Started' }

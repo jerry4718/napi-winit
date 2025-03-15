@@ -4,11 +4,6 @@ use napi::{Env, Error};
 use crate::{flat_rop, THREAD_POOL};
 
 #[napi]
-pub fn thread_sleep(millis: f64) {
-    std::thread::sleep(std::time::Duration::from_millis(millis as u64));
-}
-
-#[napi]
 pub struct ThreadPool {
     pub(crate) pool: threadpool::ThreadPool
 }

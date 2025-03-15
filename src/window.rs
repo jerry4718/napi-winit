@@ -420,6 +420,11 @@ impl Window {
     }
 
     #[napi]
+    pub fn inner_size(&self) -> Size {
+        Size::from(self.inner.inner_size())
+    }
+
+    #[napi]
     pub fn request_inner_size(&self, size: Size) -> Option<Size> {
         self.inner.request_inner_size(size).map(Size::from)
     }
