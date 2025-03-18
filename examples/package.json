@@ -1,0 +1,14 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ./start.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "napi-winit": "file:../"
+  }
+}

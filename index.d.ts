@@ -19,24 +19,13 @@ export declare class ActiveEventLoop {
   ownedDisplayHandle(): OwnedDisplayHandle
 }
 
-export declare class ApplicationT1 {
-  constructor(callbacks: ApplicationOptions)
-  static fromRefs(callbacks: ApplicationOptionRefs): ApplicationT1
-}
-
-export declare class ApplicationT2 {
-  constructor(callbacks: ApplicationOptions)
-  static fromRefs(callbacks: ApplicationOptionRefs): ApplicationT2
-}
-
-export declare class ApplicationT3 {
-  constructor(callbacks: ApplicationSyncOptions)
-  static fromRefs(callbacks: ApplicationSyncOptionRefs): ApplicationT3
-}
-
-export declare class ApplicationT4 {
-  constructor(callbacks: ApplicationSyncOptions)
-  static fromRefs(callbacks: ApplicationSyncOptionRefs): ApplicationT4
+export declare class Application {
+  static withAsyncEnvRef(options: ApplicationOptions): Application
+  static withSyncEnvRef(options: ApplicationOptions): Application
+  static withAsyncRef(options: ApplicationOptions): Application
+  static withSyncRef(options: ApplicationOptions): Application
+  static withAsync(options: ApplicationOptions): Application
+  static withSync(options: ApplicationOptions): Application
 }
 
 export declare class AsyncRequestSerial {
@@ -62,18 +51,9 @@ export declare class DeviceId {
 
 export declare class EventLoop {
   constructor()
-  runApp(app: ApplicationT1): void
-  runAppOnDemand(app: ApplicationT1): void
-  pumpAppEvents(millis: number, app: ApplicationT1): PumpStatus
-  runApp2(app: ApplicationT2): void
-  runApp2OnDemand(app: ApplicationT2): void
-  pumpApp2Events(millis: number, app: ApplicationT2): PumpStatus
-  runApp3(app: ApplicationT3): void
-  runApp3OnDemand(app: ApplicationT3): void
-  pumpApp3Events(millis: number, app: ApplicationT3): PumpStatus
-  runApp4(app: ApplicationT4): void
-  runApp4OnDemand(app: ApplicationT4): void
-  pumpApp4Events(millis: number, app: ApplicationT4): PumpStatus
+  runApp(app: Application): void
+  runAppOnDemand(app: Application): void
+  pumpAppEvents(millis: number, app: Application): PumpStatus
 }
 
 export declare class Icon {
@@ -270,52 +250,40 @@ export declare class WindowId {
 
 }
 
-export interface ApplicationOptionRefs {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => Promise<void>
-  onResumed: (eventLoop: ActiveEventLoop) => Promise<void>
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => Promise<void>
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => Promise<void>
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => Promise<void>
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onSuspended?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onExiting?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => Promise<void>
-}
-
 export interface ApplicationOptions {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => Promise<void>
-  onResumed: (eventLoop: ActiveEventLoop) => Promise<void>
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => Promise<void>
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => Promise<void>
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => Promise<void>
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onSuspended?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onExiting?: (eventLoop: ActiveEventLoop) => Promise<void>
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => Promise<void>
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => (void | Promise<void>)
+  onResumed: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => (void | Promise<void>)
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => (void | Promise<void>)
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => (void | Promise<void>)
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onSuspended?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onExiting?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
 }
 
-export interface ApplicationSyncOptionRefs {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => void
-  onResumed: (eventLoop: ActiveEventLoop) => void
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => void
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => void
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => void
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => void
-  onSuspended?: (eventLoop: ActiveEventLoop) => void
-  onExiting?: (eventLoop: ActiveEventLoop) => void
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => void
+export interface ApplicationOptionsRefAsync {
+  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => Promise<undefined> | null
+  onResumed: (arg0: ActiveEventLoop) => Promise<undefined> | null
+  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => Promise<undefined> | null
+  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => Promise<undefined> | null
+  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => Promise<undefined> | null
+  onAboutToWait?: (arg0: ActiveEventLoop) => Promise<undefined> | null
+  onSuspended?: (arg0: ActiveEventLoop) => Promise<undefined> | null
+  onExiting?: (arg0: ActiveEventLoop) => Promise<undefined> | null
+  onMemoryWarning?: (arg0: ActiveEventLoop) => Promise<undefined> | null
 }
 
-export interface ApplicationSyncOptions {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => void
-  onResumed: (eventLoop: ActiveEventLoop) => void
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => void
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => void
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => void
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => void
-  onSuspended?: (eventLoop: ActiveEventLoop) => void
-  onExiting?: (eventLoop: ActiveEventLoop) => void
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => void
+export interface ApplicationOptionsRefSync {
+  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => void
+  onResumed: (arg0: ActiveEventLoop) => void
+  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => void
+  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => void
+  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => void
+  onAboutToWait?: (arg0: ActiveEventLoop) => void
+  onSuspended?: (arg0: ActiveEventLoop) => void
+  onExiting?: (arg0: ActiveEventLoop) => void
+  onMemoryWarning?: (arg0: ActiveEventLoop) => void
 }
 
 export declare function asyncSleep(millis: number): Promise<unknown>

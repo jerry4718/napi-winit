@@ -1,16 +1,20 @@
 import {
-    ActiveEventLoop,
-    ControlFlow,
-    ApplicationT1 as Application,
+    type ActiveEventLoop,
+    type ControlFlow,
+    Application,
     EventLoop,
-    NamedKey,
-    StartCause,
+    type StartCause,
     Window,
     WindowAttributes,
-    WindowEvent,
-    WindowId,
-    asyncSleep
-} from "../index";
+    type WindowEvent,
+    type WindowId,
+    asyncSleep,
+    type UserPayload,
+    type DeviceId,
+    type DeviceEvent,
+    tokioSleep,
+    SoftSurface,
+} from "napi-winit";
 import process from "node:process";
 
 const event_loop = new EventLoop();
@@ -24,15 +28,17 @@ const attrs = new WindowAttributes()
     .withTransparent(false);
 
 let window: Window;
+let surface: SoftSurface;
 
 let mode: ControlFlow["type"] = "Wait";
 let wait_cancelled: boolean = false;
 let close_requested: boolean = false;
 let request_redraw: boolean = false;
 
-const app = Application.fromRefs({
+let buffer = new Uint32Array(0);
+
+const app = Application.withAsync({
     onNewEvents: (_eventLoop: ActiveEventLoop, cause: StartCause) => {
-        // console.log({ type: cause.type });
         if (cause.type === "WaitCancelled") {
             wait_cancelled = (mode === "WaitUntil");
         }
@@ -40,8 +46,9 @@ const app = Application.fromRefs({
     onResumed: (eventLoop: ActiveEventLoop) => {
         attrs.withTitle("Press 1, 2, 3 to change control flow mode. Press R to toggle redraw requests.");
         window = eventLoop.createWindow(attrs)
+        surface = new SoftSurface(window);
     },
-    onWindowEvent: async (_eventLoop: ActiveEventLoop, _window_id: WindowId, event: WindowEvent) => {
+    onWindowEvent: (_eventLoop: ActiveEventLoop, _window_id: WindowId, event: WindowEvent) => {
         if (event.type === "CloseRequested") {
             close_requested = true;
             return;
@@ -50,7 +57,7 @@ const app = Application.fromRefs({
             const keyEvent = event.event;
             const { state, logicalKey, text } = keyEvent;
 
-            if (logicalKey.type === "Character") {
+            if (logicalKey.type === "Character" && state === "Released") {
                 if (logicalKey.ch === "1") {
                     mode = "Wait";
                 }
@@ -65,7 +72,7 @@ const app = Application.fromRefs({
                 }
             }
             if (logicalKey.type === "Named") {
-                if (logicalKey.name === NamedKey.Escape) {
+                if (logicalKey.name === "Escape") {
                     close_requested = true;
                 }
             }
@@ -74,11 +81,24 @@ const app = Application.fromRefs({
         }
         if (event.type === "RedrawRequested") {
             window.prePresentNotify();
+            const {width, height} = window.innerSize();
+            const pixels = width * height;
+            if (pixels > buffer.length) {
+                const old = buffer;
+                buffer = new Uint32Array(pixels);
+                buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
+                buffer.set(old)
+            }
+            if (pixels < buffer.length) {
+                buffer = buffer.slice(-pixels);
+            }
+            surface.present(buffer);
             return;
         }
         // console.log({ window_id, event: event.type });
     },
     onAboutToWait: async (eventLoop: ActiveEventLoop) => {
+        // console.log(`request_redraw = ${ request_redraw }, wait_cancelled = ${ wait_cancelled }, close_requested = ${ close_requested }`)
         if (request_redraw && !wait_cancelled && !close_requested) {
             window?.requestRedraw();
         }
@@ -92,7 +112,7 @@ const app = Application.fromRefs({
             }
         }
         if (mode === "Poll") {
-            await asyncSleep(100);
+            await tokioSleep(100);
             eventLoop.setControlFlowPoll();
         }
 
@@ -100,16 +120,21 @@ const app = Application.fromRefs({
             eventLoop.exit()
             process.exit()
         }
-    }
+    },
+    onUserEvent: (eventLoop: ActiveEventLoop, event: UserPayload) => void {},
+    onDeviceEvent: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => void {},
+    onSuspended: (eventLoop: ActiveEventLoop) => void {},
+    onExiting: (eventLoop: ActiveEventLoop) => void {},
+    onMemoryWarning: (eventLoop: ActiveEventLoop) => void {},
 });
 
-const interval = setInterval(() => {
-    const { type, code } = event_loop.pumpAppEvents(30, app);
+while(true) {
+    const sleep = asyncSleep(7);
+    const {type, code} = event_loop.pumpAppEvents(0, app);
 
-    if (type === "Exit") {
-        clearInterval(interval);
-        process.exit(code);
+    if (type === "Continue") {
+        await sleep;
+        continue;
     }
-}, 30);
-
-console.log(attrs, { transparent: attrs.transparent });
+    process.exit(code);
+}

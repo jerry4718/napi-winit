@@ -372,10 +372,7 @@ if (!nativeBinding) {
 
 module.exports.ActivationToken = nativeBinding.ActivationToken
 module.exports.ActiveEventLoop = nativeBinding.ActiveEventLoop
-module.exports.ApplicationT1 = nativeBinding.ApplicationT1
-module.exports.ApplicationT2 = nativeBinding.ApplicationT2
-module.exports.ApplicationT3 = nativeBinding.ApplicationT3
-module.exports.ApplicationT4 = nativeBinding.ApplicationT4
+module.exports.Application = nativeBinding.Application
 module.exports.AsyncRequestSerial = nativeBinding.AsyncRequestSerial
 module.exports.Cursor = nativeBinding.Cursor
 module.exports.CustomCursor = nativeBinding.CustomCursor
