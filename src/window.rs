@@ -671,7 +671,7 @@ mod rwh_05_impls {
                         display_handle: BigInt::from(window.ns_view as u64),
                     })
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
                 (
                     RawWindowHandle::Xlib(window),
                     RawDisplayHandle::Xlib(display)
@@ -682,7 +682,7 @@ mod rwh_05_impls {
                         display_handle: BigInt::from(display.display as u64),
                     })
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
                 (
                     RawWindowHandle::Wayland(window),
                     RawDisplayHandle::Wayland(display)
@@ -745,7 +745,7 @@ mod rwh_06_impls {
                         display_handle: BigInt::from(Retained::as_ptr(&ns_view) as u64),
                     })
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
                 (
                     RawWindowHandle::Xlib(window),
                     RawDisplayHandle::Xlib(display)
@@ -756,7 +756,7 @@ mod rwh_06_impls {
                         display_handle: BigInt::from(display.display.unwrap().as_ptr() as u64),
                     })
                 }
-                #[cfg(target_os = "linux")]
+                #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
                 (
                     RawWindowHandle::Wayland(window),
                     RawDisplayHandle::Wayland(display)
