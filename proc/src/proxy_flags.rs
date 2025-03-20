@@ -159,7 +159,7 @@ impl ToTokens for TempStruct {
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #toggle_idents<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
+                    pub fn #toggle_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
                         self.#flag_idents = !self.#flag_idents;
                         this
                     }
@@ -173,7 +173,7 @@ impl ToTokens for TempStruct {
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #insert_idents<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
+                    pub fn #insert_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
                         self.#flag_idents = true;
                         this
                     }
@@ -181,14 +181,13 @@ impl ToTokens for TempStruct {
             }
         });
 
-
         spanned_from_flag_zip!(remove_idents, ident = "remove_{}" => #ident);
         append_to_tokens(tokens, quote_spanned! { name.span() =>
             #[napi]
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #remove_idents<'a>(&mut self, this: This<'a, JsObject>) -> This<'a, JsObject> {
+                    pub fn #remove_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
                         self.#flag_idents = false;
                         this
                     }

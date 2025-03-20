@@ -1,44 +1,41 @@
-use winit::{event::{
-    DeviceEvent as OriginDeviceEvent,
-    DeviceId as OriginDeviceId,
-    ElementState as OriginElementState,
-    Event as OriginEvent,
-    Ime as OriginIme,
-    InnerSizeWriter as OriginInnerSizeWriter,
-    KeyEvent as OriginKeyEvent,
-    Modifiers as OriginModifiers,
-    MouseButton as OriginMouseButton,
-    MouseScrollDelta as OriginMouseScrollDelta,
-    RawKeyEvent as OriginRawKeyEvent,
-    StartCause as OriginStartCause,
-    Touch as OriginTouch,
-    TouchPhase as OriginTouchPhase,
-    WindowEvent as OriginWindowEvent,
-}, keyboard, window::Theme as OriginTheme};
+use napi::bindgen_prelude::*;
+
+use winit::{
+    event::{
+        DeviceEvent as OriginDeviceEvent,
+        DeviceId as OriginDeviceId,
+        ElementState as OriginElementState,
+        Event as OriginEvent,
+        Ime as OriginIme,
+        InnerSizeWriter as OriginInnerSizeWriter,
+        KeyEvent as OriginKeyEvent,
+        Modifiers as OriginModifiers,
+        MouseButton as OriginMouseButton,
+        MouseScrollDelta as OriginMouseScrollDelta,
+        RawKeyEvent as OriginRawKeyEvent,
+        StartCause as OriginStartCause,
+        Touch as OriginTouch,
+        TouchPhase as OriginTouchPhase,
+        WindowEvent as OriginWindowEvent,
+    },
+    window::Theme as OriginTheme,
+};
+
+use proc::proxy_enum;
 
 use crate::{
-    dpi::{
-        Position,
-        Size,
-    },
+    dpi::{Position, Size},
     event_loop::AsyncRequestSerial,
     extra::{
         convert::ExInto,
-        time::TimeDuration,
+        time::Timeout,
     },
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     mark_ex_into,
     string_enum,
-    window::{
-        ActivationToken,
-        Theme,
-        WindowId,
-    },
+    window::{ActivationToken, Theme, WindowId},
     wrap_struct,
 };
-
-use napi::bindgen_prelude::*;
-use proc::proxy_enum;
 
 #[napi]
 #[derive(Clone)]
@@ -63,19 +60,27 @@ pub enum Event {
     MemoryWarning,
 }
 
+fn option_into<T: Into<V>, V>(from: Option<T>) -> Option<V> {
+    from.map(Into::into)
+}
+
 #[proxy_enum(origin_enum = winit::event::StartCause, skip_backward)]
 pub enum StartCause {
     ResumeTimeReached {
-        start: TimeDuration,
-        requested_resume: TimeDuration,
+        start: Timeout,
+        requested_resume: Timeout,
     },
     WaitCancelled {
-        start: TimeDuration,
-        #[proxy_enum(from_origin = { requested_resume.map(|x| x.into()) })]
-        requested_resume: Option<TimeDuration>,
+        start: Timeout,
+        #[proxy_enum(from_origin = option_into)]
+        requested_resume: Option<Timeout>,
     },
     Poll,
     Init,
+}
+
+fn path_buf_to_string(path_buf: std::path::PathBuf) -> String {
+    path_buf.to_str().unwrap().into()
 }
 
 #[proxy_enum(origin_enum = winit::event::WindowEvent, skip_backward)]
@@ -88,10 +93,10 @@ pub enum WindowEvent {
     Moved(#[proxy_enum(field_name = "position")] Position),
     CloseRequested,
     Destroyed,
-    DroppedFile(#[proxy_enum(field_name = "path", from_origin = { path.to_str().unwrap().into() })] String),
-    HoveredFile(#[proxy_enum(field_name = "path", from_origin = { path.to_str().unwrap().into() })] String),
+    DroppedFile(#[proxy_enum(field_name = "path", from_origin = path_buf_to_string)] String),
+    HoveredFile(#[proxy_enum(field_name = "path", from_origin = path_buf_to_string)] String),
     HoveredFileCancelled,
-    Focused(bool),
+    Focused(#[proxy_enum(field_name = "focused")] bool),
     KeyboardInput {
         device_id: DeviceId,
         event: KeyEvent,
@@ -189,7 +194,7 @@ impl KeyEvent {
     }
     #[napi(getter)]
     pub fn text(&self) -> Option<String> {
-        self.origin.text.clone().map(|text| text.ex_into())
+        self.origin.text.clone().map(ExInto::ex_into)
     }
     #[napi(getter)]
     pub fn location(&self) -> KeyLocation {
@@ -220,7 +225,7 @@ pub enum Ime {
     Enabled,
     Preedit(
         #[proxy_enum(field_name = "preedit")] String,
-        #[proxy_enum(field_name = "position", from_origin = { position.map(|x| x.into()) })] Option<Position>
+        #[proxy_enum(field_name = "position", from_origin = option_into)] Option<Position>
     ),
     Commit(#[proxy_enum(field_name = "commit")] String),
     Disabled,

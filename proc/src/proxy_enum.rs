@@ -1,4 +1,4 @@
-use crate::utils::{append_to_tokens, get_meta_value_as_block, get_meta_value_as_lit_str, get_meta_value_as_type, get_metas_by_attr_name, get_type_ty_or, parse_as, parse_metas, separate_attr_by_name, to_tokens};
+use crate::utils::{append_to_tokens, get_meta_value_as_block, get_meta_value_as_closure, get_meta_value_as_lit_str, get_meta_value_as_type, get_metas_by_attr_name, get_type_ty_or, parse_as, parse_metas, separate_attr_by_name, to_tokens};
 use proc_macro2::TokenStream;
 use quote::{
     format_ident,
@@ -7,22 +7,7 @@ use quote::{
     IdentFragment,
     ToTokens
 };
-use syn::{
-    parse_macro_input,
-    spanned::Spanned,
-    Attribute,
-    ExprBlock,
-    Field,
-    Fields,
-    Ident,
-    ItemEnum,
-    Meta,
-    Path,
-    PathSegment,
-    Type,
-    TypePath,
-    Variant
-};
+use syn::{parse_macro_input, spanned::Spanned, Attribute, Block, Expr, ExprBlock, ExprClosure, ExprPath, Field, Fields, Ident, ItemEnum, Meta, MetaNameValue, Path, PathSegment, Type, TypePath, Variant};
 
 pub(crate) fn proxy_enum(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -66,14 +51,19 @@ struct TempVariant {
     pub temp_fields: Vec<TempField>,
 }
 
+enum ConvUsage {
+    Path(ExprPath),
+    Closure(ExprClosure),
+}
+
 struct TempField {
     pub input: Field,
     pub reserved_attrs: Vec<Attribute>,
     pub ident: Ident,
     pub direct_type: bool,
     pub use_clone: bool,
-    pub from_origin: Option<ExprBlock>,
-    pub into_origin: Option<ExprBlock>,
+    pub from_origin: Option<ConvUsage>,
+    pub into_origin: Option<ConvUsage>,
 }
 
 enum With { Origin, Proxy }
@@ -101,6 +91,40 @@ fn quote_ident(TempField { ident, .. }: &TempField) -> TokenStream {
     quote! { #ident }
 }
 
+fn parse_conv_closure(ident: &Ident, conv_usage: &ConvUsage) -> TokenStream {
+    // let ExprClosure { inputs, body, .. } = expr_closure;
+    //
+    // if inputs.len() != 1 { panic!("Expected one argument of type Closure"); }
+    //
+    // let pat = inputs.first().unwrap();
+    //
+    // let stmts = match body.as_ref() {
+    //     Expr::Block(ExprBlock { block: Block { stmts, .. }, .. }) => quote!(#( #stmts )*),
+    //     expr => quote_spanned! { expr.span() => #expr },
+    // };
+    //
+    // quote!({
+    //     let #pat = #ident;
+    //     #stmts
+    // })
+
+    match conv_usage {
+        ConvUsage::Path(path) => quote_spanned!{ path.span() => (#path(#ident)) },
+        ConvUsage::Closure(closure) => quote_spanned!{ closure.span() => ((#closure)(#ident)) },
+    }
+}
+
+macro_rules! conv_use_if {
+    ($field: ident) => {
+        |TempField { ident, $field, .. }| {
+            match $field {
+                Some($field) => parse_conv_closure(ident, $field),
+                None => quote! { #ident.into() },
+            }
+        }
+    };
+}
+
 fn conv_from_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStream {
     let TempVariant { input: Variant { ident, .. }, .. } = variant;
     let dispose = map_temp_fields(
@@ -109,12 +133,7 @@ fn conv_from_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStrea
     );
     let compose = map_temp_fields(
         variant, Kind::Compose, With::Proxy,
-        |TempField { ident, from_origin, .. }| {
-            match from_origin {
-                Some(from_block) => quote! { #from_block },
-                None => quote! { #ident.into() },
-            }
-        },
+        conv_use_if!(from_origin),
     );
     quote! { #origin_type::#ident #dispose => Self::#ident #compose }
 }
@@ -127,12 +146,7 @@ fn conv_into_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStrea
     );
     let compose = map_temp_fields(
         variant, Kind::Compose, With::Origin,
-        |TempField { ident, into_origin, .. }| {
-            match into_origin {
-                Some(into_block) => quote! { #into_block },
-                None => quote! { #ident.into() },
-            }
-        },
+        conv_use_if!(into_origin),
     );
     quote! { Self::#ident #dispose => #origin_type::#ident #compose }
 }
@@ -297,6 +311,18 @@ fn temp_variants(variants: Vec<&Variant>) -> Vec<TempVariant> {
         .collect()
 }
 
+#[inline]
+fn get_meta_value_as_conv_usage(meta: &Meta) -> Option<ConvUsage> {
+    let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
+    else { return None };
+
+    match value {
+        Expr::Path(path) => Some(ConvUsage::Path(path.clone())),
+        Expr::Closure(closure) => Some(ConvUsage::Closure(closure.clone())),
+        _ => panic!("unexpected converter"),
+    }
+}
+
 fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
     fields.iter()
         .zip(0..fields.len())
@@ -323,8 +349,8 @@ fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
                 }
             };
 
-            let from_origin = from_origin.map(|meta| get_meta_value_as_block(&meta)).flatten();
-            let into_origin = into_origin.map(|meta| get_meta_value_as_block(&meta)).flatten();
+            let from_origin = from_origin.map(|meta| get_meta_value_as_conv_usage(&meta)).flatten();
+            let into_origin = into_origin.map(|meta| get_meta_value_as_conv_usage(&meta)).flatten();
 
             TempField {
                 input: (*field).clone(),

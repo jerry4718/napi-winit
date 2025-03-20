@@ -1,3 +1,5 @@
+use napi::bindgen_prelude::*;
+
 use winit::window::{
     ActivationToken as OriginActivationToken,
     CursorIcon as OriginCursorIcon,
@@ -11,10 +13,11 @@ use winit::window::{
     WindowLevel as OriginWindowLevel,
 };
 
+use proc::proxy_flags;
+
 use crate::{
     cursor::{Cursor, CursorIcon},
-    dpi::Position,
-    dpi::Size,
+    dpi::{Position, Size},
     extra::convert::ExInto,
     mark_ex_into,
     monitor::MonitorHandle,
@@ -22,19 +25,6 @@ use crate::{
     wrap_struct,
 };
 
-use napi::{
-    bindgen_prelude::*,
-    sys::{napi_env, napi_value},
-    JsObject,
-    JsString,
-};
-use proc::proxy_flags;
-use rwh_05::{
-    HasRawDisplayHandle,
-    HasRawWindowHandle,
-    RawDisplayHandle,
-    RawWindowHandle,
-};
 
 #[napi]
 #[derive(Clone)]
@@ -164,67 +154,67 @@ impl WindowAttributes {
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_inner_size<'a>(&mut self, this: This<'a, JsObject>, size: Size) -> This<'a, JsObject> {
+    pub fn with_inner_size<'a>(&mut self, this: This<'a, Object>, size: Size) -> This<'a, Object> {
         self.inner_size = Some(size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_min_inner_size<'a>(&mut self, this: This<'a, JsObject>, min_size: Size) -> This<'a, JsObject> {
+    pub fn with_min_inner_size<'a>(&mut self, this: This<'a, Object>, min_size: Size) -> This<'a, Object> {
         self.min_inner_size = Some(min_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_max_inner_size<'a>(&mut self, this: This<'a, JsObject>, max_size: Size) -> This<'a, JsObject> {
+    pub fn with_max_inner_size<'a>(&mut self, this: This<'a, Object>, max_size: Size) -> This<'a, Object> {
         self.max_inner_size = Some(max_size);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_position<'a>(&mut self, this: This<'a, JsObject>, position: Position) -> This<'a, JsObject> {
+    pub fn with_position<'a>(&mut self, this: This<'a, Object>, position: Position) -> This<'a, Object> {
         self.position = Some(position);
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_resizable<'a>(&mut self, this: This<'a, JsObject>, resizable: bool) -> This<'a, JsObject> {
+    pub fn with_resizable<'a>(&mut self, this: This<'a, Object>, resizable: bool) -> This<'a, Object> {
         self.resizable = resizable;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_enabled_buttons<'a>(&mut self, this: This<'a, JsObject>, buttons: &WindowButtons) -> This<'a, JsObject> {
+    pub fn with_enabled_buttons<'a>(&mut self, this: This<'a, Object>, buttons: &WindowButtons) -> This<'a, Object> {
         self.enabled_buttons = buttons.clone();
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_title<'a>(&mut self, this: This<'a, JsObject>, title: String) -> This<'a, JsObject> {
+    pub fn with_title<'a>(&mut self, this: This<'a, Object>, title: String) -> This<'a, Object> {
         self.title = title;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_fullscreen<'a>(&mut self, this: This<'a, JsObject>, fullscreen: Option<Fullscreen>) -> This<'a, JsObject> {
+    pub fn with_fullscreen<'a>(&mut self, this: This<'a, Object>, fullscreen: Option<Fullscreen>) -> This<'a, Object> {
         self.fullscreen = fullscreen;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_maximized<'a>(&mut self, this: This<'a, JsObject>, maximized: bool) -> This<'a, JsObject> {
+    pub fn with_maximized<'a>(&mut self, this: This<'a, Object>, maximized: bool) -> This<'a, Object> {
         self.maximized = maximized;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_visible<'a>(&mut self, this: This<'a, JsObject>, visible: bool) -> This<'a, JsObject> {
+    pub fn with_visible<'a>(&mut self, this: This<'a, Object>, visible: bool) -> This<'a, Object> {
         self.visible = visible;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_transparent<'a>(&mut self, this: This<'a, JsObject>, transparent: bool) -> This<'a, JsObject> {
+    pub fn with_transparent<'a>(&mut self, this: This<'a, Object>, transparent: bool) -> This<'a, Object> {
         self.transparent = transparent;
         this
     }
@@ -235,55 +225,55 @@ impl WindowAttributes {
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_blur<'a>(&mut self, this: This<'a, JsObject>, blur: bool) -> This<'a, JsObject> {
+    pub fn with_blur<'a>(&mut self, this: This<'a, Object>, blur: bool) -> This<'a, Object> {
         self.blur = blur;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_decorations<'a>(&mut self, this: This<'a, JsObject>, decorations: bool) -> This<'a, JsObject> {
+    pub fn with_decorations<'a>(&mut self, this: This<'a, Object>, decorations: bool) -> This<'a, Object> {
         self.decorations = decorations;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_window_level<'a>(&mut self, this: This<'a, JsObject>, level: WindowLevel) -> This<'a, JsObject> {
+    pub fn with_window_level<'a>(&mut self, this: This<'a, Object>, level: WindowLevel) -> This<'a, Object> {
         self.window_level = level;
         this
     }
 
     // #[inline]
-    pub fn with_window_icon<'a>(&mut self, this: This<'a, JsObject>, window_icon: Option<Icon>) -> This<'a, JsObject> {
+    pub fn with_window_icon<'a>(&mut self, this: This<'a, Object>, window_icon: Option<Icon>) -> This<'a, Object> {
         self.window_icon = window_icon;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_theme<'a>(&mut self, this: This<'a, JsObject>, theme: Option<Theme>) -> This<'a, JsObject> {
+    pub fn with_theme<'a>(&mut self, this: This<'a, Object>, theme: Option<Theme>) -> This<'a, Object> {
         self.preferred_theme = theme;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_resize_increments<'a>(&mut self, this: This<'a, JsObject>, resize_increments: Size) -> This<'a, JsObject> {
+    pub fn with_resize_increments<'a>(&mut self, this: This<'a, Object>, resize_increments: Size) -> This<'a, Object> {
         self.resize_increments = Some(resize_increments.into());
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_content_protected<'a>(&mut self, this: This<'a, JsObject>, protected: bool) -> This<'a, JsObject> {
+    pub fn with_content_protected<'a>(&mut self, this: This<'a, Object>, protected: bool) -> This<'a, Object> {
         self.content_protected = protected;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_active<'a>(&mut self, this: This<'a, JsObject>, active: bool) -> This<'a, JsObject> {
+    pub fn with_active<'a>(&mut self, this: This<'a, Object>, active: bool) -> This<'a, Object> {
         self.active = active;
         this
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_cursor<'a>(&mut self, this: This<'a, JsObject>, cursor: &Cursor) -> This<'a, JsObject> {
+    pub fn with_cursor<'a>(&mut self, this: This<'a, Object>, cursor: &Cursor) -> This<'a, Object> {
         self.cursor = cursor.clone();
         this
     }
@@ -651,55 +641,137 @@ pub struct SurfaceOptions {
     pub display_handle: BigInt,
 }
 
-#[napi]
-impl Window {
-    #[napi]
-    pub fn get_surface_options(&self) -> Result<SurfaceOptions> {
-        let raw_window_handle = self.inner.raw_window_handle();
-        let raw_display_handle = self.inner.raw_display_handle();
+mod rwh_05_impls {
+    use crate::window::{SurfaceOptions, SurfaceSystem, Window};
+    use napi::bindgen_prelude::BigInt;
+    use napi::Error;
+    use rwh_05::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
 
-        match (raw_window_handle, raw_display_handle) {
-            (RawWindowHandle::Win32(window), _) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Win32,
-                    window_handle: BigInt::from(window.hwnd as u64),
-                    display_handle: BigInt::from(window.hinstance as u64),
-                })
+    #[napi]
+    impl Window {
+        #[napi]
+        pub fn get_surface_options(&self) -> napi::Result<SurfaceOptions> {
+            let raw_window_handle = self.inner.raw_window_handle();
+            let raw_display_handle = self.inner.raw_display_handle();
+
+            match (raw_window_handle, raw_display_handle) {
+                #[cfg(target_os = "windows")]
+                (RawWindowHandle::Win32(window), _) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Win32,
+                        window_handle: BigInt::from(window.hwnd as u64),
+                        display_handle: BigInt::from(window.hinstance as u64),
+                    })
+                }
+                #[cfg(target_os = "macos")]
+                (RawWindowHandle::AppKit(window), _) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Cocoa,
+                        window_handle: BigInt::from(window.ns_window as u64),
+                        display_handle: BigInt::from(window.ns_view as u64),
+                    })
+                }
+                #[cfg(target_os = "linux")]
+                (
+                    RawWindowHandle::Xlib(window),
+                    RawDisplayHandle::Xlib(display)
+                ) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::X11,
+                        window_handle: BigInt::from(window.window as u64),
+                        display_handle: BigInt::from(display.display as u64),
+                    })
+                }
+                #[cfg(target_os = "linux")]
+                (
+                    RawWindowHandle::Wayland(window),
+                    RawDisplayHandle::Wayland(display)
+                ) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Wayland,
+                        window_handle: BigInt::from(window.surface as u64),
+                        display_handle: BigInt::from(display.display as u64),
+                    })
+                }
+                _ => Err(Error::from_reason("unimplemented for this platform")),
             }
-            (RawWindowHandle::AppKit(window), _) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Cocoa,
-                    window_handle: BigInt::from(window.ns_window as u64),
-                    display_handle: BigInt::from(window.ns_view as u64),
-                })
-            }
-            (
-                RawWindowHandle::Xlib(window),
-                RawDisplayHandle::Xlib(display)
-            ) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::X11,
-                    window_handle: BigInt::from(window.window as u64),
-                    display_handle: BigInt::from(display.display as u64),
-                })
-            }
-            (
-                RawWindowHandle::Wayland(window),
-                RawDisplayHandle::Wayland(display)
-            ) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Wayland,
-                    window_handle: BigInt::from(window.surface as u64),
-                    display_handle: BigInt::from(display.display as u64),
-                })
-            }
-            _ => Err(Error::from_reason("unimplemented for this platform")),
         }
     }
 }
 
-// wrap_struct!(struct WindowHandle { inner: rwh_06::WindowHandle<'_> });
-// wrap_struct!(struct DisplayHandle { inner: rwh_06::DisplayHandle<'_> });
+/* just draft */
+mod rwh_06_impls {
+    use crate::window::{SurfaceOptions, SurfaceSystem, Window};
+    use napi::bindgen_prelude::BigInt;
+    use napi::Error;
+    use rwh_06::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
+
+    // #[napi]
+    impl Window {
+        // #[napi]
+        pub fn get_surface_options_with_rwh_06(&self) -> napi::Result<SurfaceOptions> {
+            let window_handle = match self.inner.window_handle() {
+                Err(e) => return Err(Error::from_reason(format!("{e}"))),
+                Ok(handle) => handle.as_raw(),
+            };
+
+            let display_handle = match self.inner.display_handle() {
+                Err(e) => return Err(Error::from_reason(format!("{e}"))),
+                Ok(handle) => handle.as_raw(),
+            };
+
+            match (window_handle, display_handle) {
+                #[cfg(target_os = "windows")]
+                (RawWindowHandle::Win32(window), _) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Win32,
+                        window_handle: BigInt::from(window.hwnd.unsigned_abs().get() as u64),
+                        display_handle: BigInt::from(window.hinstance.unwrap().unsigned_abs().get() as u64),
+                    })
+                }
+                #[cfg(target_os = "macos")]
+                (RawWindowHandle::AppKit(window), _) => {
+                    use objc2::rc::Retained;
+                    use objc2_app_kit::{NSView, NSWindow};
+
+                    let ns_view = window.ns_view.as_ptr();
+
+                    let ns_view: Retained<NSView> = unsafe { Retained::retain(ns_view.cast()) }.unwrap();
+                    let ns_window: Retained<NSWindow> = ns_view.window().expect("view was not installed in a window");
+
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Cocoa,
+                        window_handle: BigInt::from(Retained::as_ptr(&ns_window) as u64),
+                        display_handle: BigInt::from(Retained::as_ptr(&ns_view) as u64),
+                    })
+                }
+                #[cfg(target_os = "linux")]
+                (
+                    RawWindowHandle::Xlib(window),
+                    RawDisplayHandle::Xlib(display)
+                ) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::X11,
+                        window_handle: BigInt::from(window.window as u64),
+                        display_handle: BigInt::from(display.display.unwrap().as_ptr() as u64),
+                    })
+                }
+                #[cfg(target_os = "linux")]
+                (
+                    RawWindowHandle::Wayland(window),
+                    RawDisplayHandle::Wayland(display)
+                ) => {
+                    Ok(SurfaceOptions {
+                        system: SurfaceSystem::Wayland,
+                        window_handle: BigInt::from(window.surface.as_ptr() as u64),
+                        display_handle: BigInt::from(display.display.as_ptr() as u64),
+                    })
+                }
+                _ => Err(Error::from_reason("unimplemented for this platform")),
+            }
+        }
+    }
+}
 
 string_enum!(enum ImePurpose => winit::window::ImePurpose { Normal, Password, Terminal } "never reach here");
 string_enum!(enum UserAttentionType => winit::window::UserAttentionType { Critical, Informational });

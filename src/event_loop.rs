@@ -1,10 +1,10 @@
 use napi::bindgen_prelude::*;
 
 use std::{
-    process::ExitCode,
     ptr::NonNull,
     time::{Duration, Instant},
 };
+
 use winit::{
     application::ApplicationHandler,
     event_loop::{
@@ -21,13 +21,15 @@ use winit::{
     },
 };
 
+use proc::proxy_enum;
+
 use crate::{
     application::public::{Application, Runner},
     cursor::{CustomCursor, CustomCursorSource},
     event::UserPayload,
     extra::{
         convert::ExInto,
-        time::TimeDuration,
+        time::Timeout
     },
     mark_ex_into,
     monitor::MonitorHandle,
@@ -35,8 +37,6 @@ use crate::{
     window::{Theme, Window, WindowAttributes},
     wrap_struct,
 };
-
-use proc::proxy_enum;
 
 wrap_struct!(struct EventLoop { inner: OriginEventLoop<UserPayload> });
 
@@ -103,12 +103,6 @@ impl EventLoop {
 
         PumpStatus::from(result)
     }
-    /*#[napi]
-    pub fn pump_app_events(&mut self, millis: f64, app: Application) -> PumpStatus {
-        let application = unsafe { NonNull::new(&app as *const _ as *mut Application).unwrap().as_mut() };
-        let timeout = Some(Duration::from_millis(millis as u64));
-        self.inner.pump_app_events(timeout, application).into()
-    }*/
     // create_proxy
     // owned_display_handle
     // listen_device_events
@@ -155,24 +149,10 @@ impl ActiveEventLoop {
     pub fn system_theme(&self) -> Option<Theme> {
         inner_ref!(self).system_theme().map(|theme| theme.into())
     }
-    // #[napi]
-    // pub fn set_control_flow(&self, control_flow: &ControlFlow) {
-    //     self.inner.set_control_flow(control_flow.clone().into())
-    // }
-
     #[napi]
-    pub fn set_control_flow_poll(&self) {
-        inner_ref!(self).set_control_flow(OriginControlFlow::Poll)
+    pub fn set_control_flow(&self, control_flow: ControlFlow) {
+        inner_ref!(self).set_control_flow(control_flow.into())
     }
-    #[napi]
-    pub fn set_control_flow_wait(&self) {
-        inner_ref!(self).set_control_flow(OriginControlFlow::Wait)
-    }
-    #[napi]
-    pub fn set_control_flow_wait_until(&self, millis: f64) {
-        inner_ref!(self).set_control_flow(OriginControlFlow::WaitUntil(Instant::now() + Duration::from_millis(millis as u64)))
-    }
-
     #[napi]
     pub fn control_flow(&self) -> ControlFlow {
         inner_ref!(self).control_flow().into()
@@ -199,11 +179,11 @@ string_enum!(
     }
 );
 
-#[proxy_enum(origin_enum = winit::event_loop::ControlFlow, skip_backward)]
+#[proxy_enum(origin_enum = winit::event_loop::ControlFlow)]
 pub enum ControlFlow {
     Poll,
     Wait,
-    WaitUntil(TimeDuration),
+    WaitUntil(#[proxy_enum(field_name = "timeout")] Timeout),
 }
 
 wrap_struct!(#[derive(Clone)]struct OwnedDisplayHandle(OriginOwnedDisplayHandle));

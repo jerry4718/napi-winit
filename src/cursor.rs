@@ -1,3 +1,5 @@
+use napi::bindgen_prelude::*;
+
 use winit::window::{
     Cursor as OriginCursor,
     CursorIcon as OriginCursorIcon,
@@ -7,8 +9,6 @@ use winit::window::{
 };
 
 use crate::{mark_ex_into, string_enum, wrap_struct};
-
-use napi::bindgen_prelude::*;
 
 string_enum!(
     enum CursorIcon => OriginCursorIcon {

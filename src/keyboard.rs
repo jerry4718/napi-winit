@@ -1,29 +1,24 @@
-use proc::{proxy_enum, proxy_flags};
-use crate::{
-    extra::convert::{ExInto},
-    mark_ex_into,
-    string_enum
-};
+use napi::bindgen_prelude::*;
 
-use winit::keyboard:: {
-    NativeKeyCode as OriginNativeKeyCode,
-    NativeKey as OriginNativeKey,
+use winit::keyboard::{
     Key as OriginKey,
     KeyCode as OriginKeyCode,
-    NamedKey as OriginNamedKey,
     KeyLocation as OriginKeyLocation,
-    ModifiersState as OriginModifiersState,
     ModifiersKeyState as OriginModifiersKeyState,
+    ModifiersState as OriginModifiersState,
+    NamedKey as OriginNamedKey,
+    NativeKey as OriginNativeKey,
+    NativeKeyCode as OriginNativeKeyCode,
     PhysicalKey as OriginPhysicalKey,
     SmolStr,
 };
 
-use napi::{
-    bindgen_prelude::*,
-    JsObject,
-    NapiRaw,
-    NapiValue,
-    sys::{napi_env, napi_value}
+use proc::{proxy_enum, proxy_flags};
+
+use crate::{
+    extra::convert::ExInto,
+    mark_ex_into,
+    string_enum
 };
 
 #[proxy_enum(origin_enum = winit::keyboard::NativeKeyCode, skip_backward)]
@@ -45,12 +40,16 @@ pub enum NativeKey {
     Web(#[proxy_enum(field_name = "code")] String),
 }
 
+fn to_option_string<T: ToString>(input: Option<T>) -> Option<String> {
+    input.map(|it| it.to_string())
+}
+
 #[proxy_enum(origin_enum = winit::keyboard::Key::<SmolStr>, skip_backward)]
 pub enum Key {
     Named(#[proxy_enum(field_name = "name")] NamedKey),
     Character(#[proxy_enum(field_name = "ch")] String),
     Unidentified(#[proxy_enum(field_name = "ch")] NativeKey),
-    Dead(#[proxy_enum(field_name = "ch", from_origin = { ch.map(|x| x.to_string()) })] Option<String>),
+    Dead(#[proxy_enum(field_name = "ch", from_origin = to_option_string)] Option<String>),
 }
 
 #[proxy_enum(origin_enum = winit::keyboard::PhysicalKey, skip_backward)]

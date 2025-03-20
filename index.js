@@ -370,6 +370,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports.Timeout = nativeBinding.Timeout
 module.exports.ActivationToken = nativeBinding.ActivationToken
 module.exports.ActiveEventLoop = nativeBinding.ActiveEventLoop
 module.exports.Application = nativeBinding.Application
@@ -388,8 +389,6 @@ module.exports.MonitorHandle = nativeBinding.MonitorHandle
 module.exports.OwnedDisplayHandle = nativeBinding.OwnedDisplayHandle
 module.exports.SoftSurface = nativeBinding.SoftSurface
 module.exports.ThreadPool = nativeBinding.ThreadPool
-module.exports.TimeDuration = nativeBinding.TimeDuration
-module.exports.Timeout = nativeBinding.Timeout
 module.exports.Touch = nativeBinding.Touch
 module.exports.UserPayload = nativeBinding.UserPayload
 module.exports.VideoModeHandle = nativeBinding.VideoModeHandle

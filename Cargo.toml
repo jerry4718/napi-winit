@@ -17,7 +17,7 @@ once_cell = "1.20.3"
 
 [dependencies.winit]
 version = "0.30.9"
-features = [ "rwh_05" ]
+features = [ "rwh_05", "rwh_06" ]
 
 [dependencies.tokio]
 version = "1.43.0"
@@ -35,17 +35,17 @@ version = "0.6.2"
 features = [ "std" ]
 
 [dependencies.napi]
-version = "3.0.0-alpha.28"
+version = "3.0.0-alpha.33"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.0.0-alpha.26"
+version = "3.0.0-alpha.29"
 features = ["type-def"]
 
 [dependencies.ctor]
-version = "0.3.4"
+version = "0.4.0"
 
 [dependencies.softbuffer]
 version = "0.4.6"
@@ -56,6 +56,11 @@ features = [
     "wayland",
     "wayland-dlopen",
 ]
+
+[target.'cfg(target_os = "macos")'.dependencies.objc2]
+version = "0.6.0"
+[target.'cfg(target_os = "macos")'.dependencies.objc2-app-kit]
+version = "0.3.0"
 
 [build-dependencies]
 napi-build = "2.1.4"

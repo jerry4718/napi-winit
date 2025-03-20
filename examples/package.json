@@ -9,6 +9,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "napi-winit": "file:../"
+    "@ylcc/napi-winit": "file:../"
   }
 }

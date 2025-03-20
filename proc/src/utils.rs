@@ -154,8 +154,6 @@ pub(crate) fn get_meta_value_as_block(meta: &Meta) -> Option<ExprBlock> {
     Some(parse_as::<ExprBlock>(value))
 }
 
-
-
 #[inline]
 pub(crate) fn get_type_ty_or<Input: ToTokens>(meta: &Option<Meta>, input: &Input) -> Type {
     match meta {
