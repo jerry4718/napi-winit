@@ -1,6 +1,13 @@
 #![deny(clippy::all)]
 #![allow(unused_imports, unused_variables, dead_code)]
 
+// #[cfg(not(target_env = "msvc"))]
+// use jemallocator::Jemalloc;
+
+// #[cfg(not(target_env = "msvc"))]
+// #[global_allocator]
+// static GLOBAL: Jemalloc = Jemalloc;
+
 #[macro_use]
 extern crate napi_derive;
 

@@ -16,7 +16,10 @@ use winit::keyboard::{
 use proc::{proxy_enum, proxy_flags};
 
 use crate::{
-    extra::convert::ExInto,
+    extra::{
+        convert::ExInto,
+        helpers::to_option_string,
+    },
     mark_ex_into,
     string_enum
 };
@@ -38,10 +41,6 @@ pub enum NativeKey {
     Windows(#[proxy_enum(field_name = "code")] u16),
     Xkb(#[proxy_enum(field_name = "code")] u32),
     Web(#[proxy_enum(field_name = "code")] String),
-}
-
-fn to_option_string<T: ToString>(input: Option<T>) -> Option<String> {
-    input.map(|it| it.to_string())
 }
 
 #[proxy_enum(origin_enum = winit::keyboard::Key::<SmolStr>, skip_backward)]

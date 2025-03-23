@@ -1,15 +1,18 @@
-import type { ControlFlow } from "@ylcc/napi-winit";
+import {type ControlFlow} from "@ylcc/napi-winit";
 import {
     Application,
     asyncSleep,
     EventLoop,
     SoftSurface,
+    threadInterval,
+    tokioInterval,
     tokioSleep,
     Timeout,
     Window,
     WindowAttributes,
 } from "@ylcc/napi-winit";
 import process from "node:process";
+import { Buffer } from "node:buffer";
 
 const event_loop = new EventLoop();
 
@@ -27,18 +30,89 @@ const attrs = new WindowAttributes()
 let window: Window;
 let surface: SoftSurface;
 
-let mode: ControlFlow["type"] = "Wait";
+let mode: ControlFlow["type"] = "WaitUntil";
 let wait_cancelled: boolean = false;
 let close_requested: boolean = false;
-let request_redraw: boolean = false;
+let request_redraw: boolean = true;
 
 let buffer = new Uint32Array(0);
+
+function prePresentNotify() {
+    window.prePresentNotify();
+}
+
+function get_pixels() {
+    const { width, height } = window.innerSize();
+    return width * height;
+}
+
+function append_buffer(pixels: number) {
+    const old = buffer;
+    buffer = new Uint32Array(pixels);
+    buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
+    buffer.set(old);
+}
+
+function slice_buffer(pixels: number) {
+    buffer = buffer.slice(-pixels);
+}
+
+function write_buffer(/*err: (Error | null), */view: Uint32Array)  {
+    // if (err) console.error(err);
+    console.log(view);
+    view.set(buffer);
+}
+
+function writeWithSize(width: number, height: number, view: Uint32Array) {
+    const pixels = width * height;
+    if (pixels > buffer.length) {
+        append_buffer(pixels);
+    }
+    if (pixels < buffer.length) {
+        slice_buffer(pixels);
+    }
+    // console.log(view);
+    view.set(buffer)
+}
+
+function present() {
+    // surface.presentWithWriter((e, view) => {
+    //     // console.log(view);
+    //     view.set(buffer)
+    // });
+    surface.presentWithWriterVec(writeWithSize);
+    // surface.presentWithTyped(buffer);
+    // surface.presentWithBuffer(new Uint8Array(buffer.buffer));
+}
+
+const frame_stamps: number[] = [];
+
+function stamps() {
+    const now = Date.now();
+    const pre = now - 1000;
+    while (frame_stamps[0] && frame_stamps[0] < pre) {
+        frame_stamps.shift()
+    }
+    frame_stamps.push(now)
+}
+
+function redraw() {
+    prePresentNotify();
+    // const pixels = get_pixels();
+    // if (pixels > buffer.length) {
+    //     append_buffer(pixels);
+    // }
+    // if (pixels < buffer.length) {
+    //     slice_buffer(pixels);
+    // }
+    stamps();
+    present();
+}
 
 const app = Application.withAsync({
     onNewEvents: (_eventLoop, cause) => {
         if (cause.type === "WaitCancelled" && mode === "WaitUntil") {
             wait_cancelled = true;
-            console.log({ start: cause.start, requestedResume: cause.requestedResume })
         }
     },
     onResumed: (eventLoop) => {
@@ -77,19 +151,7 @@ const app = Application.withAsync({
             return;
         }
         if (event.type === "RedrawRequested") {
-            window.prePresentNotify();
-            const { width, height } = window.innerSize();
-            const pixels = width * height;
-            if (pixels > buffer.length) {
-                const old = buffer;
-                buffer = new Uint32Array(pixels);
-                buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
-                buffer.set(old);
-            }
-            if (pixels < buffer.length) {
-                buffer = buffer.slice(-pixels);
-            }
-            surface.present(buffer);
+            redraw();
             return;
         }
         // console.log({ window_id, event: event.type });
@@ -104,7 +166,7 @@ const app = Application.withAsync({
             eventLoop.setControlFlow({ type: "Wait" });
         }
         if (mode === "WaitUntil" && wait_cancelled) {
-            eventLoop.setControlFlow({ type: "WaitUntil", timeout: Timeout.fromMillis(100) });
+            eventLoop.setControlFlow({ type: "WaitUntil", timeout: Timeout.fromNanos(1_000_000 / 120) });
         }
         if (mode === "Poll") {
             await tokioSleep(Timeout.fromMillis(100));
@@ -117,13 +179,23 @@ const app = Application.withAsync({
     },
 });
 
-while (true) {
-    const sleep = asyncSleep(7);
-    const status = event_loop.pumpAppEvents(0, app);
+// while (true) {
+//     const sleep = asyncSleep(7);
+//     const status = event_loop.pumpAppEvents(0, app);
+//
+//     if (status.type === "Continue") {
+//         await sleep;
+//         continue;
+//     }
+//     process.exit(status.code);
+// }
 
+function pump() {
+    const status = event_loop.pumpAppEvents(0, app);
     if (status.type === "Continue") {
-        await sleep;
-        continue;
+        return;
     }
     process.exit(status.code);
 }
+
+tokioInterval(Timeout.fromNanos(1_000_000 / 60), pump);

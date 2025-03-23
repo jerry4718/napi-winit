@@ -114,7 +114,10 @@ export declare class OwnedDisplayHandle {
 
 export declare class SoftSurface {
   constructor(window: Window)
-  present(input: Uint32Array): void
+  presentWithTyped(input: Uint32Array): void
+  presentWithBuffer(buffer: Buffer): void
+  presentWithWriter(write: (arg0: number, arg1: number, arg2: Uint32Array) => void): void
+  presentWithWriterVec(write: (arg0: number, arg1: number, arg2: Uint32Array) => void): void
 }
 
 export declare class ThreadPool {
@@ -936,6 +939,8 @@ export type PixelUnit =
   | { type: 'Physical', count: number }
   | { type: 'Logical', count: number }
 
+export declare function pollsterInterval(timeout: Timeout, exec: () => (Promise<void> | void)): void
+
 export type Position =
   | { type: 'Physical', x: number, y: number }
   | { type: 'Logical', x: number, y: number }
@@ -987,6 +992,8 @@ export declare const enum Theme {
   Light = 'Light',
   Dark = 'Dark'
 }
+
+export declare function threadInterval(timeout: Timeout, exec: () => (Promise<void> | void)): void
 
 export interface Timeout {
   secs: bigint

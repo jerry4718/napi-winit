@@ -1,3 +1,4 @@
 pub mod convert;
+pub mod helpers;
 pub mod time;
-mod surface;
+pub mod surface;

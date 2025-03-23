@@ -28,6 +28,7 @@ use crate::{
     event_loop::AsyncRequestSerial,
     extra::{
         convert::ExInto,
+        helpers::{option_into, path_buf_to_string},
         time::Timeout,
     },
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
@@ -60,10 +61,6 @@ pub enum Event {
     MemoryWarning,
 }
 
-fn option_into<T: Into<V>, V>(from: Option<T>) -> Option<V> {
-    from.map(Into::into)
-}
-
 #[proxy_enum(origin_enum = winit::event::StartCause, skip_backward)]
 pub enum StartCause {
     ResumeTimeReached {
@@ -77,10 +74,6 @@ pub enum StartCause {
     },
     Poll,
     Init,
-}
-
-fn path_buf_to_string(path_buf: std::path::PathBuf) -> String {
-    path_buf.to_str().unwrap().into()
 }
 
 #[proxy_enum(origin_enum = winit::event::WindowEvent, skip_backward)]
