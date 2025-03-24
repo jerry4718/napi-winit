@@ -1,18 +1,15 @@
-import {type ControlFlow} from "@ylcc/napi-winit";
 import {
     Application,
-    asyncSleep,
+    type ControlFlow,
     EventLoop,
     SoftSurface,
     threadInterval,
-    tokioInterval,
-    tokioSleep,
     Timeout,
+    tokioSleep,
     Window,
-    WindowAttributes,
+    WindowAttributes
 } from "@ylcc/napi-winit";
 import process from "node:process";
-import { Buffer } from "node:buffer";
 
 const event_loop = new EventLoop();
 
@@ -20,7 +17,7 @@ const attrs = new WindowAttributes()
     .withActive(true)
     .withFullscreen(null)
     .withResizable(true)
-    // .withInnerSize({type: UnitType.Logical, width: 100, height: 100})
+    .withInnerSize({type: 'Logical', width: 480, height: 320})
     .withPosition({ type: "Logical", x: 500, y: 500 })
     .withTransparent(false)
     .withTitle(
@@ -41,11 +38,6 @@ function prePresentNotify() {
     window.prePresentNotify();
 }
 
-function get_pixels() {
-    const { width, height } = window.innerSize();
-    return width * height;
-}
-
 function append_buffer(pixels: number) {
     const old = buffer;
     buffer = new Uint32Array(pixels);
@@ -55,12 +47,6 @@ function append_buffer(pixels: number) {
 
 function slice_buffer(pixels: number) {
     buffer = buffer.slice(-pixels);
-}
-
-function write_buffer(/*err: (Error | null), */view: Uint32Array)  {
-    // if (err) console.error(err);
-    console.log(view);
-    view.set(buffer);
 }
 
 function writeWithSize(width: number, height: number, view: Uint32Array) {
@@ -76,13 +62,7 @@ function writeWithSize(width: number, height: number, view: Uint32Array) {
 }
 
 function present() {
-    // surface.presentWithWriter((e, view) => {
-    //     // console.log(view);
-    //     view.set(buffer)
-    // });
     surface.presentWithWriterVec(writeWithSize);
-    // surface.presentWithTyped(buffer);
-    // surface.presentWithBuffer(new Uint8Array(buffer.buffer));
 }
 
 const frame_stamps: number[] = [];
@@ -98,15 +78,8 @@ function stamps() {
 
 function redraw() {
     prePresentNotify();
-    // const pixels = get_pixels();
-    // if (pixels > buffer.length) {
-    //     append_buffer(pixels);
-    // }
-    // if (pixels < buffer.length) {
-    //     slice_buffer(pixels);
-    // }
-    stamps();
     present();
+    stamps();
 }
 
 const app = Application.withAsync({
@@ -154,7 +127,7 @@ const app = Application.withAsync({
             redraw();
             return;
         }
-        // console.log({ window_id, event: event.type });
+        // console.log({ _windowId, event: event.type });
     },
     onAboutToWait: async (eventLoop) => {
         // console.log(`request_redraw = ${ request_redraw }, wait_cancelled = ${ wait_cancelled }, close_requested = ${ close_requested }`)
@@ -179,17 +152,6 @@ const app = Application.withAsync({
     },
 });
 
-// while (true) {
-//     const sleep = asyncSleep(7);
-//     const status = event_loop.pumpAppEvents(0, app);
-//
-//     if (status.type === "Continue") {
-//         await sleep;
-//         continue;
-//     }
-//     process.exit(status.code);
-// }
-
 function pump() {
     const status = event_loop.pumpAppEvents(0, app);
     if (status.type === "Continue") {
@@ -198,4 +160,4 @@ function pump() {
     process.exit(status.code);
 }
 
-tokioInterval(Timeout.fromNanos(1_000_000 / 60), pump);
+threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
