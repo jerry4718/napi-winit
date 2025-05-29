@@ -14,7 +14,7 @@ use winit::{
 };
 
 use crate::{
-    application::public::{OptionsRefHolder, OptionsRefWithEnv},
+    application::public::{OptionsGhostHolder, OptionsRefHolder},
     event::{
         DeviceEvent,
         DeviceId,
@@ -31,64 +31,73 @@ macro_rules! wrap_event_loop {
     ($name: expr) => { ActiveEventLoop { inner_non_null: NonNull::new($name as *const _ as *mut OriginActiveEventLoop).unwrap() } };
 }
 
-macro_rules! borrow_back {
-    ($callback: ident @ $env: ident ) => {
-        $callback.borrow_back($env).unwrap()
+macro_rules! borrow_back_callback {
+    ($callback: ident as $local: ident with $env: ident from $self: ident) => {
+        {
+            let Self { env, options: OptionsGhostHolder { $callback: $local, .. } } = &$self;
+            $local.borrow_back(env).unwrap()
+        }
+    };
+    ($callback: ident? as $local: ident with $env: ident from $self: ident) => {
+        {
+            let Self { env, options: OptionsGhostHolder { $callback: Some($local), .. } } = &$self else { return; };
+            $local.borrow_back(env).unwrap()
+        }
     };
 }
 
-impl ApplicationHandler<UserPayload> for OptionsRefWithEnv<Option<Promise<()>>> {
+impl ApplicationHandler<UserPayload> for OptionsRefHolder<Option<Promise<()>>> {
     fn new_events(&mut self, event_loop: &OriginActiveEventLoop, cause: OriginStartCause) {
-        let Self { env, options: OptionsRefHolder { on_new_events: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop), StartCause::from(cause))));
+        let callback = borrow_back_callback!(on_new_events? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), StartCause::from(cause))));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn resumed(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { env, options: OptionsRefHolder { on_resumed: callback, .. } } = &self;
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop),)));
+        let callback = borrow_back_callback!(on_resumed as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn user_event(&mut self, event_loop: &OriginActiveEventLoop, event: UserPayload) {
-        let Self { env, options: OptionsRefHolder { on_user_event: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop), event)));
+        let callback = borrow_back_callback!(on_user_event? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), event)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn window_event(&mut self, event_loop: &OriginActiveEventLoop, window_id: OriginWindowId, event: OriginWindowEvent) {
-        let Self { env, options: OptionsRefHolder { on_window_event: callback, .. } } = &self;
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop), WindowId::from(window_id), WindowEvent::from(event))));
+        let callback = borrow_back_callback!(on_window_event as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), WindowId::from(window_id), WindowEvent::from(event))));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn device_event(&mut self, event_loop: &OriginActiveEventLoop, device_id: OriginDeviceId, event: OriginDeviceEvent) {
-        let Self { env, options: OptionsRefHolder { on_device_event: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop), DeviceId::from(device_id), DeviceEvent::from(event))));
+        let callback = borrow_back_callback!(on_device_event? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), DeviceId::from(device_id), DeviceEvent::from(event))));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn about_to_wait(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { env, options: OptionsRefHolder { on_about_to_wait: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop),)));
+        let callback = borrow_back_callback!(on_about_to_wait? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn suspended(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { env, options: OptionsRefHolder { on_suspended: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop),)));
+        let callback = borrow_back_callback!(on_suspended? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn exiting(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { env, options: OptionsRefHolder { on_exiting: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop),)));
+        let callback = borrow_back_callback!(on_exiting? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 
     fn memory_warning(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { env, options: OptionsRefHolder { on_memory_warning: Some(callback), .. } } = &self else { return; };
-        let result = borrow_back!(callback @ env).call(FnArgs::from((wrap_event_loop!(event_loop),)));
+        let callback = borrow_back_callback!(on_memory_warning? as callback with env from self);
+        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
         handle_rop!(spawn(Some(promise) @ result));
     }
 }

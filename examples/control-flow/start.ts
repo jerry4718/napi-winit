@@ -1,15 +1,7 @@
-import {
-    Application,
-    type ControlFlow,
-    EventLoop,
-    SoftSurface,
-    threadInterval,
-    Timeout,
-    tokioSleep,
-    Window,
-    WindowAttributes
-} from "@ylcc/napi-winit";
+import { Application, type ControlFlow, EventLoop, Extra, Timeout, Window, WindowAttributes } from "@ylcc/napi-winit";
 import process from "node:process";
+
+const { SoftSurface, threadInterval, tokioSleep } = Extra;
 
 const event_loop = new EventLoop();
 
@@ -25,7 +17,7 @@ const attrs = new WindowAttributes()
     );
 
 let window: Window;
-let surface: SoftSurface;
+let surface: Extra.SoftSurface;
 
 let mode: ControlFlow["type"] = "WaitUntil";
 let wait_cancelled: boolean = false;
@@ -33,39 +25,40 @@ let close_requested: boolean = false;
 let request_redraw: boolean = true;
 
 let buffer = new Uint32Array(0);
+let old_width: number = 0, old_height: number = 0;
 
 function prePresentNotify() {
     window.prePresentNotify();
 }
 
-function append_buffer(pixels: number) {
-    const old = buffer;
-    buffer = new Uint32Array(pixels);
-    buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
-    buffer.set(old);
-}
+function update_buffer(width: number, height: number) {
+    if (width === old_width && height === old_height) return;
 
-function slice_buffer(pixels: number) {
-    buffer = buffer.slice(-pixels);
+    const old = buffer;
+    buffer = new Uint32Array(width * height);
+    buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
+
+    for (let line = 0; line < Math.min(height, old_height); line++) {
+        const old_offset_end = (line + Math.max(old_height - height, 0) + 1) * old_width;
+        const old_line_buffer = old.slice(old_offset_end - Math.min(width, old_width), old_offset_end);
+        buffer.set(old_line_buffer, line * width);
+    }
 }
 
 function writeWithSize(width: number, height: number, view: Uint32Array) {
-    const pixels = width * height;
-    if (pixels > buffer.length) {
-        append_buffer(pixels);
-    }
-    if (pixels < buffer.length) {
-        slice_buffer(pixels);
-    }
+    update_buffer(width, height);
     // console.log(view);
-    view.set(buffer)
+    view.set(buffer);
+    old_width = width;
+    old_height = height;
 }
 
 function present() {
-    surface.presentWithWriterVec(writeWithSize);
+    surface.presentWithAlloc(writeWithSize);
 }
 
 const frame_stamps: number[] = [];
+const fps = () => frame_stamps.length;
 
 function stamps() {
     const now = Date.now();
@@ -73,7 +66,7 @@ function stamps() {
     while (frame_stamps[0] && frame_stamps[0] < pre) {
         frame_stamps.shift()
     }
-    frame_stamps.push(now)
+    frame_stamps.push(now);
 }
 
 function redraw() {
@@ -82,11 +75,9 @@ function redraw() {
     stamps();
 }
 
-const app = Application.withAsync({
+const app = Application.withAsyncFx2Safe({
     onNewEvents: (_eventLoop, cause) => {
-        if (cause.type === "WaitCancelled" && mode === "WaitUntil") {
-            wait_cancelled = true;
-        }
+        wait_cancelled = (cause.type === "WaitCancelled" && mode === "WaitUntil");
     },
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
@@ -114,6 +105,9 @@ const app = Application.withAsync({
                 if (logicalKey.ch === "r") {
                     request_redraw = !request_redraw;
                 }
+                if (logicalKey.ch === "s") {
+                    window.requestInnerSize({type: 'Logical', width: 480, height: 320});
+                }
             }
             if (logicalKey.type === "Named") {
                 if (logicalKey.name === "Escape") {
@@ -125,6 +119,7 @@ const app = Application.withAsync({
         }
         if (event.type === "RedrawRequested") {
             redraw();
+            console.log({ fps: fps() });
             return;
         }
         // console.log({ _windowId, event: event.type });
@@ -160,4 +155,8 @@ function pump() {
     process.exit(status.code);
 }
 
-threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
+while (true) {
+    await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
+    pump()
+}
+// threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);

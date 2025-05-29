@@ -1,6 +1,6 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.0.112",
+  "version": "0.0.113",
   "license": "MIT",
   "repository": {
     "url": "git+https://github.com/jerry4718/napi-winit.git"
@@ -28,13 +28,13 @@
     "./index.d.ts"
   ],
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.75",
+    "@napi-rs/cli": "^3.0.0-alpha.80",
     "ava": "^6.2.0"
   },
   "scripts": {
     "test": "ava",
     "build": "napi build --release --platform --strip",
-    "build:debug": "napi build",
+    "build:debug": "napi build --platform --strip",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
     "version": "napi version"

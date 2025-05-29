@@ -30,13 +30,13 @@ where
 
 #[macro_export] macro_rules! impl_from_into {
     ($pa: path => $pb:path: $from: ident =>  { $t_from: expr }) => {
-        impl $crate::extra::convert::ExInto<$pb> for $pa {
+        impl $crate::utils::convert::ExInto<$pb> for $pa {
             fn ex_into(self) -> $pb {
                 let $from = self;
                 $t_from
             }
         }
-        impl $crate::extra::convert::ExInto<Option<$pb>> for Option<$pa> {
+        impl $crate::utils::convert::ExInto<Option<$pb>> for Option<$pa> {
             fn ex_into(self) -> Option<$pb> {
                 match self {
                     None => None,
@@ -49,23 +49,23 @@ where
 
 // #[macro_export] macro_rules! impl_for_auto {
 //     ($($path: path), *) => {
-//         $(impl $crate::extra::convert::ExFromTag for $path {})*
+//         $(impl $crate::utils::convert::ExFromTag for $path {})*
 //     };
 // }
 
 #[macro_export] macro_rules! mark_ex_into {
     ($($path: path), *) => {
-        $(impl<T> $crate::extra::convert::ExIntoTag<T> for $path where $path: Into<T> {})*
+        $(impl<T> $crate::utils::convert::ExIntoTag<T> for $path where $path: Into<T> {})*
     };
     ($(($($path: path), *)),*) => {
-        $(impl<T> $crate::extra::convert::ExIntoTag<T> for ($($path),*) where ($($path),*): Into<T> {})*
+        $(impl<T> $crate::utils::convert::ExIntoTag<T> for ($($path),*) where ($($path),*): Into<T> {})*
     }
 }
 
 mod local_impl {
     use std::path::PathBuf;
     use winit::keyboard::SmolStr;
-    use crate::extra::convert::ExIntoTag;
+    use crate::utils::convert::ExIntoTag;
 
     impl_from_into!(PathBuf => String: from => { from.to_str().unwrap().into() });
     // impl_from_into!(SmolStr => String: from => { from.to_string() });
@@ -84,7 +84,7 @@ mod local_impl {
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::extra::convert::{ExInto, ExIntoTag, ExOptionInto};
+    use crate::utils::convert::{ExInto, ExIntoTag, ExOptionInto};
 
     #[derive(Debug)]
     struct Fr {

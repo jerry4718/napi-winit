@@ -135,7 +135,7 @@ impl ToTokens for TempStruct {
                 #[napi]
                 pub fn is_empty(&self) -> bool {
                     let Self { #( #flag_idents ),* } = self;
-                    false #( && !*#flag_idents )*
+                    true #( && !*#flag_idents )*
                 }
             }
         });
@@ -159,9 +159,9 @@ impl ToTokens for TempStruct {
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #toggle_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
+                    pub fn #toggle_idents(&mut self) -> &Self {
                         self.#flag_idents = !self.#flag_idents;
-                        this
+                        self
                     }
                 )*
             }
@@ -173,9 +173,9 @@ impl ToTokens for TempStruct {
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #insert_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
+                    pub fn #insert_idents(&mut self) -> &Self {
                         self.#flag_idents = true;
-                        this
+                        self
                     }
                 )*
             }
@@ -187,9 +187,9 @@ impl ToTokens for TempStruct {
             impl #name {
                 #(
                     #[napi(ts_return_type="this")]
-                    pub fn #remove_idents<'a>(&mut self, this: This<'a, Object>) -> This<'a, Object> {
+                    pub fn #remove_idents(&mut self) -> &Self {
                         self.#flag_idents = false;
-                        this
+                        self
                     }
                 )*
             }

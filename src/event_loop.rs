@@ -27,15 +27,13 @@ use crate::{
     application::public::{Application, Runner},
     cursor::{CustomCursor, CustomCursorSource},
     event::UserPayload,
-    extra::{
-        convert::ExInto,
-        time::Timeout
-    },
+    extra::time::Timeout,
     mark_ex_into,
     monitor::MonitorHandle,
     string_enum,
+    utils::convert::ExInto,
     window::{Theme, Window, WindowAttributes},
-    wrap_struct,
+    wrap_struct
 };
 
 wrap_struct!(struct EventLoop { inner: OriginEventLoop<UserPayload> });
@@ -63,12 +61,15 @@ impl EventLoop {
         let this = unsafe { Box::from_raw(self as *const _ as *mut EventLoop) };
 
         let result = match app.runner {
-            Runner::Async(ref mut handler) => this.inner.run_app(&mut handler.with_env(env)),
-            Runner::Sync(ref mut handler) => this.inner.run_app(&mut handler.with_env(env)),
-            Runner::AsyncRef(ref mut handler) => this.inner.run_app(&mut handler.borrow_back(&env)),
-            Runner::SyncRef(ref mut handler) => this.inner.run_app(&mut handler.borrow_back(&env)),
-            Runner::AsyncEnvRef(ref mut handler) => this.inner.run_app(handler),
-            Runner::SyncEnvRef(ref mut handler) => this.inner.run_app(handler),
+            Runner::AsyncFx(ref mut handler) => this.inner.run_app(handler),
+            Runner::SyncFx(ref mut handler) => this.inner.run_app(handler),
+            Runner::AsyncRef(ref mut handler) => this.inner.run_app(handler),
+            Runner::SyncRef(ref mut handler) => this.inner.run_app(handler),
+            Runner::AsyncRef2Fx(ref mut handler) => this.inner.run_app(&mut handler.borrow_back(&env)),
+            Runner::SyncRef2Fx(ref mut handler) => this.inner.run_app(&mut handler.borrow_back(&env)),
+            Runner::AsyncFx2Ref(ref mut handler) => this.inner.run_app(&mut handler.with_env(env)),
+            Runner::SyncFx2Ref(ref mut handler) => this.inner.run_app(&mut handler.with_env(env)),
+            Runner::AsyncFxSafe(ref mut handler) => this.inner.run_app(handler),
         };
 
         result.map_err(|e| Error::from_reason(format!("{}", e)))
@@ -77,12 +78,15 @@ impl EventLoop {
     #[napi]
     pub fn run_app_on_demand(&mut self, env: Env, app: &mut Application) -> Result<()> {
         let result = match app.runner {
-            Runner::Async(ref mut handler) => self.inner.run_app_on_demand(&mut handler.with_env(env)),
-            Runner::Sync(ref mut handler) => self.inner.run_app_on_demand(&mut handler.with_env(env)),
-            Runner::AsyncRef(ref mut handler) => self.inner.run_app_on_demand(&mut handler.borrow_back(&env)),
-            Runner::SyncRef(ref mut handler) => self.inner.run_app_on_demand(&mut handler.borrow_back(&env)),
-            Runner::AsyncEnvRef(ref mut handler) => self.inner.run_app_on_demand(handler),
-            Runner::SyncEnvRef(ref mut handler) => self.inner.run_app_on_demand(handler),
+            Runner::AsyncFx(ref mut handler) => self.inner.run_app_on_demand(handler),
+            Runner::SyncFx(ref mut handler) => self.inner.run_app_on_demand(handler),
+            Runner::AsyncRef(ref mut handler) => self.inner.run_app_on_demand(handler),
+            Runner::SyncRef(ref mut handler) => self.inner.run_app_on_demand(handler),
+            Runner::AsyncRef2Fx(ref mut handler) => self.inner.run_app_on_demand(&mut handler.borrow_back(&env)),
+            Runner::SyncRef2Fx(ref mut handler) => self.inner.run_app_on_demand(&mut handler.borrow_back(&env)),
+            Runner::AsyncFx2Ref(ref mut handler) => self.inner.run_app_on_demand(&mut handler.with_env(env)),
+            Runner::SyncFx2Ref(ref mut handler) => self.inner.run_app_on_demand(&mut handler.with_env(env)),
+            Runner::AsyncFxSafe(ref mut handler) => self.inner.run_app_on_demand(handler),
         };
 
         result.map_err(|e| Error::from_reason(format!("{}", e)))
@@ -93,12 +97,15 @@ impl EventLoop {
         let timeout = Some(Duration::from_millis(millis as u64));
 
         let result = match app.runner {
-            Runner::Async(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.with_env(env)),
-            Runner::Sync(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.with_env(env)),
-            Runner::AsyncRef(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.borrow_back(&env)),
-            Runner::SyncRef(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.borrow_back(&env)),
-            Runner::AsyncEnvRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-            Runner::SyncEnvRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
+            Runner::AsyncFx(ref mut handler) => self.inner.pump_app_events(timeout, handler),
+            Runner::SyncFx(ref mut handler) => self.inner.pump_app_events(timeout, handler),
+            Runner::AsyncRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
+            Runner::SyncRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
+            Runner::AsyncRef2Fx(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.borrow_back(&env)),
+            Runner::SyncRef2Fx(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.borrow_back(&env)),
+            Runner::AsyncFx2Ref(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.with_env(env)),
+            Runner::SyncFx2Ref(ref mut handler) => self.inner.pump_app_events(timeout, &mut handler.with_env(env)),
+            Runner::AsyncFxSafe(ref mut handler) => self.inner.pump_app_events(timeout, handler),
         };
 
         PumpStatus::from(result)

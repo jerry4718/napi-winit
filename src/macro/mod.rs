@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 #[macro_export] macro_rules! wrap_struct {
     ($(#[$attr: meta])* struct $name: ident ($origin: path)) => {
         #[napi]
@@ -74,13 +76,19 @@
     };
 }
 
+#[macro_export] macro_rules! code_point {
+    () => (format!("{}:{}:{}", file!(), line!(), column!()))
+}
+
+#[macro_export] macro_rules! print_err {
+    ($err: ident) => (eprintln!("handle_res:Error [{}]\n  {:?}", $crate::code_point!(), $err))
+}
+
 #[macro_export] macro_rules! handle_res {
     ($result: ident) => {
         match $result {
             Ok(_) => (),
-            Err(napi::bindgen_prelude::Error { status, reason, .. }) => {
-                println!("status: {}, reason: {}", status, reason);
-            }
+            Err(err) => $crate::print_err!(err),
         }
     };
 }
@@ -93,16 +101,19 @@
                 $crate::handle_res!(result);
             }),
             Ok(None) => return,
-            Err(err) => { println!("handle_result error {:?}", err); return },
+            Err(err) => return $crate::print_err!(err),
         }
     };
 }
 
-#[macro_export] macro_rules! pool_rop {
-    ($result: ident) => {
-        $crate::THREAD_POOL.execute(move || {
-            let result = $crate::flat_rop!($result: Some(promise) => pollster::block_on(promise));
-            $crate::handle_res!(result);
-        })
+#[macro_export] macro_rules! ok_or_reason {
+    ($from: expr) => {
+        ok_or_reason!($from; "{}")
+    };
+    ($from: expr; $display: literal) => {
+        match $from {
+            Ok(temp) => temp,
+            Err(err) => return Err(Error::from_reason(format!($display, err))),
+        }
     };
 }

@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "napi-winit"
-version = "0.0.112"
+version = "0.0.113"
 
 [lib]
 crate-type = ["cdylib"]
@@ -11,16 +11,15 @@ members = [ "./proc" ]
 
 [dependencies]
 proc = { path = "./proc" }
-pollster = "0.4.0"
 threadpool = "1.8.1"
 once_cell = "1.20.3"
 
 [dependencies.winit]
-version = "0.30.9"
+version = "0.30.11"
 features = [ "rwh_05", "rwh_06" ]
 
 [dependencies.tokio]
-version = "1.43.0"
+version = "1.45.0"
 features = [ "time" ]
 # features = [ "rt", "rt-multi-thread","time" ]
 
@@ -35,17 +34,17 @@ version = "0.6.2"
 features = [ "std" ]
 
 [dependencies.napi]
-version = "3.0.0-alpha.33"
+version = "3.0.0-beta.2"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.0.0-alpha.29"
+version = "3.0.0-beta.2"
 features = ["type-def"]
 
 [dependencies.ctor]
-version = "0.4.0"
+version = "0.4.2"
 
 [dependencies.softbuffer]
 version = "0.4.6"
@@ -67,7 +66,7 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.1.4"
+napi-build = "2.2.0"
 
 [profile.release]
 lto = true

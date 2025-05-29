@@ -26,14 +26,14 @@ use proc::proxy_enum;
 use crate::{
     dpi::{Position, Size},
     event_loop::AsyncRequestSerial,
-    extra::{
-        convert::ExInto,
-        helpers::{option_into, path_buf_to_string},
-        time::Timeout,
-    },
+    extra::time::Timeout,
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     mark_ex_into,
     string_enum,
+    utils::{
+        convert::ExInto,
+        helpers::{option_into, path_buf_to_string}
+    },
     window::{ActivationToken, Theme, WindowId},
     wrap_struct,
 };

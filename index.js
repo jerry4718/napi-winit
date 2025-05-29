@@ -35,7 +35,11 @@ const isMuslFromFilesystem = () => {
 }
 
 const isMuslFromReport = () => {
-  const report = typeof process.report.getReport === 'function' ? process.report.getReport() : null
+  let report = null
+  if (typeof process.report?.getReport === 'function') {
+    process.report.excludeNetwork = true
+    report = process.report.getReport()
+  }
   if (!report) {
     return null
   }
@@ -64,7 +68,7 @@ function requireNative() {
     try {
       nativeBinding = require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
     } catch (err) {
-      loadErrors.push(err);
+      loadErrors.push(err)
     }
   } else if (process.platform === 'android') {
     if (process.arch === 'arm64') {
@@ -370,6 +374,8 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports = nativeBinding
+module.exports.Extra = nativeBinding.Extra
 module.exports.Timeout = nativeBinding.Timeout
 module.exports.ActivationToken = nativeBinding.ActivationToken
 module.exports.ActiveEventLoop = nativeBinding.ActiveEventLoop
@@ -387,8 +393,6 @@ module.exports.Modifiers = nativeBinding.Modifiers
 module.exports.ModifiersState = nativeBinding.ModifiersState
 module.exports.MonitorHandle = nativeBinding.MonitorHandle
 module.exports.OwnedDisplayHandle = nativeBinding.OwnedDisplayHandle
-module.exports.SoftSurface = nativeBinding.SoftSurface
-module.exports.ThreadPool = nativeBinding.ThreadPool
 module.exports.Touch = nativeBinding.Touch
 module.exports.UserPayload = nativeBinding.UserPayload
 module.exports.VideoModeHandle = nativeBinding.VideoModeHandle
@@ -396,7 +400,6 @@ module.exports.Window = nativeBinding.Window
 module.exports.WindowAttributes = nativeBinding.WindowAttributes
 module.exports.WindowButtons = nativeBinding.WindowButtons
 module.exports.WindowId = nativeBinding.WindowId
-module.exports.asyncSleep = nativeBinding.asyncSleep
 module.exports.CursorGrabMode = nativeBinding.CursorGrabMode
 module.exports.CursorIcon = nativeBinding.CursorIcon
 module.exports.DeviceEvents = nativeBinding.DeviceEvents
@@ -407,13 +410,7 @@ module.exports.KeyCode = nativeBinding.KeyCode
 module.exports.KeyLocation = nativeBinding.KeyLocation
 module.exports.ModifiersKeyState = nativeBinding.ModifiersKeyState
 module.exports.NamedKey = nativeBinding.NamedKey
-module.exports.pollsterInterval = nativeBinding.pollsterInterval
 module.exports.ResizeDirection = nativeBinding.ResizeDirection
-module.exports.SurfaceSystem = nativeBinding.SurfaceSystem
 module.exports.Theme = nativeBinding.Theme
-module.exports.threadInterval = nativeBinding.threadInterval
-module.exports.tokioCallSpawn = nativeBinding.tokioCallSpawn
-module.exports.tokioInterval = nativeBinding.tokioInterval
-module.exports.tokioSleep = nativeBinding.tokioSleep
 module.exports.UserAttentionType = nativeBinding.UserAttentionType
 module.exports.WindowLevel = nativeBinding.WindowLevel

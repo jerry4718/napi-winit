@@ -16,12 +16,12 @@ use winit::keyboard::{
 use proc::{proxy_enum, proxy_flags};
 
 use crate::{
-    extra::{
-        convert::ExInto,
-        helpers::to_option_string,
-    },
     mark_ex_into,
-    string_enum
+    string_enum,
+    utils::{
+        convert::ExInto,
+        helpers::to_option_string
+    }
 };
 
 #[proxy_enum(origin_enum = winit::keyboard::NativeKeyCode, skip_backward)]

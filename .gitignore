@@ -1,5 +1,7 @@
 .idea
 deno.lock
+yarn.lock
+pnpm-lockfile.yaml
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
