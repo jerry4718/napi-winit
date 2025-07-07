@@ -49,7 +49,7 @@ impl CustomCursor {
     pub fn from_rgba(rgba: Uint8Array, width: u16, height: u16, hotspot_x: u16, hotspot_y: u16) -> Result<CustomCursorSource> {
         OriginCustomCursor::from_rgba(rgba.to_vec(), width, height, hotspot_x, hotspot_y)
             .map(CustomCursorSource::from)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
 }
 

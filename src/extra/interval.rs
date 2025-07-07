@@ -7,9 +7,14 @@ pub mod namespace {
         Error,
         threadsafe_function::ThreadsafeFunction,
     };
-    use crate::{extra::time::Timeout, handle_res, THREAD_POOL};
-
+    use crate::{
+        extra::time::Timeout,
+        handle_res,
+        THREAD_POOL,
+        utils::alias::ThreadsafeNoCallee
+    };
     #[napi]
+
     pub fn tokio_interval(
         timeout: Timeout,
         #[napi(ts_arg_type = "() => (Promise<void> | void)")]
@@ -31,7 +36,7 @@ pub mod namespace {
         THREAD_POOL.execute(move || block_on(inner_loop(duration, task)))
     }
 
-    async fn inner_loop(duration: Duration, exec: ThreadsafeFunction<(), (), (), false>) -> () {
+    async fn inner_loop(duration: Duration, exec: ThreadsafeNoCallee<(), ()>) -> () {
         loop {
             let sleep = tokio::time::sleep(duration);
             let result = exec.call_async(()).await;

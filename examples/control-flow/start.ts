@@ -22,7 +22,7 @@ let surface: Extra.SoftSurface;
 let mode: ControlFlow["type"] = "WaitUntil";
 let wait_cancelled: boolean = false;
 let close_requested: boolean = false;
-let request_redraw: boolean = true;
+let request_redraw: boolean = false;
 
 let buffer = new Uint32Array(0);
 let old_width: number = 0, old_height: number = 0;
@@ -75,6 +75,14 @@ function redraw() {
     stamps();
 }
 
+let prev = 0;
+function print_fps() {
+    const now = Date.now();
+    if (now - prev <= 30) return;
+    prev = now;
+    console.log({ fps: fps() });
+}
+
 const app = Application.withAsyncFx2Safe({
     onNewEvents: (_eventLoop, cause) => {
         wait_cancelled = (cause.type === "WaitCancelled" && mode === "WaitUntil");
@@ -119,7 +127,7 @@ const app = Application.withAsyncFx2Safe({
         }
         if (event.type === "RedrawRequested") {
             redraw();
-            console.log({ fps: fps() });
+            print_fps();
             return;
         }
         // console.log({ _windowId, event: event.type });

@@ -10,6 +10,7 @@ use crate::{
     },
     event_loop::ActiveEventLoop,
     window::WindowId,
+    utils::alias::ThreadsafeNoCallee,
 };
 
 #[napi(object, object_to_js = false)]
@@ -115,18 +116,16 @@ pub(crate) struct OptionsFxHolder<'scope, Return: FromNapiValue> {
     pub on_memory_warning: Option<Function<'scope, FnArgs<(ActiveEventLoop,)>, Return>>,
 }
 
-type FunctionSafe<T, R> = ThreadsafeFunction<T, R, T, false>;
-
 pub(crate) struct OptionsSafeHolder<Return: 'static + FromNapiValue> {
-    pub on_new_events: Option<FunctionSafe<FnArgs<(ActiveEventLoop, StartCause)>, Return>>,
-    pub on_resumed: FunctionSafe<FnArgs<(ActiveEventLoop,)>, Return>,
-    pub on_user_event: Option<FunctionSafe<FnArgs<(ActiveEventLoop, UserPayload)>, Return>>,
-    pub on_window_event: FunctionSafe<FnArgs<(ActiveEventLoop, WindowId, WindowEvent)>, Return>,
-    pub on_device_event: Option<FunctionSafe<FnArgs<(ActiveEventLoop, DeviceId, DeviceEvent)>, Return>>,
-    pub on_about_to_wait: Option<FunctionSafe<FnArgs<(ActiveEventLoop,)>, Return>>,
-    pub on_suspended: Option<FunctionSafe<FnArgs<(ActiveEventLoop,)>, Return>>,
-    pub on_exiting: Option<FunctionSafe<FnArgs<(ActiveEventLoop,)>, Return>>,
-    pub on_memory_warning: Option<FunctionSafe<FnArgs<(ActiveEventLoop,)>, Return>>,
+    pub on_new_events: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop, StartCause)>, Return>>,
+    pub on_resumed: ThreadsafeNoCallee<FnArgs<(ActiveEventLoop,)>, Return>,
+    pub on_user_event: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop, UserPayload)>, Return>>,
+    pub on_window_event: ThreadsafeNoCallee<FnArgs<(ActiveEventLoop, WindowId, WindowEvent)>, Return>,
+    pub on_device_event: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop, DeviceId, DeviceEvent)>, Return>>,
+    pub on_about_to_wait: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop,)>, Return>>,
+    pub on_suspended: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop,)>, Return>>,
+    pub on_exiting: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop,)>, Return>>,
+    pub on_memory_warning: Option<ThreadsafeNoCallee<FnArgs<(ActiveEventLoop,)>, Return>>,
 }
 
 macro_rules! borrow_back {

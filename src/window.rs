@@ -347,7 +347,7 @@ impl Icon {
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
         OriginIcon::from_rgba(rgba.to_vec(), width, height)
             .map(Self::from)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
 }
 
@@ -393,14 +393,14 @@ impl Window {
     pub fn inner_position(&self) -> Result<Position> {
         self.inner.inner_position()
             .map(Position::from)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
 
     #[napi]
     pub fn outer_position(&self) -> Result<Position> {
         self.inner.outer_position()
             .map(Position::from)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
 
     #[napi]
@@ -577,12 +577,12 @@ impl Window {
     #[napi]
     pub fn set_cursor_position(&self, position: Position) -> Result<()> {
         self.inner.set_cursor_position(position)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
     #[napi]
     pub fn set_cursor_grab(&self, mode: CursorGrabMode) -> Result<()> {
         self.inner.set_cursor_grab(mode.into())
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
     #[napi]
     pub fn set_cursor_visible(&self, visible: bool) {
@@ -591,12 +591,12 @@ impl Window {
     #[napi]
     pub fn drag_window(&self) -> Result<()> {
         self.inner.drag_window()
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
     #[napi]
     pub fn drag_resize_window(&self, direction: ResizeDirection) -> Result<()> {
         self.inner.drag_resize_window(direction.into())
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
     #[napi]
     pub fn show_window_menu(&self, position: Position) {
@@ -605,7 +605,7 @@ impl Window {
     #[napi]
     pub fn set_cursor_hittest(&self, hittest: bool) -> Result<()> {
         self.inner.set_cursor_hittest(hittest)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
 }
 

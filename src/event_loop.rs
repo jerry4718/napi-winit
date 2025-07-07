@@ -72,7 +72,7 @@ impl EventLoop {
             Runner::AsyncFxSafe(ref mut handler) => this.inner.run_app(handler),
         };
 
-        result.map_err(|e| Error::from_reason(format!("{}", e)))
+        result.map_err(|e| Error::from_reason(format!("{e}")))
     }
 
     #[napi]
@@ -89,7 +89,7 @@ impl EventLoop {
             Runner::AsyncFxSafe(ref mut handler) => self.inner.run_app_on_demand(handler),
         };
 
-        result.map_err(|e| Error::from_reason(format!("{}", e)))
+        result.map_err(|e| Error::from_reason(format!("{e}")))
     }
 
     #[napi]
@@ -134,7 +134,7 @@ impl ActiveEventLoop {
     pub fn create_window(&self, window_attributes: &WindowAttributes) -> Result<Window> {
         inner_ref!(self).create_window(window_attributes.clone().into())
             .map(Window::from)
-            .map_err(|e| Error::from_reason(format!("{}", e)))
+            .map_err(|e| Error::from_reason(format!("{e}")))
     }
     // #[napi]
     // pub fn create_custom_cursor(&self, custom_cursor: &CustomCursorSource) -> CustomCursor {

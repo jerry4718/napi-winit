@@ -24,8 +24,9 @@ pub mod rwh_05_impl {
     use crate::window::Window;
     use napi::bindgen_prelude::*;
     use rwh_05::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
-
+    use crate::napi_reason;
     #[napi]
+
     pub fn get_rwh_05_options(window: &Window) -> Result<SurfaceOptions> {
         let raw_window_handle = window.inner.raw_window_handle();
         let raw_display_handle = window.inner.raw_display_handle();
@@ -69,7 +70,7 @@ pub mod rwh_05_impl {
                     display_handle: BigInt::from(display.display as u64),
                 })
             }
-            _ => Err(Error::from_reason("unimplemented for this platform")),
+            _ => napi_reason!("unimplemented for this platform"),
         }
     }
 }
@@ -81,17 +82,17 @@ mod rwh_06_impl {
     use crate::window::Window;
     use napi::bindgen_prelude::*;
     use rwh_06::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
-
+    use crate::napi_reason;
 
     // #[napi]
     pub fn get_rwh_06_options(window: &Window) -> Result<SurfaceOptions> {
         let window_handle = match window.inner.window_handle() {
-            Err(e) => return Err(Error::from_reason(format!("{e}"))),
+            Err(e) => return napi_reason!("{e}"),
             Ok(handle) => handle.as_raw(),
         };
 
         let display_handle = match window.inner.display_handle() {
-            Err(e) => return Err(Error::from_reason(format!("{e}"))),
+            Err(e) => return napi_reason!("{e}"),
             Ok(handle) => handle.as_raw(),
         };
 
@@ -142,7 +143,7 @@ mod rwh_06_impl {
                     display_handle: BigInt::from(display.display.as_ptr() as u64),
                 })
             }
-            _ => Err(Error::from_reason("unimplemented for this platform")),
+            _ => napi_reason!("unimplemented for this platform"),
         }
     }
 }

@@ -28,7 +28,7 @@
     "./index.d.ts"
   ],
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.80",
+    "@napi-rs/cli": "^3.0.0-alpha.92",
     "ava": "^6.2.0"
   },
   "scripts": {
