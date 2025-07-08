@@ -21,7 +21,6 @@ use crate::{
     monitor::MonitorHandle,
     napi_reason,
     string_enum,
-    utils::convert::ExInto,
     wrap_struct
 };
 
