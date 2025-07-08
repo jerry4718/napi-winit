@@ -16,12 +16,8 @@ use winit::keyboard::{
 use proc::{proxy_enum, proxy_flags};
 
 use crate::{
-    mark_ex_into,
     string_enum,
-    utils::{
-        convert::ExInto,
-        helpers::to_option_string
-    }
+    utils::helpers::to_option_string
 };
 
 #[proxy_enum(origin_enum = winit::keyboard::NativeKeyCode, skip_backward)]
@@ -152,27 +148,4 @@ string_enum!(
         Pressed,
         Unknown,
     }
-);
-
-mark_ex_into!(
-    OriginNativeKeyCode,
-    OriginNativeKey,
-    OriginKey,
-    OriginKeyCode,
-    OriginNamedKey,
-    OriginKeyLocation,
-    OriginModifiersState,
-    OriginModifiersKeyState,
-    OriginPhysicalKey,
-    SmolStr,
-    // local
-    NativeKeyCode,
-    NativeKey,
-    Key,
-    KeyCode,
-    NamedKey,
-    KeyLocation,
-    ModifiersState,
-    ModifiersKeyState,
-    PhysicalKey
 );

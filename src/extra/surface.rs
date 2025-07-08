@@ -25,8 +25,8 @@ pub mod namespace {
     use super::*;
     use crate::{
         window::Window,
-        ok_or_reason,
         napi_reason,
+        ok_or_reason,
         utils::alias::ThreadsafeNoCallee
     };
     use napi::{
@@ -70,7 +70,7 @@ pub mod namespace {
                 let dest_len = buffer.len();
 
                 if src_len != dest_len {
-                    return napi_reason!("source slice length ({src_len}) does not match destination slice length ({dest_len})");
+                    return Err(napi_reason!("source slice length ({src_len}) does not match destination slice length ({dest_len})"));
                 }
 
                 buffer.copy_from_slice(input.as_ref());
@@ -82,7 +82,7 @@ pub mod namespace {
         pub fn present_with_buffer(&mut self, buffer: Buffer) -> Result<()> {
             let buf_len = buffer.len();
             if buf_len % 4 != 0 {
-                return napi_reason!("input buffer length not align to 32 bits");
+                return Err(napi_reason!("input buffer length not align to 32 bits"));
             }
 
             let src_ptr = buffer.as_ptr().cast::<u32>().cast_mut();
@@ -92,7 +92,7 @@ pub mod namespace {
                 let dest_len = buffer.len();
 
                 if src_len != dest_len {
-                    return napi_reason!("source slice length ({src_len}) does not match destination slice length ({dest_len})");
+                    return Err(napi_reason!("source slice length ({src_len}) does not match destination slice length ({dest_len})"));
                 }
 
                 buffer.copy_from_slice(unsafe { slice::from_raw_parts(src_ptr, src_len) });
@@ -175,7 +175,7 @@ pub mod namespace {
             Some(ref mut context) => context,
             None => match Context::new(surf.window) {
                 Ok(context) => surf.context.insert(context),
-                Err(e) => return napi_reason!("Failed to create buffer context: {e}"),
+                Err(e) => return Err(napi_reason!("Failed to create buffer context: {e}")),
             }
         };
 
@@ -183,26 +183,26 @@ pub mod namespace {
             Some(ref mut surface) => surface,
             None => match Surface::new(&context, surf.window) {
                 Ok(surface) => surf.surface.insert(surface),
-                Err(e) => return napi_reason!("Failed to create buffer surface: {e}"),
+                Err(e) => return Err(napi_reason!("Failed to create buffer surface: {e}")),
             }
         };
 
         let size = surf.window.inner_size();
 
         let Some(width) = NonZeroU32::new(size.width)
-        else { return napi_reason!("invalid window size [width: {}]", size.width) };
+        else { return Err(napi_reason!("invalid window size [width: {}]", size.width)) };
 
         let Some(height) = NonZeroU32::new(size.height)
-        else { return napi_reason!("invalid window size [height: {}]", size.height) };
+        else { return Err(napi_reason!("invalid window size [height: {}]", size.height)) };
 
         if let Err(e) = surface.resize(width, height) {
-            return napi_reason!("failed to resize surface: {e}");
+            return Err(napi_reason!("failed to resize surface: {e}"));
         }
 
         let (err, res) = flat_result(surface.buffer_mut());
 
         if let Some(e) = err {
-            return napi_reason!("failed to access buffer: {e}");
+            return Err(napi_reason!("failed to access buffer: {e}"));
         }
 
         let Some(mut buffer) = res else { unreachable!("never handled") };
@@ -210,6 +210,6 @@ pub mod namespace {
         ok_or_reason!(write_fn(width, height, &mut buffer); "{}");
 
         buffer.present()
-            .map_err(|e| Error::from_reason(format!("failed to access buffer: {e}")))
+            .map_err(|e| napi_reason!("failed to access buffer: {e}"))
     }
 }

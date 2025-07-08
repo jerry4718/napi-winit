@@ -28,12 +28,8 @@ use crate::{
     event_loop::AsyncRequestSerial,
     extra::time::Timeout,
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
-    mark_ex_into,
     string_enum,
-    utils::{
-        convert::ExInto,
-        helpers::{option_into, path_buf_to_string}
-    },
+    utils::helpers::{option_into, path_buf_to_string},
     window::{ActivationToken, Theme, WindowId},
     wrap_struct,
 };
@@ -187,7 +183,7 @@ impl KeyEvent {
     }
     #[napi(getter)]
     pub fn text(&self) -> Option<String> {
-        self.origin.text.clone().map(ExInto::ex_into)
+        self.origin.text.clone().map(String::from)
     }
     #[napi(getter)]
     pub fn location(&self) -> KeyLocation {
@@ -279,40 +275,4 @@ string_enum!(
         Pressed,
         Released,
     }
-);
-
-mark_ex_into!(
-    OriginDeviceEvent,
-    OriginDeviceId,
-    OriginEvent<UserPayload>,
-    OriginStartCause,
-    OriginWindowEvent,
-    OriginKeyEvent,
-    OriginModifiers,
-    OriginIme,
-    OriginMouseScrollDelta,
-    OriginTouchPhase,
-    OriginElementState,
-    OriginMouseButton,
-    OriginTouch,
-    OriginInnerSizeWriter,
-    OriginRawKeyEvent,
-    OriginTheme,
-    // local
-    UserPayload,
-    Event,
-    StartCause,
-    WindowEvent,
-    DeviceId,
-    RawKeyEvent,
-    KeyEvent,
-    Modifiers,
-    Ime,
-    MouseButton,
-    MouseScrollDelta,
-    InnerSizeWriter,
-    TouchPhase,
-    Touch,
-    DeviceEvent,
-    ElementState
 );

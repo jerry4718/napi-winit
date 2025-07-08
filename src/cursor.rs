@@ -8,7 +8,7 @@ use winit::window::{
     Icon as OriginIcon
 };
 
-use crate::{mark_ex_into, string_enum, wrap_struct};
+use crate::{napi_reason, string_enum, wrap_struct};
 
 string_enum!(
     enum CursorIcon => OriginCursorIcon {
@@ -49,17 +49,6 @@ impl CustomCursor {
     pub fn from_rgba(rgba: Uint8Array, width: u16, height: u16, hotspot_x: u16, hotspot_y: u16) -> Result<CustomCursorSource> {
         OriginCustomCursor::from_rgba(rgba.to_vec(), width, height, hotspot_x, hotspot_y)
             .map(CustomCursorSource::from)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
 }
-
-mark_ex_into!(
-    OriginCursorIcon,
-    OriginCursor,
-    OriginCustomCursor,
-    OriginCustomCursorSource,
-    CursorIcon,
-    Cursor,
-    CustomCursor,
-    CustomCursorSource
-);

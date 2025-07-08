@@ -67,24 +67,26 @@ mod local_impl {
     use winit::keyboard::SmolStr;
     use crate::utils::convert::ExIntoTag;
 
-    impl_from_into!(PathBuf => String: from => { from.to_str().unwrap().into() });
+    // impl_from_into!(PathBuf => String: from => { from.to_str().unwrap().into() });
     // impl_from_into!(SmolStr => String: from => { from.to_string() });
-    impl_from_into!(char => String: from => { from.to_string() });
+    // impl_from_into!(char => String: from => { from.to_string() });
 
-    mark_ex_into!(String);
+    // mark_ex_into!(String);
 
-    mark_ex_into!(
-        u8, u16, u32, u64, u128, usize,
-        i8, i16, i32, i64, i128, isize,
-        f32, f64,
-        bool
-    );
+    // mark_ex_into!(
+    //     u8, u16, u32, u64, u128, usize,
+    //     i8, i16, i32, i64, i128, isize,
+    //     f32, f64,
+    //     bool
+    // );
 }
 
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
     use crate::utils::convert::{ExInto, ExIntoTag, ExOptionInto};
+
+    impl_from_into!(PathBuf => String: from => { from.to_str().unwrap().into() });
 
     #[derive(Debug)]
     struct Fr {

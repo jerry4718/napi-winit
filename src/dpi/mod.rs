@@ -10,7 +10,6 @@ use winit::{
     dpi::Position as OriginPosition,
     dpi::Size as OriginSize,
 };
-use crate::mark_ex_into;
 
 #[napi]
 #[derive(Clone)]
@@ -177,20 +176,3 @@ impl Into<OriginPixelUnit> for PixelUnit {
         }
     }
 }
-
-mark_ex_into!(
-    OriginPhysicalSize<u32>,
-    OriginPhysicalPosition<i32>,
-    OriginPhysicalPosition<f64>,
-    OriginPhysicalPosition<f32>,
-    // local
-    Position,
-    Size,
-    PixelUnit
-);
-
-mark_ex_into!(
-    // f**k
-    (usize, usize),
-    (f64, f64)
-);

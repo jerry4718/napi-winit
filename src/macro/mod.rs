@@ -113,13 +113,13 @@ use std::fmt::format;
     ($from: expr; $display: literal) => {
         match $from {
             Ok(temp) => temp,
-            Err(err) => return napi_reason!($display, err),
+            Err(err) => return Err(napi_reason!($display, err)),
         }
     };
 }
 
 #[macro_export] macro_rules! napi_reason {
     ($display: literal $(, $args: expr )*) => {
-        Err(napi::Error::from_reason(format!($display $(, $args)*)))
+        napi::Error::from_reason(format!($display $(, $args)*))
     };
 }

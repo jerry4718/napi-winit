@@ -18,8 +18,8 @@ use proc::proxy_flags;
 use crate::{
     cursor::{Cursor, CursorIcon},
     dpi::{Position, Size},
-    mark_ex_into,
     monitor::MonitorHandle,
+    napi_reason,
     string_enum,
     utils::convert::ExInto,
     wrap_struct
@@ -347,11 +347,12 @@ impl Icon {
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
         OriginIcon::from_rgba(rgba.to_vec(), width, height)
             .map(Self::from)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
+wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));
+wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
 wrap_struct!(struct Window { inner: OriginWindow });
 
 #[napi]
@@ -393,14 +394,14 @@ impl Window {
     pub fn inner_position(&self) -> Result<Position> {
         self.inner.inner_position()
             .map(Position::from)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
     pub fn outer_position(&self) -> Result<Position> {
         self.inner.outer_position()
             .map(Position::from)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
@@ -577,12 +578,12 @@ impl Window {
     #[napi]
     pub fn set_cursor_position(&self, position: Position) -> Result<()> {
         self.inner.set_cursor_position(position)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
     #[napi]
     pub fn set_cursor_grab(&self, mode: CursorGrabMode) -> Result<()> {
         self.inner.set_cursor_grab(mode.into())
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
     #[napi]
     pub fn set_cursor_visible(&self, visible: bool) {
@@ -591,12 +592,12 @@ impl Window {
     #[napi]
     pub fn drag_window(&self) -> Result<()> {
         self.inner.drag_window()
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
     #[napi]
     pub fn drag_resize_window(&self, direction: ResizeDirection) -> Result<()> {
         self.inner.drag_resize_window(direction.into())
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
     #[napi]
     pub fn show_window_menu(&self, position: Position) {
@@ -605,7 +606,7 @@ impl Window {
     #[napi]
     pub fn set_cursor_hittest(&self, hittest: bool) -> Result<()> {
         self.inner.set_cursor_hittest(hittest)
-            .map_err(|e| Error::from_reason(format!("{e}")))
+            .map_err(|e| napi_reason!("{e}"))
     }
 }
 
@@ -638,14 +639,3 @@ string_enum!(enum ResizeDirection => winit::window::ResizeDirection {
     SouthWest,
     West,
 });
-
-mark_ex_into!(
-    OriginWindow,
-    OriginWindowId,
-    OriginActivationToken,
-    // local
-    Window,
-    Theme,
-    WindowId,
-    ActivationToken
-);
