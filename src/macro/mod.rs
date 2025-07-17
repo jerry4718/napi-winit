@@ -39,33 +39,6 @@ use std::fmt::format;
     }
 }
 
-#[macro_export] macro_rules! string_enum {
-    ($(#[$attr: meta])* enum $name: ident => $origin: path { $($variant: ident),* $(,)? } $($never: literal)?) => {
-        #[napi(string_enum)]
-        $(#[$attr])*
-        pub enum $name {
-            $($variant,)*
-        }
-
-        impl From<$origin> for $name {
-            fn from(origin: $origin) -> Self {
-                match origin {
-                    $(<$origin>::$variant => Self::$variant,)*
-                    $(_ => unreachable!($never),)?
-                }
-            }
-        }
-
-        impl Into<$origin> for $name {
-            fn into(self) -> $origin {
-                match self {
-                    $($name::$variant => <$origin>::$variant,)*
-                }
-            }
-        }
-    }
-}
-
 #[macro_export] macro_rules! flat_rop {
     ($result: ident: Some($promise: ident) => $($tt: tt)*) => {
         match $result {

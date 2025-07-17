@@ -5,7 +5,7 @@ use quote::{
     quote,
     quote_spanned,
     IdentFragment,
-    ToTokens
+    ToTokens,
 };
 use syn::{parse_macro_input, spanned::Spanned, Attribute, Block, Expr, ExprBlock, ExprClosure, ExprPath, Field, Fields, Ident, ItemEnum, Meta, MetaNameValue, Path, PathSegment, Type, TypePath, Variant};
 
@@ -24,6 +24,8 @@ struct TempEnum {
     pub reserved_attrs: Vec<Attribute>,
     pub temp_variants: Vec<TempVariant>,
     pub origin_enum: Type,
+    pub string_enum: bool,
+    pub non_exhaustive: bool,
     pub skip_forward: bool,
     pub skip_backward: bool,
 }
@@ -49,6 +51,7 @@ struct TempVariant {
     pub like: FieldsLike,
     pub reserved_attrs: Vec<Attribute>,
     pub temp_fields: Vec<TempField>,
+    pub string_enum: bool,
 }
 
 enum ConvUsage {
@@ -109,8 +112,8 @@ fn parse_conv_closure(ident: &Ident, conv_usage: &ConvUsage) -> TokenStream {
     // })
 
     match conv_usage {
-        ConvUsage::Path(path) => quote_spanned!{ path.span() => (#path(#ident)) },
-        ConvUsage::Closure(closure) => quote_spanned!{ closure.span() => ((#closure)(#ident)) },
+        ConvUsage::Path(path) => quote_spanned! { path.span() => (#path(#ident)) },
+        ConvUsage::Closure(closure) => quote_spanned! { closure.span() => ((#closure)(#ident)) },
     }
 }
 
@@ -125,7 +128,7 @@ macro_rules! conv_use_if {
     };
 }
 
-fn conv_from_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStream {
+fn conv_structure_from(variant: &TempVariant, origin_type: &Type) -> TokenStream {
     let TempVariant { input: Variant { ident, .. }, .. } = variant;
     let dispose = map_temp_fields(
         variant, Kind::Dispose, With::Origin,
@@ -138,7 +141,7 @@ fn conv_from_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStrea
     quote! { #origin_type::#ident #dispose => Self::#ident #compose }
 }
 
-fn conv_into_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStream {
+fn conv_structure_into(variant: &TempVariant, origin_type: &Type) -> TokenStream {
     let TempVariant { input: Variant { ident, .. }, .. } = variant;
     let dispose = map_temp_fields(
         variant, Kind::Dispose, With::Proxy,
@@ -151,54 +154,83 @@ fn conv_into_branch((variant, origin_type): (&TempVariant, &Type)) -> TokenStrea
     quote! { Self::#ident #dispose => #origin_type::#ident #compose }
 }
 
+fn conv_unit_from(variant: &TempVariant, origin_type: &Type) -> TokenStream {
+    let TempVariant { input: Variant { ident, .. }, .. } = variant;
+    quote! { #origin_type::#ident => Self::#ident }
+}
+
+fn conv_unit_into(variant: &TempVariant, origin_type: &Type) -> TokenStream {
+    let TempVariant { input: Variant { ident, .. }, .. } = variant;
+    quote! { Self::#ident => #origin_type::#ident }
+}
+
+enum NonExhaustive {
+    Variant,
+    From,
+    Into,
+}
+
 impl ToTokens for TempEnum {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, reserved_attrs, temp_variants, origin_enum: origin_type, skip_forward, skip_backward } = self;
+        let Self { input, reserved_attrs, temp_variants, origin_enum: origin_type, string_enum, non_exhaustive, skip_forward, skip_backward } = self;
 
         let ItemEnum { ident, vis, .. } = input;
 
         let mut napi_metas = Vec::new();
+        if *string_enum { napi_metas.push(quote! {string_enum}) }
         if *skip_forward { napi_metas.push(quote! {object_to_js = false}) }
         if *skip_backward { napi_metas.push(quote! {object_from_js = false}) }
+
+        let non_exhaustive_variant = if !(*non_exhaustive) { vec![] }
+        else { vec![quote! { NonExhaustive }] };
 
         append_to_tokens(tokens, quote_spanned! { input.span() =>
             #[napi( #( #napi_metas ),* )]
             #( #reserved_attrs )*
             #vis enum #ident {
-                #( #temp_variants ),*
+                #( #temp_variants, )*
+                #( #non_exhaustive_variant, )*
             }
         });
 
-        if !skip_forward {
+        if !*skip_forward {
+            let conv = if !*string_enum { conv_structure_from } else { conv_unit_from };
             let conv_from: Vec<_> = temp_variants
                 .iter()
-                .zip(vec![origin_type; temp_variants.len()])
-                .map(conv_from_branch)
+                .map(|variant| conv(variant, origin_type))
                 .collect();
+
+            let non_exhaustive_from = if !(*non_exhaustive) { vec![] }
+            else { vec![quote! { _ => Self::NonExhaustive }] };
 
             append_to_tokens(tokens, quote! {
                 impl From<#origin_type> for #ident {
                     fn from(value: #origin_type) -> Self {
                         match value {
-                            #( #conv_from ),*
+                            #( #conv_from, )*
+                            #( #non_exhaustive_from, )*
                         }
                     }
                 }
             });
         }
 
-        if !skip_backward {
+        if !*skip_backward {
+            let conv = if !*string_enum { conv_structure_into } else { conv_unit_into };
             let conv_into: Vec<_> = temp_variants
                 .iter()
-                .zip(vec![origin_type; temp_variants.len()])
-                .map(conv_into_branch)
+                .map(|variant| conv(variant, origin_type))
                 .collect();
+
+            let non_exhaustive_into = if !(*non_exhaustive) { vec![] }
+            else { vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }] };
 
             append_to_tokens(tokens, quote! {
                 impl Into<#origin_type> for #ident {
                     fn into(self) -> #origin_type {
                         match self {
-                            #( #conv_into ),*
+                            #( #conv_into, )*
+                            #( #non_exhaustive_into, )*
                         }
                     }
                 }
@@ -209,9 +241,15 @@ impl ToTokens for TempEnum {
 
 impl ToTokens for TempVariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, like, reserved_attrs, temp_fields } = self;
+        let Self { input, like, reserved_attrs, temp_fields, string_enum } = self;
         let Variant { ident, fields, .. } = input;
 
+        if *string_enum {
+            append_to_tokens(tokens, quote_spanned! { input.span() =>
+                #( #reserved_attrs )* #ident
+            });
+            return;
+        }
         append_to_tokens(tokens, quote_spanned! { input.span() =>
             #( #reserved_attrs )*
             #ident { #( #temp_fields ),* }
@@ -238,6 +276,8 @@ const ATTR_INCLUDES: &[&str] = &[
 ];
 
 const META_ORIGIN_ENUM: &str = "origin_enum";
+const META_STRING_ENUM: &str = "string_enum";
+const META_NON_EXHAUSTIVE: &str = "non_exhaustive";
 const META_SKIP_FORWARD: &str = "skip_forward";
 const META_SKIP_BACKWARD: &str = "skip_backward";
 const META_FIELD_NAME: &str = "field_name";
@@ -266,23 +306,25 @@ fn temp_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> TempEnum {
 
     map_meta_to_local!(&metas => {
         META_ORIGIN_ENUM => origin_enum,
+        META_STRING_ENUM => string_enum,
+        META_NON_EXHAUSTIVE => non_exhaustive,
         META_SKIP_FORWARD => skip_forward,
         META_SKIP_BACKWARD => skip_backward,
     });
 
-    let origin_enum = get_type_ty_or(&origin_enum, &format_ident!("Origin{}", ident));
-
     TempEnum {
         input: item_enum.clone(),
         reserved_attrs: surplus,
-        temp_variants: temp_variants(variants.iter().collect()),
-        origin_enum,
+        temp_variants: temp_variants(string_enum.is_some(), variants.iter().collect()),
+        origin_enum: get_type_ty_or(&origin_enum, &format_ident!("Origin{}", ident)),
+        string_enum: string_enum.is_some(),
+        non_exhaustive: non_exhaustive.is_some(),
         skip_forward: skip_forward.is_some(),
         skip_backward: skip_backward.is_some(),
     }
 }
 
-fn temp_variants(variants: Vec<&Variant>) -> Vec<TempVariant> {
+fn temp_variants(string_enum: bool, variants: Vec<&Variant>) -> Vec<TempVariant> {
     variants.iter()
         .map(|variant| {
             let Variant { attrs, fields, ident, .. } = variant;
@@ -306,6 +348,7 @@ fn temp_variants(variants: Vec<&Variant>) -> Vec<TempVariant> {
                 like: field_like,
                 reserved_attrs: surplus,
                 temp_fields: temp_fields(fields.iter().collect()),
+                string_enum,
             }
         })
         .collect()

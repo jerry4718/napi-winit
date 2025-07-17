@@ -1,14 +1,14 @@
-use winit::{
-    dpi::LogicalPosition as OriginLogicalPosition,
-    dpi::LogicalSize as OriginLogicalSize,
-    dpi::LogicalUnit as OriginLogicalUnit,
-    dpi::PhysicalPosition as OriginPhysicalPosition,
-    dpi::PhysicalSize as OriginPhysicalSize,
-    dpi::PhysicalUnit as OriginPhysicalUnit,
-    dpi::Pixel as OriginPixel,
-    dpi::PixelUnit as OriginPixelUnit,
-    dpi::Position as OriginPosition,
-    dpi::Size as OriginSize,
+use winit::dpi::{
+    LogicalPosition as OriginLogicalPosition,
+    LogicalSize as OriginLogicalSize,
+    LogicalUnit as OriginLogicalUnit,
+    PhysicalPosition as OriginPhysicalPosition,
+    PhysicalSize as OriginPhysicalSize,
+    PhysicalUnit as OriginPhysicalUnit,
+    Pixel as OriginPixel,
+    PixelUnit as OriginPixelUnit,
+    Position as OriginPosition,
+    Size as OriginSize
 };
 
 #[napi]

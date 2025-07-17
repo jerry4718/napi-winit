@@ -1,5 +1,6 @@
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
+use winit::application::ApplicationHandler;
 use crate::{
     event::{
         DeviceEvent,
@@ -143,10 +144,10 @@ macro_rules! borrow_back {
         }
     };
     ($from: ident ($name: ident? @ $env: ident)) => {
-        if let Some(cb) = (&$from.$name) { Some(cb.borrow_back(&$env).unwrap()) } else { None }
+        $from.$name.as_ref().map(|cb| cb.borrow_back(&$env).unwrap())
     };
     ($from: ident ($name: ident @ $env: ident)) => {
-        (&$from.$name).borrow_back(&$env).unwrap()
+        $from.$name.borrow_back(&$env).unwrap()
     };
 }
 
@@ -186,10 +187,10 @@ macro_rules! create_ref {
         }
     };
     ($from: ident ($name: ident? @ $env: ident)) => {
-        (&$from.$name).as_ref().map(|r| r.create_ref().unwrap())
+        $from.$name.as_ref().map(|r| r.create_ref().unwrap())
     };
     ($from: ident ($name: ident @ $env: ident)) => {
-        (&$from.$name).create_ref().unwrap()
+        $from.$name.create_ref().unwrap()
     };
 }
 
@@ -241,7 +242,7 @@ impl<'scope> From<ApplicationOptionsRefSync<'scope>> for OptionsGhostHolder<Unkn
 }
 
 macro_rules! build_threadsafe {
-    ($ty: ident { $from: ident }) => {
+    ($ty: ident { ..$from: ident }) => {
         $ty {
             on_new_events: build_threadsafe!($from ( on_new_events ? )),
             on_resumed: build_threadsafe!($from ( on_resumed )),
@@ -255,33 +256,42 @@ macro_rules! build_threadsafe {
         }
     };
     ($from: ident ($name: ident?)) => {
-        if let Some(cb) = (&$from.$name) { Some(cb.build_threadsafe_function().build().unwrap()) } else { None }
+        $from.$name.map(|cb| cb.build_threadsafe_function().build().unwrap())
     };
     ($from: ident ($name: ident)) => {
-        (&$from.$name).build_threadsafe_function().build().unwrap()
+        $from.$name.build_threadsafe_function().build().unwrap()
     };
 }
 
 impl<'scope> From<ApplicationOptionsFxAsync<'scope>> for OptionsSafeHolder<Option<Promise<()>>> {
     fn from(options: ApplicationOptionsFxAsync<'scope>) -> Self {
-        build_threadsafe!(OptionsSafeHolder { options })
+        build_threadsafe!(OptionsSafeHolder { ..options })
     }
 }
 
 pub(crate) enum Runner<'env> {
     AsyncFx(OptionsFxHolder<'env, Option<Promise<()>>>),
     AsyncRef(OptionsRefHolder<Option<Promise<()>>>),
-    AsyncFx2Ref(OptionsGhostHolder<Option<Promise<()>>>),
-    AsyncRef2Fx(OptionsGhostHolder<Option<Promise<()>>>),
-    AsyncFxSafe(OptionsSafeHolder<Option<Promise<()>>>),
     SyncFx(OptionsFxHolder<'env, Unknown<'env>>),
     SyncRef(OptionsRefHolder<Unknown<'env>>),
-    SyncFx2Ref(OptionsGhostHolder<Unknown<'env>>),
-    SyncRef2Fx(OptionsGhostHolder<Unknown<'env>>),
+    SafeCall(OptionsSafeHolder<Option<Promise<()>>>),
+}
+
+impl<'env> Runner<'env> {
+    pub fn handler(&mut self, env: Env) -> &mut dyn ApplicationHandler<UserPayload> {
+        match self {
+            Runner::AsyncFx(ref mut handler) => handler,
+            Runner::SyncFx(ref mut handler) => handler,
+            Runner::AsyncRef(ref mut handler) => handler,
+            Runner::SyncRef(ref mut handler) => handler,
+            Runner::SafeCall(ref mut handler) => handler,
+        }
+    }
 }
 
 #[napi]
 pub struct Application<'env> {
+    pub(crate) env: Env,
     pub(crate) runner: Runner<'env>,
 }
 
@@ -290,26 +300,12 @@ impl<'env> Application<'env> {
     #[napi(factory)]
     pub fn with_async_ref(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefAsync) -> Self {
         let runner = Runner::AsyncRef(OptionsRefHolder { env, options: From::from(options) });
-        Self { runner }
+        Self { env, runner }
     }
     #[napi(factory)]
     pub fn with_sync_ref(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefSync<'env>) -> Self {
         let runner = Runner::SyncRef(OptionsRefHolder { env, options: From::from(options) });
-        Self { runner }
-    }
-}
-
-#[napi]
-impl<'env> Application<'env> {
-    #[napi(factory)]
-    pub fn with_async_ref_2_fx(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefAsync) -> Self {
-        let runner = Runner::AsyncRef2Fx(From::from(options));
-        Self { runner }
-    }
-    #[napi(factory)]
-    pub fn with_sync_ref_2_fx(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefSync<'env>) -> Self {
-        let runner = Runner::SyncRef2Fx(From::from(options));
-        Self { runner }
+        Self { env, runner }
     }
 }
 
@@ -318,26 +314,12 @@ impl<'env> Application<'env> {
     #[napi(factory)]
     pub fn with_async_fx(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsFxAsync<'env>) -> Self {
         let runner = Runner::AsyncFx(From::from(options));
-        Self { runner }
+        Self { env, runner }
     }
     #[napi(factory)]
     pub fn with_sync_fx(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsFxSync<'env>) -> Self {
         let runner = Runner::SyncFx(From::from(options));
-        Self { runner }
-    }
-}
-
-#[napi]
-impl<'env> Application<'env> {
-    #[napi(factory)]
-    pub fn with_async_fx_2_ref(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefAsync) -> Self {
-        let runner = Runner::AsyncFx2Ref(From::from(options));
-        Self { runner }
-    }
-    #[napi(factory)]
-    pub fn with_sync_fx_2_ref(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsRefSync<'env>) -> Self {
-        let runner = Runner::SyncFx2Ref(From::from(options));
-        Self { runner }
+        Self { env, runner }
     }
 }
 
@@ -345,7 +327,7 @@ impl<'env> Application<'env> {
 impl<'env> Application<'env> {
     #[napi(factory)]
     pub fn with_async_fx_2_safe(env: Env, #[napi(ts_arg_type = "ApplicationOptions")] options: ApplicationOptionsFxAsync<'env>) -> Self {
-        let runner = Runner::AsyncFxSafe(From::from(options));
-        Self { runner }
+        let runner = Runner::SafeCall(From::from(options));
+        Self { env, runner }
     }
 }

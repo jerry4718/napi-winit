@@ -1,26 +1,16 @@
 use napi::bindgen_prelude::*;
 
 use winit::window::{
-    ActivationToken as OriginActivationToken,
-    CursorIcon as OriginCursorIcon,
     Fullscreen as OriginFullscreen,
-    Icon as OriginIcon,
-    Theme as OriginTheme,
-    Window as OriginWindow,
-    WindowAttributes as OriginWindowAttributes,
-    WindowButtons as OriginWindowButtons,
-    WindowId as OriginWindowId,
-    WindowLevel as OriginWindowLevel,
 };
 
-use proc::proxy_flags;
+use proc::{proxy_enum, proxy_flags};
 
 use crate::{
     cursor::{Cursor, CursorIcon},
     dpi::{Position, Size},
     monitor::MonitorHandle,
     napi_reason,
-    string_enum,
     wrap_struct
 };
 
@@ -85,9 +75,9 @@ impl Default for WindowAttributes {
     }
 }
 
-impl Into<OriginWindowAttributes> for WindowAttributes {
-    fn into(self) -> OriginWindowAttributes {
-        let attrs = OriginWindowAttributes::default()
+impl Into<winit::window::WindowAttributes> for WindowAttributes {
+    fn into(self) -> winit::window::WindowAttributes {
+        let attrs = winit::window::WindowAttributes::default()
             .with_resizable(self.resizable)
             .with_enabled_buttons(self.enabled_buttons.into())
             .with_title(self.title)
@@ -321,38 +311,29 @@ impl From<OriginFullscreen> for Fullscreen {
 #[derive(Clone)]
 pub struct WindowButtons;
 
-string_enum!(
-    #[derive(Clone)]
-    enum WindowLevel => OriginWindowLevel {
-        AlwaysOnBottom,
-        Normal,
-        AlwaysOnTop,
-    }
-);
+#[proxy_enum(origin_enum = winit::window::WindowLevel, string_enum)]
+#[derive(Clone)]
+pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
 
-string_enum!(
-    #[derive(Clone)]
-    enum Theme => OriginTheme {
-        Light,
-        Dark,
-    }
-);
+#[proxy_enum(origin_enum = winit::window::Theme, string_enum)]
+#[derive(Clone)]
+pub enum Theme { Light, Dark }
 
-wrap_struct!(#[derive(Clone)] struct Icon { inner: OriginIcon });
+wrap_struct!(#[derive(Clone)] struct Icon { inner: winit::window::Icon });
 
 #[napi]
 impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
-        OriginIcon::from_rgba(rgba.to_vec(), width, height)
+        winit::window::Icon::from_rgba(rgba.to_vec(), width, height)
             .map(Self::from)
             .map_err(|e| napi_reason!("{e}"))
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct WindowId(OriginWindowId));
-wrap_struct!(#[derive(Clone)] struct ActivationToken(OriginActivationToken));
-wrap_struct!(struct Window { inner: OriginWindow });
+wrap_struct!(struct WindowId(winit::window::WindowId));
+wrap_struct!(struct ActivationToken(winit::window::ActivationToken));
+wrap_struct!(struct Window { inner: winit::window::Window });
 
 #[napi]
 impl Window {
@@ -625,16 +606,14 @@ impl Window {
     }
 }
 
-string_enum!(enum ImePurpose => winit::window::ImePurpose { Normal, Password, Terminal } "never reach here");
-string_enum!(enum UserAttentionType => winit::window::UserAttentionType { Critical, Informational });
-string_enum!(enum CursorGrabMode => winit::window::CursorGrabMode { None, Confined, Locked });
-string_enum!(enum ResizeDirection => winit::window::ResizeDirection {
-    East,
-    North,
-    NorthEast,
-    NorthWest,
-    South,
-    SouthEast,
-    SouthWest,
-    West,
-});
+#[proxy_enum(origin_enum = winit::window::ImePurpose, string_enum, non_exhaustive)]
+pub enum ImePurpose { Normal, Password, Terminal }
+
+#[proxy_enum(origin_enum = winit::window::UserAttentionType, string_enum)]
+pub enum UserAttentionType { Critical, Informational }
+
+#[proxy_enum(origin_enum = winit::window::CursorGrabMode, string_enum)]
+pub enum CursorGrabMode { None, Confined, Locked }
+
+#[proxy_enum(origin_enum = winit::window::ResizeDirection, string_enum)]
+pub enum ResizeDirection { East, North, NorthEast, NorthWest, South, SouthEast, SouthWest, West }

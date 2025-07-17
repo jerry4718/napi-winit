@@ -1,26 +1,5 @@
 use napi::bindgen_prelude::*;
 
-use winit::{
-    event::{
-        DeviceEvent as OriginDeviceEvent,
-        DeviceId as OriginDeviceId,
-        ElementState as OriginElementState,
-        Event as OriginEvent,
-        Ime as OriginIme,
-        InnerSizeWriter as OriginInnerSizeWriter,
-        KeyEvent as OriginKeyEvent,
-        Modifiers as OriginModifiers,
-        MouseButton as OriginMouseButton,
-        MouseScrollDelta as OriginMouseScrollDelta,
-        RawKeyEvent as OriginRawKeyEvent,
-        StartCause as OriginStartCause,
-        Touch as OriginTouch,
-        TouchPhase as OriginTouchPhase,
-        WindowEvent as OriginWindowEvent,
-    },
-    window::Theme as OriginTheme,
-};
-
 use proc::proxy_enum;
 
 use crate::{
@@ -28,7 +7,6 @@ use crate::{
     event_loop::AsyncRequestSerial,
     extra::time::Timeout,
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
-    string_enum,
     utils::helpers::{option_into, path_buf_to_string},
     window::{ActivationToken, Theme, WindowId},
     wrap_struct,
@@ -151,7 +129,7 @@ pub enum WindowEvent {
     RedrawRequested,
 }
 
-wrap_struct!(#[derive(Clone)] struct DeviceId(winit::event::DeviceId));
+wrap_struct!(struct DeviceId(winit::event::DeviceId));
 
 #[napi(object, object_from_js = false)]
 pub struct RawKeyEvent {
@@ -169,7 +147,7 @@ impl From<winit::event::RawKeyEvent> for RawKeyEvent {
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct KeyEvent { origin: winit::event::KeyEvent });
+wrap_struct!(struct KeyEvent { origin: winit::event::KeyEvent });
 
 #[napi]
 impl KeyEvent {
@@ -199,7 +177,7 @@ impl KeyEvent {
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct Modifiers(OriginModifiers));
+wrap_struct!(struct Modifiers(winit::event::Modifiers));
 
 #[napi]
 impl Modifiers {
@@ -236,9 +214,9 @@ pub enum MouseScrollDelta {
     PixelDelta(#[proxy_enum(field_name = "delta")] Position),
 }
 
-wrap_struct!(#[derive(Clone)] struct InnerSizeWriter(OriginInnerSizeWriter));
+wrap_struct!(struct InnerSizeWriter(winit::event::InnerSizeWriter));
 
-#[proxy_enum(origin_enum = winit::event::TouchPhase, skip_backward)]
+#[proxy_enum(origin_enum = winit::event::TouchPhase, string_enum, skip_backward)]
 pub enum TouchPhase {
     Started,
     Moved,
@@ -246,7 +224,7 @@ pub enum TouchPhase {
     Cancelled,
 }
 
-wrap_struct!(#[derive(Clone)] struct Touch(OriginTouch));
+wrap_struct!(struct Touch(winit::event::Touch));
 
 #[proxy_enum(origin_enum = winit::event::DeviceEvent, skip_backward)]
 pub enum DeviceEvent {
@@ -269,10 +247,9 @@ pub enum DeviceEvent {
     Key(#[proxy_enum(field_name = "raw")] RawKeyEvent),
 }
 
-string_enum!(
-    #[derive(Clone)]
-    enum ElementState => OriginElementState {
-        Pressed,
-        Released,
-    }
-);
+#[proxy_enum(origin_enum = winit::event::ElementState, skip_backward)]
+#[derive(Clone)]
+pub enum ElementState {
+    Pressed,
+    Released,
+}

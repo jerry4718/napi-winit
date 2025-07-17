@@ -27,62 +27,55 @@ use crate::{
     window::WindowId,
 };
 
-macro_rules! wrap_event_loop {
-    ($name: expr) => { ActiveEventLoop { inner_non_null: NonNull::new($name as *const _ as *mut OriginActiveEventLoop).unwrap() } };
+macro_rules! call {
+    ($self: ident, $func: ident, $($args: expr), +) => {
+        let Self { $func: $func, .. } = &$self;
+        call!(call $func $(, $args)+);
+    };
+    ($self: ident, $func: ident?, $($args: expr), +) => {
+        let Self { $func: Some($func), .. } = &$self else { return; };
+        call!(call $func $(, $args)+);
+    };
+    (call $fx: ident, $($args: expr), +) => {
+        let result = $fx.call(FnArgs::from(($(From::from($args), )+)));
+        handle_res!(result);
+    }
 }
 
 impl<'scope> ApplicationHandler<UserPayload> for OptionsFxHolder<'scope, Unknown<'scope>> {
     fn new_events(&mut self, event_loop: &OriginActiveEventLoop, cause: OriginStartCause) {
-        let Self { on_new_events: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), StartCause::from(cause))));
-        handle_res!(result);
+        call!(self, on_new_events?, event_loop, cause);
     }
 
     fn resumed(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { on_resumed: callback, .. } = &self;
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_resumed, event_loop);
     }
 
     fn user_event(&mut self, event_loop: &OriginActiveEventLoop, event: UserPayload) {
-        let Self { on_user_event: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), event)));
-        handle_res!(result);
+        call!(self, on_user_event?, event_loop, event);
     }
 
     fn window_event(&mut self, event_loop: &OriginActiveEventLoop, window_id: OriginWindowId, event: OriginWindowEvent) {
-        let Self { on_window_event: callback, .. } = &self;
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), WindowId::from(window_id), WindowEvent::from(event))));
-        handle_res!(result);
+        call!(self, on_window_event, event_loop, window_id, event);
     }
 
     fn device_event(&mut self, event_loop: &OriginActiveEventLoop, device_id: OriginDeviceId, event: OriginDeviceEvent) {
-        let Self { on_device_event: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), DeviceId::from(device_id), DeviceEvent::from(event))));
-        handle_res!(result);
+        call!(self, on_device_event?, event_loop, device_id, event);
     }
 
     fn about_to_wait(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { on_about_to_wait: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_about_to_wait?, event_loop);
     }
 
     fn suspended(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { on_suspended: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_suspended?, event_loop);
     }
 
     fn exiting(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { on_exiting: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_exiting?, event_loop);
     }
 
     fn memory_warning(&mut self, event_loop: &OriginActiveEventLoop) {
-        let Self { on_memory_warning: Some(callback), .. } = &self else { return; };
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_memory_warning?, event_loop);
     }
 }

@@ -40,8 +40,8 @@ pub mod namespace {
         ptr::NonNull,
         slice,
     };
-    #[napi]
 
+    #[napi]
     struct SoftSurface<'scope> {
         pub(crate) window: &'scope winit::window::Window,
         pub(crate) context: Option<Context<&'scope winit::window::Window>>,

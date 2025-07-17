@@ -27,77 +27,57 @@ use crate::{
     window::WindowId,
 };
 
-macro_rules! wrap_event_loop {
-    ($name: expr) => { ActiveEventLoop { inner_non_null: NonNull::new($name as *const _ as *mut OriginActiveEventLoop).unwrap() } };
-}
-
-macro_rules! borrow_back_callback {
-    ($callback: ident as $local: ident with $env: ident from $self: ident) => {
-        {
-            let Self { env, options: OptionsGhostHolder { $callback: $local, .. } } = &$self;
-            $local.borrow_back(env).unwrap()
-        }
+macro_rules! call {
+    ($self: ident, $func: ident, $($args: expr), +) => {
+        let Self { env, options: OptionsGhostHolder { $func: $func, .. } } = &$self;
+        let $func = $func.borrow_back(env).unwrap();
+        call!(call $func $(, $args)+);
     };
-    ($callback: ident? as $local: ident with $env: ident from $self: ident) => {
-        {
-            let Self { env, options: OptionsGhostHolder { $callback: Some($local), .. } } = &$self else { return; };
-            $local.borrow_back(env).unwrap()
-        }
+    ($self: ident, $func: ident?, $($args: expr), +) => {
+        let Self { env, options: OptionsGhostHolder { $func: Some($func), .. } } = &$self else { return; };
+        let $func = $func.borrow_back(env).unwrap();
+        call!(call $func $(, $args)+);
     };
+    (call $fx: ident, $($args: expr), +) => {
+        let result = $fx.call(FnArgs::from(($(From::from($args), )+)));
+        handle_res!(result);
+    }
 }
 
 impl<'scope> ApplicationHandler<UserPayload> for OptionsRefHolder<Unknown<'scope>> {
     fn new_events(&mut self, event_loop: &OriginActiveEventLoop, cause: OriginStartCause) {
-        let callback = borrow_back_callback!(on_new_events? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), StartCause::from(cause))));
-        handle_res!(result);
+        call!(self, on_new_events?, event_loop, cause);
     }
 
     fn resumed(&mut self, event_loop: &OriginActiveEventLoop) {
-        let callback = borrow_back_callback!(on_resumed as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_resumed, event_loop);
     }
 
     fn user_event(&mut self, event_loop: &OriginActiveEventLoop, event: UserPayload) {
-        let callback = borrow_back_callback!(on_user_event? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), event)));
-        handle_res!(result);
+        call!(self, on_user_event?, event_loop, event);
     }
 
     fn window_event(&mut self, event_loop: &OriginActiveEventLoop, window_id: OriginWindowId, event: OriginWindowEvent) {
-        let callback = borrow_back_callback!(on_window_event as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), WindowId::from(window_id), WindowEvent::from(event))));
-        handle_res!(result);
+        call!(self, on_window_event, event_loop, window_id, event);
     }
 
     fn device_event(&mut self, event_loop: &OriginActiveEventLoop, device_id: OriginDeviceId, event: OriginDeviceEvent) {
-        let callback = borrow_back_callback!(on_device_event? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop), DeviceId::from(device_id), DeviceEvent::from(event))));
-        handle_res!(result);
+        call!(self, on_device_event?, event_loop, device_id, event);
     }
 
     fn about_to_wait(&mut self, event_loop: &OriginActiveEventLoop) {
-        let callback = borrow_back_callback!(on_about_to_wait? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_about_to_wait?, event_loop);
     }
 
     fn suspended(&mut self, event_loop: &OriginActiveEventLoop) {
-        let callback = borrow_back_callback!(on_suspended? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_suspended?, event_loop);
     }
 
     fn exiting(&mut self, event_loop: &OriginActiveEventLoop) {
-        let callback = borrow_back_callback!(on_exiting? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_exiting?, event_loop);
     }
 
     fn memory_warning(&mut self, event_loop: &OriginActiveEventLoop) {
-        let callback = borrow_back_callback!(on_memory_warning? as callback with env from self);
-        let result = callback.call(FnArgs::from((wrap_event_loop!(event_loop),)));
-        handle_res!(result);
+        call!(self, on_memory_warning?, event_loop);
     }
 }

@@ -1,4 +1,5 @@
-use napi::Status;
+use napi::bindgen_prelude::FromNapiValue;
+use napi::{Status, Unknown};
 use napi::threadsafe_function::ThreadsafeFunction;
 
-pub type ThreadsafeNoCallee<T, R> = ThreadsafeFunction<T, R, T, Status, false>;
+pub type ThreadsafeNoCallee<T, Return = Unknown<'static>> = ThreadsafeFunction<T, Return, T, Status, false>;
