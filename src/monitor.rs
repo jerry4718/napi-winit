@@ -1,4 +1,7 @@
-use crate::wrap_struct;
+use proc::proxy_struct;
 
-wrap_struct!(struct VideoModeHandle(winit::monitor::VideoModeHandle));
-wrap_struct!(struct MonitorHandle(winit::monitor::MonitorHandle));
+#[proxy_struct(origin_type = winit::monitor::VideoModeHandle)]
+pub struct VideoModeHandle;
+
+#[proxy_struct(origin_type = winit::monitor::MonitorHandle)]
+pub struct MonitorHandle;

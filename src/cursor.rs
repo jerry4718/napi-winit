@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
-use proc::proxy_enum;
-use crate::{napi_reason, wrap_struct};
+use proc::{proxy_enum, proxy_struct};
+use crate::napi_reason;
 
 /** [`winit::window::CursorIcon`] */
 #[proxy_enum(origin_enum = winit::window::CursorIcon, string_enum, non_exhaustive)]
@@ -17,7 +17,9 @@ impl Default for CursorIcon {
     }
 }
 
-wrap_struct!(#[derive(Clone, Default)] struct Cursor (winit::window::Cursor));
+#[proxy_struct(origin_type = winit::window::Cursor)]
+#[derive(Clone, Default)]
+pub struct Cursor;
 
 #[napi]
 impl Cursor {
@@ -31,8 +33,12 @@ impl Cursor {
     }
 }
 
-wrap_struct!(#[derive(Clone)] struct CustomCursor { inner: winit::window::CustomCursor });
-wrap_struct!(struct CustomCursorSource { inner: winit::window::CustomCursorSource });
+#[proxy_struct(origin_type = winit::window::CustomCursor, field_name = inner)]
+#[derive(Clone)]
+pub struct CustomCursor;
+
+#[proxy_struct(origin_type = winit::window::CustomCursorSource, field_name = inner)]
+pub struct CustomCursorSource;
 
 #[napi]
 impl CustomCursor {

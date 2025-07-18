@@ -82,7 +82,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 'arm') {
       try {
         return require('./napi-winit.android-arm-eabi.node')
@@ -94,7 +93,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else {
       loadErrors.push(new Error(`Unsupported architecture on Android ${process.arch}`))
     }
@@ -110,7 +108,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 'ia32') {
       try {
         return require('./napi-winit.win32-ia32-msvc.node')
@@ -122,7 +119,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 'arm64') {
       try {
         return require('./napi-winit.win32-arm64-msvc.node')
@@ -134,22 +130,20 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else {
       loadErrors.push(new Error(`Unsupported architecture on Windows: ${process.arch}`))
     }
   } else if (process.platform === 'darwin') {
     try {
-        return require('./napi-winit.darwin-universal.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-darwin-universal')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+      return require('./napi-winit.darwin-universal.node')
+    } catch (e) {
+      loadErrors.push(e)
+    }
+    try {
+      return require('@ylcc/napi-winit-darwin-universal')
+    } catch (e) {
+      loadErrors.push(e)
+    }
     if (process.arch === 'x64') {
       try {
         return require('./napi-winit.darwin-x64.node')
@@ -161,7 +155,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 'arm64') {
       try {
         return require('./napi-winit.darwin-arm64.node')
@@ -173,7 +166,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else {
       loadErrors.push(new Error(`Unsupported architecture on macOS: ${process.arch}`))
     }
@@ -189,7 +181,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 'arm64') {
       try {
         return require('./napi-winit.freebsd-arm64.node')
@@ -201,7 +192,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else {
       loadErrors.push(new Error(`Unsupported architecture on FreeBSD: ${process.arch}`))
     }
@@ -209,106 +199,98 @@ function requireNative() {
     if (process.arch === 'x64') {
       if (isMusl()) {
         try {
-        return require('./napi-winit.linux-x64-musl.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-x64-musl')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-x64-musl.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-x64-musl')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       } else {
         try {
-        return require('./napi-winit.linux-x64-gnu.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-x64-gnu')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-x64-gnu.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-x64-gnu')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       }
     } else if (process.arch === 'arm64') {
       if (isMusl()) {
         try {
-        return require('./napi-winit.linux-arm64-musl.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-arm64-musl')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-arm64-musl.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-arm64-musl')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       } else {
         try {
-        return require('./napi-winit.linux-arm64-gnu.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-arm64-gnu')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-arm64-gnu.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-arm64-gnu')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       }
     } else if (process.arch === 'arm') {
       if (isMusl()) {
         try {
-        return require('./napi-winit.linux-arm-musleabihf.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-arm-musleabihf')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-arm-musleabihf.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-arm-musleabihf')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       } else {
         try {
-        return require('./napi-winit.linux-arm-gnueabihf.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-arm-gnueabihf')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-arm-gnueabihf.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-arm-gnueabihf')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       }
     } else if (process.arch === 'riscv64') {
       if (isMusl()) {
         try {
-        return require('./napi-winit.linux-riscv64-musl.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-riscv64-musl')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-riscv64-musl.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-riscv64-musl')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       } else {
         try {
-        return require('./napi-winit.linux-riscv64-gnu.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('@ylcc/napi-winit-linux-riscv64-gnu')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-
+          return require('./napi-winit.linux-riscv64-gnu.node')
+        } catch (e) {
+          loadErrors.push(e)
+        }
+        try {
+          return require('@ylcc/napi-winit-linux-riscv64-gnu')
+        } catch (e) {
+          loadErrors.push(e)
+        }
       }
     } else if (process.arch === 'ppc64') {
       try {
@@ -321,7 +303,6 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else if (process.arch === 's390x') {
       try {
         return require('./napi-winit.linux-s390x-gnu.node')
@@ -333,9 +314,45 @@ function requireNative() {
       } catch (e) {
         loadErrors.push(e)
       }
-
     } else {
       loadErrors.push(new Error(`Unsupported architecture on Linux: ${process.arch}`))
+    }
+  } else if (process.platform === 'openharmony') {
+    if (process.arch === 'arm64') {
+      try {
+        return require('./napi-winit.linux-arm64-ohos.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return require('@ylcc/napi-winit-linux-arm64-ohos')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+    } else if (process.arch === 'x64') {
+      try {
+        return require('./napi-winit.linux-x64-ohos.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return require('@ylcc/napi-winit-linux-x64-ohos')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+    } else if (process.arch === 'arm') {
+      try {
+        return require('./napi-winit.linux-arm-ohos.node')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+      try {
+        return require('@ylcc/napi-winit-linux-arm-ohos')
+      } catch (e) {
+        loadErrors.push(e)
+      }
+    } else {
+      loadErrors.push(new Error(`Unsupported architecture on OpenHarmony: ${process.arch}`))
     }
   } else {
     loadErrors.push(new Error(`Unsupported OS: ${process.platform}, architecture: ${process.arch}`))
@@ -413,5 +430,6 @@ module.exports.ModifiersKeyState = nativeBinding.ModifiersKeyState
 module.exports.NamedKey = nativeBinding.NamedKey
 module.exports.ResizeDirection = nativeBinding.ResizeDirection
 module.exports.Theme = nativeBinding.Theme
+module.exports.TouchPhase = nativeBinding.TouchPhase
 module.exports.UserAttentionType = nativeBinding.UserAttentionType
 module.exports.WindowLevel = nativeBinding.WindowLevel

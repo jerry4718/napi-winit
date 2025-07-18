@@ -60,12 +60,8 @@ export declare class ActiveEventLoop {
 export declare class Application {
   static withAsyncRef(options: ApplicationOptions): Application
   static withSyncRef(options: ApplicationOptions): Application
-  static withAsyncRef2Fx(options: ApplicationOptions): Application
-  static withSyncRef2Fx(options: ApplicationOptions): Application
   static withAsyncFx(options: ApplicationOptions): Application
   static withSyncFx(options: ApplicationOptions): Application
-  static withAsyncFx2Ref(options: ApplicationOptions): Application
-  static withSyncFx2Ref(options: ApplicationOptions): Application
   static withAsyncFx2Safe(options: ApplicationOptions): Application
 }
 
@@ -279,6 +275,18 @@ export interface ApplicationOptions {
   onMemoryWarning?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
 }
 
+export interface ApplicationOptions0 {
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => (void | Promise<void>)
+  onResumed: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => (void | Promise<void>)
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => (void | Promise<void>)
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => (void | Promise<void>)
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onSuspended?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onExiting?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
+}
+
 export interface ApplicationOptionsFxAsync {
   onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => Promise<undefined> | null
   onResumed: (arg0: ActiveEventLoop) => Promise<undefined> | null
@@ -338,6 +346,7 @@ export declare const enum CursorGrabMode {
   Locked = 'Locked'
 }
 
+/** [`winit::window::CursorIcon`]  */
 export declare const enum CursorIcon {
   Default = 'Default',
   ContextMenu = 'ContextMenu',
@@ -372,7 +381,8 @@ export declare const enum CursorIcon {
   RowResize = 'RowResize',
   AllScroll = 'AllScroll',
   ZoomIn = 'ZoomIn',
-  ZoomOut = 'ZoomOut'
+  ZoomOut = 'ZoomOut',
+  NonExhaustive = 'NonExhaustive'
 }
 
 export type DeviceEvent =
@@ -420,7 +430,8 @@ export type Ime =
 export declare const enum ImePurpose {
   Normal = 'Normal',
   Password = 'Password',
-  Terminal = 'Terminal'
+  Terminal = 'Terminal',
+  NonExhaustive = 'NonExhaustive'
 }
 
 export type Key =
@@ -623,7 +634,8 @@ export declare const enum KeyCode {
   F32 = 'F32',
   F33 = 'F33',
   F34 = 'F34',
-  F35 = 'F35'
+  F35 = 'F35',
+  NonExhaustive = 'NonExhaustive'
 }
 
 export declare const enum KeyLocation {
@@ -956,7 +968,8 @@ export declare const enum NamedKey {
   F32 = 'F32',
   F33 = 'F33',
   F34 = 'F34',
-  F35 = 'F35'
+  F35 = 'F35',
+  NonExhaustive = 'NonExhaustive'
 }
 
 export type NativeKey =
@@ -1026,11 +1039,12 @@ export interface Timeout {
   nanos: number
 }
 
-export type TouchPhase =
-  | { type: 'Started' }
-  | { type: 'Moved' }
-  | { type: 'Ended' }
-  | { type: 'Cancelled' }
+export declare const enum TouchPhase {
+  Started = 'Started',
+  Moved = 'Moved',
+  Ended = 'Ended',
+  Cancelled = 'Cancelled'
+}
 
 export declare const enum UserAttentionType {
   Critical = 'Critical',

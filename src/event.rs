@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
 
-use proc::proxy_enum;
+use proc::{proxy_enum, proxy_struct};
 
 use crate::{
     dpi::{Position, Size},
@@ -9,7 +9,6 @@ use crate::{
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     utils::helpers::{option_into, path_buf_to_string},
     window::{ActivationToken, Theme, WindowId},
-    wrap_struct,
 };
 
 #[napi]
@@ -129,7 +128,8 @@ pub enum WindowEvent {
     RedrawRequested,
 }
 
-wrap_struct!(struct DeviceId(winit::event::DeviceId));
+#[proxy_struct(origin_type = winit::event::DeviceId)]
+pub struct DeviceId;
 
 #[napi(object, object_from_js = false)]
 pub struct RawKeyEvent {
@@ -147,7 +147,8 @@ impl From<winit::event::RawKeyEvent> for RawKeyEvent {
     }
 }
 
-wrap_struct!(struct KeyEvent { origin: winit::event::KeyEvent });
+#[proxy_struct(origin_type = winit::event::KeyEvent, field_name = origin)]
+pub struct KeyEvent;
 
 #[napi]
 impl KeyEvent {
@@ -177,7 +178,8 @@ impl KeyEvent {
     }
 }
 
-wrap_struct!(struct Modifiers(winit::event::Modifiers));
+#[proxy_struct(origin_type = winit::event::Modifiers)]
+pub struct Modifiers;
 
 #[napi]
 impl Modifiers {
@@ -214,7 +216,8 @@ pub enum MouseScrollDelta {
     PixelDelta(#[proxy_enum(field_name = "delta")] Position),
 }
 
-wrap_struct!(struct InnerSizeWriter(winit::event::InnerSizeWriter));
+#[proxy_struct(origin_type = winit::event::InnerSizeWriter)]
+pub struct InnerSizeWriter;
 
 #[proxy_enum(origin_enum = winit::event::TouchPhase, string_enum, skip_backward)]
 pub enum TouchPhase {
@@ -224,7 +227,8 @@ pub enum TouchPhase {
     Cancelled,
 }
 
-wrap_struct!(struct Touch(winit::event::Touch));
+#[proxy_struct(origin_type = winit::event::Touch)]
+pub struct Touch;
 
 #[proxy_enum(origin_enum = winit::event::DeviceEvent, skip_backward)]
 pub enum DeviceEvent {
@@ -247,7 +251,7 @@ pub enum DeviceEvent {
     Key(#[proxy_enum(field_name = "raw")] RawKeyEvent),
 }
 
-#[proxy_enum(origin_enum = winit::event::ElementState, skip_backward)]
+#[proxy_enum(origin_enum = winit::event::ElementState, string_enum, skip_backward)]
 #[derive(Clone)]
 pub enum ElementState {
     Pressed,

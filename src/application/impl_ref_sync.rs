@@ -30,15 +30,14 @@ use crate::{
 macro_rules! call {
     ($self: ident, $func: ident, $($args: expr), +) => {
         let Self { env, options: OptionsGhostHolder { $func: $func, .. } } = &$self;
-        let $func = $func.borrow_back(env).unwrap();
-        call!(call $func $(, $args)+);
+        call!(call $func@env $(, $args)+);
     };
     ($self: ident, $func: ident?, $($args: expr), +) => {
         let Self { env, options: OptionsGhostHolder { $func: Some($func), .. } } = &$self else { return; };
-        let $func = $func.borrow_back(env).unwrap();
-        call!(call $func $(, $args)+);
+        call!(call $func@env $(, $args)+);
     };
-    (call $fx: ident, $($args: expr), +) => {
+    (call $fx: ident@$env: ident, $($args: expr), +) => {
+        let $fx = $fx.borrow_back($env).unwrap();
         let result = $fx.call(FnArgs::from(($(From::from($args), )+)));
         handle_res!(result);
     }

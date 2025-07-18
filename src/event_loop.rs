@@ -10,7 +10,7 @@ use winit::platform::{
     run_on_demand::EventLoopExtRunOnDemand,
 };
 
-use proc::proxy_enum;
+use proc::{proxy_enum, proxy_struct};
 
 use crate::{
     application::public::{Application, Runner},
@@ -20,10 +20,10 @@ use crate::{
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
-    wrap_struct
 };
 
-wrap_struct!(struct EventLoop { inner: winit::event_loop::EventLoop<UserPayload> });
+#[proxy_struct(origin_type = winit::event_loop::EventLoop::<UserPayload>, field_name = inner)]
+pub struct EventLoop;
 
 #[napi]
 impl EventLoop {
@@ -176,5 +176,8 @@ pub enum ControlFlow {
     WaitUntil(#[proxy_enum(field_name = "timeout")] Timeout),
 }
 
-wrap_struct!(struct OwnedDisplayHandle(winit::event_loop::OwnedDisplayHandle));
-wrap_struct!(struct AsyncRequestSerial(winit::event_loop::AsyncRequestSerial));
+#[proxy_struct(origin_type = winit::event_loop::OwnedDisplayHandle)]
+pub struct OwnedDisplayHandle;
+
+#[proxy_struct(origin_type = winit::event_loop::AsyncRequestSerial)]
+pub struct AsyncRequestSerial;
