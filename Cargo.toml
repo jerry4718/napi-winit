@@ -1,4 +1,5 @@
 [package]
+authors = ["jerry4718 <jerry4718@qq.com>"]
 edition = "2021"
 name = "napi-winit"
 version = "0.0.514"
@@ -34,13 +35,13 @@ version = "0.6.2"
 features = [ "std" ]
 
 [dependencies.napi]
-version = "3.0.0-beta.12"
+version = "3.0.0"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.0.0-beta.12"
+version = "3.0.0"
 features = ["type-def"]
 
 #[dependencies.ctor]
@@ -66,8 +67,9 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.2.2"
+napi-build = "3.0.0-beta.0"
 
 [profile.release]
 lto = true
+codegen-units = 1
 strip = "symbols"

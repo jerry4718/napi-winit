@@ -2,44 +2,76 @@
   "name": "@ylcc/napi-winit",
   "version": "0.0.514",
   "license": "MIT",
-  "repository": {
-    "url": "git+https://github.com/jerry4718/napi-winit.git"
-  },
-  "engines": {
-    "node": ">= 10.20.0 < 11 || >= 12.17.0 < 13 || >= 14.0.0"
-  },
+  "description": "winit napi bindings",
   "type": "commonjs",
   "main": "index.js",
   "types": "index.d.ts",
   "browser": "browser.js",
+  "repository": {
+    "url": "https://github.com/jerry4718/napi-winit",
+    "type": "git"
+  },
+  "keywords": [
+    "napi-winit",
+    "winit",
+    "windowing",
+    "node-addon"
+  ],
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
   "napi": {
     "binaryName": "napi-winit",
     "targets": [
-      "aarch64-apple-darwin",
       "x86_64-apple-darwin",
-      "x86_64-pc-windows-msvc",
+      "aarch64-apple-darwin",
       "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
       "x86_64-unknown-linux-musl",
-      "x86_64-unknown-freebsd"
+      "aarch64-unknown-linux-gnu",
+      "i686-pc-windows-msvc",
+      "armv7-unknown-linux-gnueabihf",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-linux-musl",
+      "aarch64-pc-windows-msvc"
     ]
   },
-  "files": [
-    "./index.js",
-    "./index.d.ts"
-  ],
-  "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.92",
-    "ava": "^6.2.0"
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "scripts": {
-    "test": "ava",
-    "build": "napi build --release --platform --strip",
+    "artifacts": "napi artifacts",
+    "bench": "node --import @oxc-node/core/register benchmark/bench.ts",
+    "build": "napi build --platform --release --strip",
     "build:debug": "napi build --platform --strip",
     "prepublishOnly": "napi prepublish -t npm",
-    "artifacts": "napi artifacts",
+    "test": "ava",
     "version": "napi version"
   },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0",
+    "@oxc-node/core": "^0.0.29",
+    "ava": "^6.4.1",
+    "typescript": "^5.8.3"
+  },
   "ava": {
-    "timeout": "1m"
-  }
+    "extensions": {
+      "ts": "module"
+    },
+    "timeout": "2m",
+    "workerThreads": false,
+    "environmentVariables": {
+      "TS_NODE_PROJECT": "./tsconfig.json"
+    },
+    "nodeArguments": [
+      "--import",
+      "@oxc-node/core/register"
+    ]
+  },
+  "packageManager": "pnpm@10.13.1"
 }
