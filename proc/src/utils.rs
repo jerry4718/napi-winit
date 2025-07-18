@@ -2,8 +2,9 @@ use std::iter::Filter;
 use std::slice::Iter;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{parse, parse_macro_input, parse_str, Attribute, Expr, ExprBlock, ExprClosure, ExprPath, ExprTuple, LitStr, Meta, MetaList, MetaNameValue, Token, Type, TypePath};
+use syn::{parse, parse_macro_input, parse_str, Attribute, Expr, ExprBlock, ExprClosure, ExprPath, ExprTuple, Ident, LitStr, Meta, MetaList, MetaNameValue, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
+use syn::spanned::Spanned;
 
 pub(crate) struct Metas {
     metas: Vec<Meta>,
@@ -34,7 +35,7 @@ pub(crate) fn to_tokens<Input: ToTokens>(to_tokens: &Input) -> proc_macro2::Toke
 }
 
 #[inline]
-pub(crate) fn parse_as<As: Parse>(to_tokens: &dyn ToTokens) -> As {
+pub(crate) fn parse_as<As: Parse + Spanned>(to_tokens: &dyn ToTokens) -> As {
     parse::<As>(proc_macro::TokenStream::from(to_tokens.into_token_stream())).unwrap()
 }
 
@@ -124,6 +125,14 @@ pub(crate) fn get_meta_value_as_type(meta: &Meta) -> Option<Type> {
 }
 
 #[inline]
+pub(crate) fn get_meta_value_as_ident(meta: &Meta) -> Option<Ident> {
+    let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
+    else { return None };
+
+    Some(parse_as::<Ident>(value))
+}
+
+#[inline]
 pub(crate) fn get_meta_value_as_lit_str(meta: &Meta) -> Option<LitStr> {
     let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
     else { return None };
@@ -160,10 +169,18 @@ pub(crate) fn get_type_ty_or<Input: ToTokens>(meta: &Option<Meta>, input: &Input
         None => parse_as::<Type>(input),
         Some(meta) => {
             let Some(ty) = get_meta_value_as_type(&meta)
-            else { panic!("cannot parse proxy origin as type"); };
+            else { panic!("cannot parse meta value as type"); };
             ty
         }
     }
+}
+
+#[inline]
+pub(crate) fn get_ident_optional(meta: &Option<Meta>) -> Option<Ident> {
+    let Some(meta) = meta else { return None };
+    let Some(ident) = get_meta_value_as_ident(&meta)
+    else { panic!("cannot parse meta value as ident"); };
+    Some(ident)
 }
 
 #[inline]

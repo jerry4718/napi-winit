@@ -63,8 +63,6 @@ struct TempField {
     pub input: Field,
     pub reserved_attrs: Vec<Attribute>,
     pub ident: Ident,
-    pub direct_type: bool,
-    pub use_clone: bool,
     pub from_origin: Option<ConvUsage>,
     pub into_origin: Option<ConvUsage>,
 }
@@ -181,8 +179,7 @@ impl ToTokens for TempEnum {
         if *skip_forward { napi_metas.push(quote! {object_to_js = false}) }
         if *skip_backward { napi_metas.push(quote! {object_from_js = false}) }
 
-        let non_exhaustive_variant = if !(*non_exhaustive) { vec![] }
-        else { vec![quote! { NonExhaustive }] };
+        let non_exhaustive_variant = if !(*non_exhaustive) { vec![] } else { vec![quote! { NonExhaustive }] };
 
         append_to_tokens(tokens, quote_spanned! { input.span() =>
             #[napi( #( #napi_metas ),* )]
@@ -200,8 +197,7 @@ impl ToTokens for TempEnum {
                 .map(|variant| conv(variant, origin_type))
                 .collect();
 
-            let non_exhaustive_from = if !(*non_exhaustive) { vec![] }
-            else { vec![quote! { _ => Self::NonExhaustive }] };
+            let non_exhaustive_from = if !(*non_exhaustive) { vec![] } else { vec![quote! { _ => Self::NonExhaustive }] };
 
             append_to_tokens(tokens, quote! {
                 impl From<#origin_type> for #ident {
@@ -222,8 +218,7 @@ impl ToTokens for TempEnum {
                 .map(|variant| conv(variant, origin_type))
                 .collect();
 
-            let non_exhaustive_into = if !(*non_exhaustive) { vec![] }
-            else { vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }] };
+            let non_exhaustive_into = if !(*non_exhaustive) { vec![] } else { vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }] };
 
             append_to_tokens(tokens, quote! {
                 impl Into<#origin_type> for #ident {
@@ -283,8 +278,6 @@ const META_SKIP_BACKWARD: &str = "skip_backward";
 const META_FIELD_NAME: &str = "field_name";
 const META_FROM_ORIGIN: &str = "from_origin";
 const META_INTO_ORIGIN: &str = "into_origin";
-const META_DIRECT_TYPE: &str = "direct_type";
-const META_USE_CLONE: &str = "use_clone";
 
 const META_NAMED: &str = "Named";
 const META_UNNAMED: &str = "Unnamed";
@@ -376,8 +369,6 @@ fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
 
             map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_ENUM) => {
                 META_FIELD_NAME => field_name,
-                META_DIRECT_TYPE => direct_type,
-                META_USE_CLONE => use_clone,
                 META_FROM_ORIGIN => from_origin,
                 META_INTO_ORIGIN => into_origin,
             });
@@ -399,8 +390,6 @@ fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
                 input: (*field).clone(),
                 reserved_attrs: surplus,
                 ident,
-                direct_type: direct_type.is_some(),
-                use_clone: use_clone.is_some(),
                 from_origin,
                 into_origin,
             }

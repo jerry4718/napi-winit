@@ -4,6 +4,7 @@ mod mapping_bitflags;
 mod utils;
 mod proxy_enum;
 mod proxy_flags;
+mod proxy_struct;
 
 use proc_macro::TokenStream;
 
@@ -15,6 +16,11 @@ pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn proxy_enum(attrs: TokenStream, input: TokenStream) -> TokenStream {
     proxy_enum::proxy_enum(attrs, input)
+}
+
+#[proc_macro_attribute]
+pub fn proxy_struct(attrs: TokenStream, input: TokenStream) -> TokenStream {
+    proxy_struct::proxy_struct(attrs, input)
 }
 
 #[proc_macro_attribute]
