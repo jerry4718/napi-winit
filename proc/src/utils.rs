@@ -1,10 +1,8 @@
-use std::iter::Filter;
-use std::slice::Iter;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse, parse_macro_input, parse_str, Attribute, Expr, ExprBlock, ExprClosure, ExprPath, ExprTuple, Ident, LitStr, Meta, MetaList, MetaNameValue, Token, Type, TypePath};
+use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
+use syn::{parse, Attribute, ExprBlock, ExprClosure, ExprTuple, Ident, LitStr, Meta, MetaList, MetaNameValue, Token, Type};
 
 pub(crate) struct Metas {
     metas: Vec<Meta>,
@@ -30,20 +28,8 @@ pub(crate) fn parse_metas(input: proc_macro::TokenStream) -> Vec<Meta> {
 }
 
 #[inline]
-pub(crate) fn to_tokens<Input: ToTokens>(to_tokens: &Input) -> proc_macro2::TokenStream {
-    to_tokens.into_token_stream()
-}
-
-#[inline]
 pub(crate) fn parse_as<As: Parse + Spanned>(to_tokens: &dyn ToTokens) -> As {
     parse::<As>(proc_macro::TokenStream::from(to_tokens.into_token_stream())).unwrap()
-}
-
-#[inline]
-pub(crate) fn to_lit_str(tokens: Box<dyn ToTokens>) -> LitStr {
-    let string = tokens.into_token_stream().to_string();
-    let inner = vec![String::from('"'), string, String::from('"')];
-    parse_str::<LitStr>(&inner.join("")).unwrap()
 }
 
 #[inline]

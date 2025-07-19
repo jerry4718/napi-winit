@@ -1,8 +1,7 @@
+use crate::utils::{append_to_tokens, get_meta_by_name, get_meta_value_as_expr_tuple, get_type_ty_or, parse_as, parse_metas};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::{braced, bracketed, parenthesized, parse_macro_input, Attribute, ExprTuple, Ident, ItemStruct, Meta, Token, Type};
-use syn::parse::{Parse, ParseStream};
-use crate::utils::{append_to_tokens, get_meta_by_name, get_meta_value_as_expr_tuple, get_type_ty_or, parse_as, parse_metas, separate_attr_by_name, to_lit_str};
+use syn::{parse_macro_input, Ident, ItemStruct, Type};
 
 pub(crate) fn proxy_flags(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -10,7 +9,7 @@ pub(crate) fn proxy_flags(attrs: proc_macro::TokenStream, input: proc_macro::Tok
 
     let origin = get_type_ty_or(
         &get_meta_by_name(&metas, "origin"),
-        &format_ident!("Origin{}", input.ident)
+        &format_ident!("Origin{}", input.ident),
     );
 
     let bitflags = get_meta_by_name(&metas, "flags");
@@ -38,25 +37,13 @@ struct TempStruct {
     pub flags: Vec<Ident>,
 }
 
-fn flag_lower_name(flag: &Ident) -> Ident {
-    format_ident!("{}", flag.to_string().to_lowercase())
-}
-
-fn flag_field_name(flag: &Ident) -> Ident {
-    let flag_lower = flag_lower_name(flag);
-    format_ident!("flag_{}", flag)
-}
-
 impl ToTokens for TempStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let TempStruct {
-            input: ItemStruct { ident: name, attrs,  .. },
+            input: ItemStruct { ident: name, attrs, .. },
             origin: origin_ty,
             flags,
         } = self;
-
-        let export_ident = name.clone();
-        let export_ident_lit = to_lit_str(Box::new(export_ident.clone()));
 
         let lower_names: Vec<_> = flags.iter().map(|flag| format_ident!("{}", flag.to_string().to_lowercase())).collect();
         let lower_names_zip: Vec<_> = flags.iter().zip(&lower_names).collect();

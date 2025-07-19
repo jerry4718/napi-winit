@@ -1,17 +1,11 @@
 #![allow(unused_imports, unused_variables, dead_code)]
 
-mod mapping_bitflags;
 mod utils;
 mod proxy_enum;
 mod proxy_flags;
 mod proxy_struct;
 
 use proc_macro::TokenStream;
-
-#[proc_macro]
-pub fn mapping_bitflags(input: TokenStream) -> TokenStream {
-    mapping_bitflags::mapping_bitflags(input)
-}
 
 #[proc_macro_attribute]
 pub fn proxy_enum(attrs: TokenStream, input: TokenStream) -> TokenStream {

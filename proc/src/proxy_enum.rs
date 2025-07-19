@@ -1,13 +1,13 @@
-use crate::utils::{append_to_tokens, get_meta_value_as_block, get_meta_value_as_closure, get_meta_value_as_lit_str, get_meta_value_as_type, get_metas_by_attr_name, get_type_ty_or, parse_as, parse_metas, separate_attr_by_name, to_tokens};
-use proc_macro2::TokenStream;
-use quote::{
-    format_ident,
-    quote,
-    quote_spanned,
-    IdentFragment,
-    ToTokens,
+use crate::utils::{
+    append_to_tokens, get_meta_value_as_lit_str, get_metas_by_attr_name,
+    get_type_ty_or, parse_metas, separate_attr_by_name,
 };
-use syn::{parse_macro_input, spanned::Spanned, Attribute, Block, Expr, ExprBlock, ExprClosure, ExprPath, Field, Fields, Ident, ItemEnum, Meta, MetaNameValue, Path, PathSegment, Type, TypePath, Variant};
+use proc_macro2::TokenStream;
+use quote::{ format_ident, quote, quote_spanned, ToTokens };
+use syn::{
+    parse_macro_input,  spanned::Spanned,  Attribute,  Expr,  ExprClosure,  ExprPath,
+    Field, Fields, Ident, ItemEnum, Meta, MetaNameValue, Type, Variant,
+};
 
 pub(crate) fn proxy_enum(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -23,7 +23,7 @@ struct TempEnum {
     pub input: ItemEnum,
     pub reserved_attrs: Vec<Attribute>,
     pub temp_variants: Vec<TempVariant>,
-    pub origin_enum: Type,
+    pub origin_type: Type,
     pub string_enum: bool,
     pub non_exhaustive: bool,
     pub skip_forward: bool,
@@ -162,15 +162,13 @@ fn conv_unit_into(variant: &TempVariant, origin_type: &Type) -> TokenStream {
     quote! { Self::#ident => #origin_type::#ident }
 }
 
-enum NonExhaustive {
-    Variant,
-    From,
-    Into,
-}
-
 impl ToTokens for TempEnum {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, reserved_attrs, temp_variants, origin_enum: origin_type, string_enum, non_exhaustive, skip_forward, skip_backward } = self;
+        let Self {
+            input, reserved_attrs, temp_variants,
+            origin_type, string_enum, non_exhaustive,
+            skip_forward, skip_backward,
+        } = self;
 
         let ItemEnum { ident, vis, .. } = input;
 
@@ -236,8 +234,8 @@ impl ToTokens for TempEnum {
 
 impl ToTokens for TempVariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, like, reserved_attrs, temp_fields, string_enum } = self;
-        let Variant { ident, fields, .. } = input;
+        let Self { input, reserved_attrs, temp_fields, string_enum, .. } = self;
+        let Variant { ident, .. } = input;
 
         if *string_enum {
             append_to_tokens(tokens, quote_spanned! { input.span() =>
@@ -270,7 +268,7 @@ const ATTR_INCLUDES: &[&str] = &[
     ATTR_PROXY_ENUM,
 ];
 
-const META_ORIGIN_ENUM: &str = "origin_enum";
+const META_ORIGIN_ENUM: &str = "origin_type";
 const META_STRING_ENUM: &str = "string_enum";
 const META_NON_EXHAUSTIVE: &str = "non_exhaustive";
 const META_SKIP_FORWARD: &str = "skip_forward";
@@ -290,7 +288,7 @@ macro_rules! map_meta_to_local {
 }
 
 fn temp_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> TempEnum {
-    let ItemEnum { attrs, ident, variants, generics, .. } = item_enum;
+    let ItemEnum { attrs, ident, variants, .. } = item_enum;
 
     let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
     if matches!(matched.len(), n if n > 0) {
@@ -298,7 +296,7 @@ fn temp_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> TempEnum {
     }
 
     map_meta_to_local!(&metas => {
-        META_ORIGIN_ENUM => origin_enum,
+        META_ORIGIN_ENUM => origin_type,
         META_STRING_ENUM => string_enum,
         META_NON_EXHAUSTIVE => non_exhaustive,
         META_SKIP_FORWARD => skip_forward,
@@ -309,7 +307,7 @@ fn temp_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> TempEnum {
         input: item_enum.clone(),
         reserved_attrs: surplus,
         temp_variants: temp_variants(string_enum.is_some(), variants.iter().collect()),
-        origin_enum: get_type_ty_or(&origin_enum, &format_ident!("Origin{}", ident)),
+        origin_type: get_type_ty_or(&origin_type, &format_ident!("Origin{}", ident)),
         string_enum: string_enum.is_some(),
         non_exhaustive: non_exhaustive.is_some(),
         skip_forward: skip_forward.is_some(),
@@ -320,7 +318,7 @@ fn temp_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> TempEnum {
 fn temp_variants(string_enum: bool, variants: Vec<&Variant>) -> Vec<TempVariant> {
     variants.iter()
         .map(|variant| {
-            let Variant { attrs, fields, ident, .. } = variant;
+            let Variant { attrs, fields, .. } = variant;
 
             let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
 
@@ -363,7 +361,7 @@ fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
     fields.iter()
         .zip(0..fields.len())
         .map(|(field, idx)| {
-            let Field { attrs, ident, ty, .. } = field;
+            let Field { attrs, ident, .. } = field;
 
             let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
 

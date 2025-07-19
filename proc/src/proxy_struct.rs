@@ -1,8 +1,7 @@
-use proc_macro2::TokenStream;
-use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::{parse_macro_input, Attribute, ItemStruct, Type, Ident, Meta, ItemEnum};
-use syn::spanned::Spanned;
 use crate::utils::{append_to_tokens, get_ident_optional, get_type_ty_or, parse_metas, separate_attr_by_name};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
+use syn::{parse_macro_input, Attribute, Ident, ItemStruct, Meta, Type};
 
 pub(crate) fn proxy_struct(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -67,7 +66,10 @@ fn temp_struct(metas: &Vec<Meta>, item_struct: &ItemStruct) -> TempStruct {
 
 impl ToTokens for TempStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, reserved_attrs, origin_type, field_name, skip_forward, skip_backward } = self;
+        let Self {
+            input, reserved_attrs, origin_type,
+            field_name, skip_forward, skip_backward
+        } = self;
 
         let ItemStruct { ident, vis, .. } = input;
 
