@@ -6,7 +6,7 @@ use proc::{proxy_enum, proxy_flags};
 
 use crate::utils::helpers::to_option_string;
 
-#[proxy_enum(origin_enum = winit::keyboard::NativeKeyCode, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::NativeKeyCode, skip_backward)]
 pub enum NativeKeyCode {
     Unidentified,
     Android(#[proxy_enum(field_name = "code")] u32),
@@ -15,7 +15,7 @@ pub enum NativeKeyCode {
     Xkb(#[proxy_enum(field_name = "code")] u32),
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::NativeKey, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::NativeKey, skip_backward)]
 pub enum NativeKey {
     Unidentified,
     Android(#[proxy_enum(field_name = "code")] u32),
@@ -25,7 +25,7 @@ pub enum NativeKey {
     Web(#[proxy_enum(field_name = "code")] String),
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::Key::<SmolStr>, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::Key::<SmolStr>, skip_backward)]
 pub enum Key {
     Named(#[proxy_enum(field_name = "name")] NamedKey),
     Character(#[proxy_enum(field_name = "ch")] String),
@@ -33,13 +33,13 @@ pub enum Key {
     Dead(#[proxy_enum(field_name = "ch", from_origin = to_option_string)] Option<String>),
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::PhysicalKey, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::PhysicalKey, skip_backward)]
 pub enum PhysicalKey {
     Code(KeyCode),
     Unidentified(NativeKeyCode),
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::KeyCode, string_enum, skip_backward, non_exhaustive)]
+#[proxy_enum(origin_type = winit::keyboard::KeyCode, string_enum, skip_backward, non_exhaustive)]
 #[derive(Clone)]
 pub enum KeyCode {
     Backquote, Backslash, BracketLeft, BracketRight, Comma,
@@ -69,7 +69,7 @@ pub enum KeyCode {
     F21, F22, F23, F24, F25, F26, F27, F28, F29, F30, F31, F32, F33, F34, F35
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::NamedKey, string_enum, skip_backward, non_exhaustive)]
+#[proxy_enum(origin_type = winit::keyboard::NamedKey, string_enum, skip_backward, non_exhaustive)]
 #[derive(Clone)]
 pub enum NamedKey {
     Alt, AltGraph, CapsLock, Control, Fn, FnLock, NumLock, ScrollLock, Shift, Symbol, SymbolLock,
@@ -113,11 +113,11 @@ pub enum NamedKey {
     F21, F22, F23, F24, F25, F26, F27, F28, F29, F30, F31, F32, F33, F34, F35
 }
 
-#[proxy_enum(origin_enum = winit::keyboard::KeyLocation, string_enum, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::KeyLocation, string_enum, skip_backward)]
 pub enum KeyLocation { Standard, Left, Right, Numpad }
 
 #[proxy_flags(origin = winit::keyboard::ModifiersState, flags = (SHIFT, CONTROL, ALT, SUPER))]
 pub struct ModifiersState;
 
-#[proxy_enum(origin_enum = winit::keyboard::ModifiersKeyState, string_enum, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::ModifiersKeyState, string_enum, skip_backward)]
 pub enum ModifiersKeyState { Pressed, Unknown }

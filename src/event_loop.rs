@@ -34,7 +34,7 @@ impl EventLoop {
     }
 }
 
-#[proxy_enum(origin_enum = winit::platform::pump_events::PumpStatus)]
+#[proxy_enum(origin_type = winit::platform::pump_events::PumpStatus, skip_backward)]
 pub enum PumpStatus {
     Continue,
     Exit(#[proxy_enum(field_name = "code")] i32),
@@ -166,10 +166,10 @@ impl ActiveEventLoop {
     }
 }
 
-#[proxy_enum(origin_enum = winit::event_loop::DeviceEvents, string_enum, skip_forward)]
+#[proxy_enum(origin_type = winit::event_loop::DeviceEvents, string_enum, skip_forward)]
 pub enum DeviceEvents { Always, WhenFocused, Never }
 
-#[proxy_enum(origin_enum = winit::event_loop::ControlFlow)]
+#[proxy_enum(origin_type = winit::event_loop::ControlFlow)]
 pub enum ControlFlow {
     Poll,
     Wait,

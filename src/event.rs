@@ -15,7 +15,7 @@ use crate::{
 #[derive(Clone)]
 pub struct UserPayload {}
 
-#[proxy_enum(origin_enum = winit::event::Event::<UserPayload>, skip_backward)]
+#[proxy_enum(origin_type = winit::event::Event::<UserPayload>, skip_backward)]
 pub enum Event {
     NewEvents(#[proxy_enum(field_name = "cause")] StartCause),
     WindowEvent {
@@ -34,7 +34,7 @@ pub enum Event {
     MemoryWarning,
 }
 
-#[proxy_enum(origin_enum = winit::event::StartCause, skip_backward)]
+#[proxy_enum(origin_type = winit::event::StartCause, skip_backward)]
 pub enum StartCause {
     ResumeTimeReached {
         start: Timeout,
@@ -49,7 +49,7 @@ pub enum StartCause {
     Init,
 }
 
-#[proxy_enum(origin_enum = winit::event::WindowEvent, skip_backward)]
+#[proxy_enum(origin_type = winit::event::WindowEvent, skip_backward)]
 pub enum WindowEvent {
     ActivationTokenDone {
         serial: AsyncRequestSerial,
@@ -189,7 +189,7 @@ impl Modifiers {
     }
 }
 
-#[proxy_enum(origin_enum = winit::event::Ime, skip_backward)]
+#[proxy_enum(origin_type = winit::event::Ime, skip_backward)]
 pub enum Ime {
     Enabled,
     Preedit(
@@ -200,7 +200,7 @@ pub enum Ime {
     Disabled,
 }
 
-#[proxy_enum(origin_enum = winit::event::MouseButton, skip_backward)]
+#[proxy_enum(origin_type = winit::event::MouseButton, skip_backward)]
 pub enum MouseButton {
     Left,
     Right,
@@ -210,7 +210,7 @@ pub enum MouseButton {
     Other(u16),
 }
 
-#[proxy_enum(origin_enum = winit::event::MouseScrollDelta, skip_backward)]
+#[proxy_enum(origin_type = winit::event::MouseScrollDelta, skip_backward)]
 pub enum MouseScrollDelta {
     LineDelta(#[proxy_enum(field_name = "x")] f64, #[proxy_enum(field_name = "y")] f64),
     PixelDelta(#[proxy_enum(field_name = "delta")] Position),
@@ -219,7 +219,7 @@ pub enum MouseScrollDelta {
 #[proxy_struct(origin_type = winit::event::InnerSizeWriter)]
 pub struct InnerSizeWriter;
 
-#[proxy_enum(origin_enum = winit::event::TouchPhase, string_enum, skip_backward)]
+#[proxy_enum(origin_type = winit::event::TouchPhase, string_enum, skip_backward)]
 pub enum TouchPhase {
     Started,
     Moved,
@@ -230,7 +230,7 @@ pub enum TouchPhase {
 #[proxy_struct(origin_type = winit::event::Touch)]
 pub struct Touch;
 
-#[proxy_enum(origin_enum = winit::event::DeviceEvent, skip_backward)]
+#[proxy_enum(origin_type = winit::event::DeviceEvent, skip_backward)]
 pub enum DeviceEvent {
     Added,
     Removed,
@@ -251,7 +251,7 @@ pub enum DeviceEvent {
     Key(#[proxy_enum(field_name = "raw")] RawKeyEvent),
 }
 
-#[proxy_enum(origin_enum = winit::event::ElementState, string_enum, skip_backward)]
+#[proxy_enum(origin_type = winit::event::ElementState, string_enum, skip_backward)]
 #[derive(Clone)]
 pub enum ElementState {
     Pressed,

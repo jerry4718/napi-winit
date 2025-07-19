@@ -3,7 +3,7 @@ use proc::{proxy_enum, proxy_struct};
 use crate::napi_reason;
 
 /** [`winit::window::CursorIcon`] */
-#[proxy_enum(origin_enum = winit::window::CursorIcon, string_enum, non_exhaustive)]
+#[proxy_enum(origin_type = winit::window::CursorIcon, string_enum, non_exhaustive)]
 pub enum CursorIcon {
     Default, ContextMenu, Help, Pointer, Progress, Wait, Cell, Crosshair, Text, VerticalText,
     Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, EResize, NResize, NeResize, NwResize,

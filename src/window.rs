@@ -310,11 +310,11 @@ impl From<OriginFullscreen> for Fullscreen {
 #[derive(Clone)]
 pub struct WindowButtons;
 
-#[proxy_enum(origin_enum = winit::window::WindowLevel, string_enum)]
+#[proxy_enum(origin_type = winit::window::WindowLevel, string_enum)]
 #[derive(Clone)]
 pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
 
-#[proxy_enum(origin_enum = winit::window::Theme, string_enum)]
+#[proxy_enum(origin_type = winit::window::Theme, string_enum)]
 #[derive(Clone)]
 pub enum Theme { Light, Dark }
 
@@ -612,14 +612,14 @@ impl Window {
     }
 }
 
-#[proxy_enum(origin_enum = winit::window::ImePurpose, string_enum, non_exhaustive)]
+#[proxy_enum(origin_type = winit::window::ImePurpose, string_enum, non_exhaustive)]
 pub enum ImePurpose { Normal, Password, Terminal }
 
-#[proxy_enum(origin_enum = winit::window::UserAttentionType, string_enum)]
+#[proxy_enum(origin_type = winit::window::UserAttentionType, string_enum)]
 pub enum UserAttentionType { Critical, Informational }
 
-#[proxy_enum(origin_enum = winit::window::CursorGrabMode, string_enum)]
+#[proxy_enum(origin_type = winit::window::CursorGrabMode, string_enum)]
 pub enum CursorGrabMode { None, Confined, Locked }
 
-#[proxy_enum(origin_enum = winit::window::ResizeDirection, string_enum)]
+#[proxy_enum(origin_type = winit::window::ResizeDirection, string_enum)]
 pub enum ResizeDirection { East, North, NorthEast, NorthWest, South, SouthEast, SouthWest, West }
