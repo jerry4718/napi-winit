@@ -16,7 +16,7 @@ threadpool = "1.8.1"
 once_cell = "1.21.3"
 
 [dependencies.winit]
-version = "0.30.11"
+version = "0.30.12"
 features = [ "rwh_05", "rwh_06" ]
 
 [dependencies.tokio]
@@ -35,13 +35,13 @@ version = "0.6.2"
 features = [ "std" ]
 
 [dependencies.napi]
-version = "3.0.0"
+version = "3.2.3"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.0.0"
+version = "3.2.3"
 features = ["type-def"]
 
 #[dependencies.ctor]

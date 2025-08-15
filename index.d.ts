@@ -6,8 +6,7 @@ export declare namespace Extra {
     presentWithTyped(input: Uint32Array): void
     presentWithBuffer(buffer: Buffer): void
     presentWithWriter(write: (width: number, height: number, view: Uint32Array) => void): void
-    presentWithAlloc(write: (width: number, height: number, view: Uint32Array) => void): void
-    presentWithAllocTsfn(write: (width: number, height: number, view: Uint32Array) => void): void
+    presentWithTsfn(write: (width: number, height: number, view: Uint32Array) => void): void
   }
   export class ThreadPool {
     constructor(numThreads: number)
@@ -264,18 +263,6 @@ export declare class WindowId {
 }
 
 export interface ApplicationOptions {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => (void | Promise<void>)
-  onResumed: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => (void | Promise<void>)
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => (void | Promise<void>)
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => (void | Promise<void>)
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onSuspended?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onExiting?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-}
-
-export interface ApplicationOptions0 {
   onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => (void | Promise<void>)
   onResumed: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
   onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => (void | Promise<void>)

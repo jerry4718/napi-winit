@@ -25,6 +25,7 @@ let close_requested: boolean = false;
 let request_redraw: boolean = false;
 
 let buffer = new Uint32Array(0);
+let last_line =  new Uint32Array(0);
 let old_width: number = 0, old_height: number = 0;
 
 function prePresentNotify() {
@@ -32,15 +33,21 @@ function prePresentNotify() {
 }
 
 function update_buffer(width: number, height: number) {
-    if (width === old_width && height === old_height) return;
+    if (width === old_width && height === old_height) {
+        if (last_line.length !== width) last_line = new Uint32Array(width);
+        buffer.set(buffer.slice(width), 0);
+        last_line.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
+        buffer.set(last_line, (height - 1) * width);
+        return;
+    }
 
-    const old = buffer;
+    const old_buffer = buffer;
     buffer = new Uint32Array(width * height);
     buffer.fill(0xFF000000 | Math.floor(Math.random() * 0xFFFFFF));
 
     for (let line = 0; line < Math.min(height, old_height); line++) {
         const old_offset_end = (line + Math.max(old_height - height, 0) + 1) * old_width;
-        const old_line_buffer = old.slice(old_offset_end - Math.min(width, old_width), old_offset_end);
+        const old_line_buffer = old_buffer.slice(old_offset_end - Math.min(width, old_width), old_offset_end);
         buffer.set(old_line_buffer, line * width);
     }
 }
@@ -54,7 +61,7 @@ function writeWithSize(width: number, height: number, view: Uint32Array) {
 }
 
 function present() {
-    surface.presentWithAlloc(writeWithSize);
+    surface.presentWithWriter(writeWithSize);
 }
 
 const frame_stamps: number[] = [];
@@ -83,7 +90,7 @@ function print_fps() {
     console.log({ fps: fps() });
 }
 
-const app = Application.withAsyncFx2Safe({
+const app = Application.withSyncRef({
     onNewEvents: (_eventLoop, cause) => {
         wait_cancelled = (cause.type === "WaitCancelled" && mode === "WaitUntil");
     },
@@ -133,7 +140,6 @@ const app = Application.withAsyncFx2Safe({
         // console.log({ _windowId, event: event.type });
     },
     onAboutToWait: async (eventLoop) => {
-        // console.log(`request_redraw = ${ request_redraw }, wait_cancelled = ${ wait_cancelled }, close_requested = ${ close_requested }`)
         if (request_redraw && !wait_cancelled && !close_requested) {
             window?.requestRedraw();
         }
@@ -164,7 +170,8 @@ function pump() {
 }
 
 while (true) {
-    await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
+    await new Promise(res => setTimeout(res, 1_000 / 120))
+    // await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
     pump()
 }
 // threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);

@@ -40,8 +40,9 @@ pub mod namespace {
         ptr::NonNull,
         slice,
     };
-
+    use std::ops::DerefMut;
     #[napi]
+
     struct SoftSurface<'scope> {
         pub(crate) window: &'scope winit::window::Window,
         pub(crate) context: Option<Context<&'scope winit::window::Window>>,
@@ -108,60 +109,32 @@ pub mod namespace {
         ) -> Result<()> {
             op_present(self, |width, height, buffer| {
                 let buf_len = buffer.len();
+                let buf_slice = buffer.deref_mut();
 
-                let layout = ok_or_reason!(Layout::array::<u32>(buf_len); "{}");
-                let temp = unsafe { alloc(layout) };
                 let view = unsafe {
-                    Uint32Array::with_external_data(temp.cast::<u32>(), buf_len, move |ptr, size| {
-                        println!("surface view was deallocated!!!!!!");
-                        dealloc(temp, layout);
-                    })
+                    Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
                 };
                 ok_or_reason!(write.call(FnArgs::from((width.get(), height.get(), view))));
-                buffer.copy_from_slice(unsafe { slice::from_raw_parts(temp as *const u32, buf_len) });
                 Ok(())
             })
         }
 
         #[napi]
-        pub fn present_with_alloc<'scope>(
-            &mut self, env: Env,
-            #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
-            write: Function<'scope, FnArgs<(u32, u32, Uint32Array)>, ()>,
-        ) -> Result<()> {
-            op_present(self, |width, height, buffer| {
-                let buf_len = buffer.len();
-
-                let layout = ok_or_reason!(Layout::array::<u32>(buf_len); "{}");
-                let temp = unsafe { alloc(layout) };
-                let temp_slice = unsafe { slice::from_raw_parts(temp as *const u32, buf_len) };
-
-                let view = Uint32Array::from(unsafe { Vec::from_raw_parts(temp as *mut u32, buf_len, buf_len) });
-
-                ok_or_reason!(write.call(FnArgs::from((width.get(), height.get(), view))));
-                buffer.copy_from_slice(temp_slice);
-                Ok(())
-            })
-        }
-
-        #[napi]
-        pub fn present_with_alloc_tsfn<'scope>(
+        pub fn present_with_tsfn<'scope>(
             &mut self, env: Env,
             #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
             write: ThreadsafeNoCallee<FnArgs<(u32, u32, Uint32Array)>, ()>,
         ) -> Result<()> {
             op_present(self, |width, height, buffer| {
                 let buf_len = buffer.len();
+                let buf_slice = buffer.deref_mut();
 
-                let layout = ok_or_reason!(Layout::array::<u32>(buf_len); "{}");
-                let temp = unsafe { alloc(layout) };
-                let temp_slice = unsafe { slice::from_raw_parts(temp as *const u32, buf_len) };
+                let view = unsafe {
+                    Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
+                };
 
-                let view = Uint32Array::from(unsafe { Vec::from_raw_parts(temp as *mut u32, buf_len, buf_len) });
-
-                let status = write.call(FnArgs::from((width.get(), height.get(), view)), ThreadsafeFunctionCallMode::NonBlocking);
+                let status = write.call(FnArgs::from((width.get(), height.get(), view)), ThreadsafeFunctionCallMode::Blocking);
                 if Status::Ok != status { dbg!(status); };
-                buffer.copy_from_slice(temp_slice);
                 Ok(())
             })
         }
