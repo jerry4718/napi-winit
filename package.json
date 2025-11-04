@@ -54,10 +54,10 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.1.4",
+    "@napi-rs/cli": "^3.4.1",
     "@oxc-node/core": "^0.0.32",
     "ava": "^6.4.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "ava": {
     "extensions": {

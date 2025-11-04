@@ -153,7 +153,7 @@ macro_rules! borrow_back {
 
 impl<Return: FromNapiValue> OptionsRefHolder<Return> {
     #[inline]
-    pub(crate) fn borrow_back(&self) -> OptionsFxHolder<Return> {
+    pub(crate) fn borrow_back(&self) -> OptionsFxHolder<'_, Return> {
         let Self { env, options } = self;
         borrow_back!(OptionsFxHolder { options @ env })
     }

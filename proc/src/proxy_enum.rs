@@ -195,7 +195,11 @@ impl ToTokens for TempEnum {
                 .map(|variant| conv(variant, origin_type))
                 .collect();
 
-            let non_exhaustive_from = if !(*non_exhaustive) { vec![] } else { vec![quote! { _ => Self::NonExhaustive }] };
+            let non_exhaustive_from = if !(*non_exhaustive) {
+                vec![]
+            } else {
+                vec![quote! { _ => Self::NonExhaustive }]
+            };
 
             append_to_tokens(tokens, quote! {
                 impl From<#origin_type> for #ident {
@@ -216,7 +220,11 @@ impl ToTokens for TempEnum {
                 .map(|variant| conv(variant, origin_type))
                 .collect();
 
-            let non_exhaustive_into = if !(*non_exhaustive) { vec![] } else { vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }] };
+            let non_exhaustive_into = if !(*non_exhaustive) {
+                vec![]
+            } else {
+                vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }]
+            };
 
             append_to_tokens(tokens, quote! {
                 impl Into<#origin_type> for #ident {

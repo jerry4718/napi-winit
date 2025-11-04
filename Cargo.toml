@@ -35,13 +35,13 @@ version = "0.6.2"
 features = [ "std" ]
 
 [dependencies.napi]
-version = "3.2.3"
+version = "3.4.0"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.2.3"
+version = "3.3.0"
 features = ["type-def"]
 
 #[dependencies.ctor]
@@ -67,7 +67,7 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.2.3"
+napi-build = "2.2.4"
 
 [profile.release]
 lto = true
