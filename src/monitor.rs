@@ -1,7 +1,7 @@
-use proc::proxy_struct;
+use proc::proxy_wrap;
 
-#[proxy_struct(origin_type = winit::monitor::VideoModeHandle)]
+#[proxy_wrap(origin_type = winit::monitor::VideoModeHandle)]
 pub struct VideoModeHandle;
 
-#[proxy_struct(origin_type = winit::monitor::MonitorHandle)]
+#[proxy_wrap(origin_type = winit::monitor::MonitorHandle)]
 pub struct MonitorHandle;

@@ -1,11 +1,11 @@
 use crate::utils::{
-    append_to_tokens, get_meta_value_as_lit_str, get_metas_by_attr_name,
+    append_to_tokens, get_meta_value_as_ident, get_metas_by_attr_name,
     get_type_ty_or, parse_metas, separate_attr_by_name,
 };
 use proc_macro2::TokenStream;
-use quote::{ format_ident, quote, quote_spanned, ToTokens };
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::{
-    parse_macro_input,  spanned::Spanned,  Attribute,  Expr,  ExprClosure,  ExprPath,
+    parse_macro_input, spanned::Spanned, Attribute, Expr, ExprClosure, ExprPath,
     Field, Fields, Ident, ItemEnum, Meta, MetaNameValue, Type, Variant,
 };
 
@@ -383,9 +383,9 @@ fn temp_fields(fields: Vec<&Field>) -> Vec<TempField> {
                 (None, None) => format_ident!("field_{}", idx),
                 (Some(ident), None) => ident.clone(),
                 (_, Some(meta)) => {
-                    let Some(lit) = get_meta_value_as_lit_str(&meta)
+                    let Some(ident) = get_meta_value_as_ident(&meta)
                     else { panic!("must assign a string literal") };
-                    format_ident!("{}", lit.value())
+                    ident
                 }
             };
 

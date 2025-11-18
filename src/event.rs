@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
 
-use proc::{proxy_enum, proxy_struct};
+use proc::{proxy_enum, proxy_wrap};
 
 use crate::{
     dpi::{Position, Size},
@@ -17,7 +17,7 @@ pub struct UserPayload {}
 
 #[proxy_enum(origin_type = winit::event::Event::<UserPayload>, skip_backward)]
 pub enum Event {
-    NewEvents(#[proxy_enum(field_name = "cause")] StartCause),
+    NewEvents(#[proxy_enum(field_name = cause)] StartCause),
     WindowEvent {
         window_id: WindowId,
         event: WindowEvent,
@@ -26,7 +26,7 @@ pub enum Event {
         device_id: DeviceId,
         event: DeviceEvent,
     },
-    UserEvent(#[proxy_enum(field_name = "payload")] UserPayload),
+    UserEvent(#[proxy_enum(field_name = payload)] UserPayload),
     Suspended,
     Resumed,
     AboutToWait,
@@ -55,21 +55,21 @@ pub enum WindowEvent {
         serial: AsyncRequestSerial,
         token: ActivationToken,
     },
-    Resized(#[proxy_enum(field_name = "size")] Size),
-    Moved(#[proxy_enum(field_name = "position")] Position),
+    Resized(#[proxy_enum(field_name = size)] Size),
+    Moved(#[proxy_enum(field_name = position)] Position),
     CloseRequested,
     Destroyed,
-    DroppedFile(#[proxy_enum(field_name = "path", from_origin = path_buf_to_string)] String),
-    HoveredFile(#[proxy_enum(field_name = "path", from_origin = path_buf_to_string)] String),
+    DroppedFile(#[proxy_enum(field_name = path, from_origin = path_buf_to_string)] String),
+    HoveredFile(#[proxy_enum(field_name = path, from_origin = path_buf_to_string)] String),
     HoveredFileCancelled,
-    Focused(#[proxy_enum(field_name = "focused")] bool),
+    Focused(#[proxy_enum(field_name = focused)] bool),
     KeyboardInput {
         device_id: DeviceId,
         event: KeyEvent,
         is_synthetic: bool,
     },
-    ModifiersChanged(#[proxy_enum(field_name = "modifiers")] Modifiers),
-    Ime(#[proxy_enum(field_name = "ime")] Ime),
+    ModifiersChanged(#[proxy_enum(field_name = modifiers)] Modifiers),
+    Ime(#[proxy_enum(field_name = ime)] Ime),
     CursorMoved {
         device_id: DeviceId,
         position: Position,
@@ -118,17 +118,17 @@ pub enum WindowEvent {
         axis: u32,
         value: f64,
     },
-    Touch(#[proxy_enum(field_name = "touch")] Touch),
+    Touch(#[proxy_enum(field_name = touch)] Touch),
     ScaleFactorChanged {
         scale_factor: f64,
         inner_size_writer: InnerSizeWriter,
     },
-    ThemeChanged(#[proxy_enum(field_name = "theme")] Theme),
-    Occluded(#[proxy_enum(field_name = "occluded")] bool),
+    ThemeChanged(#[proxy_enum(field_name = theme)] Theme),
+    Occluded(#[proxy_enum(field_name = occluded)] bool),
     RedrawRequested,
 }
 
-#[proxy_struct(origin_type = winit::event::DeviceId)]
+#[proxy_wrap(origin_type = winit::event::DeviceId)]
 pub struct DeviceId;
 
 #[napi(object, object_from_js = false)]
@@ -147,7 +147,7 @@ impl From<winit::event::RawKeyEvent> for RawKeyEvent {
     }
 }
 
-#[proxy_struct(origin_type = winit::event::KeyEvent, field_name = origin)]
+#[proxy_wrap(origin_type = winit::event::KeyEvent, field_name = origin)]
 pub struct KeyEvent;
 
 #[napi]
@@ -178,7 +178,7 @@ impl KeyEvent {
     }
 }
 
-#[proxy_struct(origin_type = winit::event::Modifiers)]
+#[proxy_wrap(origin_type = winit::event::Modifiers)]
 pub struct Modifiers;
 
 #[napi]
@@ -193,10 +193,10 @@ impl Modifiers {
 pub enum Ime {
     Enabled,
     Preedit(
-        #[proxy_enum(field_name = "preedit")] String,
-        #[proxy_enum(field_name = "position", from_origin = option_into)] Option<Position>
+        #[proxy_enum(field_name = preedit)] String,
+        #[proxy_enum(field_name = position, from_origin = option_into)] Option<Position>
     ),
-    Commit(#[proxy_enum(field_name = "commit")] String),
+    Commit(#[proxy_enum(field_name = commit)] String),
     Disabled,
 }
 
@@ -212,11 +212,11 @@ pub enum MouseButton {
 
 #[proxy_enum(origin_type = winit::event::MouseScrollDelta, skip_backward)]
 pub enum MouseScrollDelta {
-    LineDelta(#[proxy_enum(field_name = "x")] f64, #[proxy_enum(field_name = "y")] f64),
-    PixelDelta(#[proxy_enum(field_name = "delta")] Position),
+    LineDelta(#[proxy_enum(field_name = x)] f64, #[proxy_enum(field_name = y)] f64),
+    PixelDelta(#[proxy_enum(field_name = delta)] Position),
 }
 
-#[proxy_struct(origin_type = winit::event::InnerSizeWriter)]
+#[proxy_wrap(origin_type = winit::event::InnerSizeWriter)]
 pub struct InnerSizeWriter;
 
 #[proxy_enum(origin_type = winit::event::TouchPhase, string_enum, skip_backward)]
@@ -227,7 +227,7 @@ pub enum TouchPhase {
     Cancelled,
 }
 
-#[proxy_struct(origin_type = winit::event::Touch)]
+#[proxy_wrap(origin_type = winit::event::Touch)]
 pub struct Touch;
 
 #[proxy_enum(origin_type = winit::event::DeviceEvent, skip_backward)]
@@ -248,7 +248,7 @@ pub enum DeviceEvent {
         button: u32,
         state: ElementState,
     },
-    Key(#[proxy_enum(field_name = "raw")] RawKeyEvent),
+    Key(#[proxy_enum(field_name = raw)] RawKeyEvent),
 }
 
 #[proxy_enum(origin_type = winit::event::ElementState, string_enum, skip_backward)]

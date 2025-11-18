@@ -3,7 +3,7 @@
 mod utils;
 mod proxy_enum;
 mod proxy_flags;
-mod proxy_struct;
+mod proxy_wrap;
 
 use proc_macro::TokenStream;
 
@@ -13,8 +13,8 @@ pub fn proxy_enum(attrs: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn proxy_struct(attrs: TokenStream, input: TokenStream) -> TokenStream {
-    proxy_struct::proxy_struct(attrs, input)
+pub fn proxy_wrap(attrs: TokenStream, input: TokenStream) -> TokenStream {
+    proxy_wrap::proxy_wrap(attrs, input)
 }
 
 #[proc_macro_attribute]

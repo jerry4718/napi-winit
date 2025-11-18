@@ -10,7 +10,7 @@ use winit::platform::{
     run_on_demand::EventLoopExtRunOnDemand,
 };
 
-use proc::{proxy_enum, proxy_struct};
+use proc::{proxy_enum, proxy_wrap};
 
 use crate::{
     application::public::{Application, Runner},
@@ -22,7 +22,7 @@ use crate::{
     window::{Theme, Window, WindowAttributes},
 };
 
-#[proxy_struct(origin_type = winit::event_loop::EventLoop::<UserPayload>, field_name = inner)]
+#[proxy_wrap(origin_type = winit::event_loop::EventLoop::<UserPayload>, field_name = inner)]
 pub struct EventLoop;
 
 #[napi]
@@ -37,7 +37,7 @@ impl EventLoop {
 #[proxy_enum(origin_type = winit::platform::pump_events::PumpStatus, skip_backward)]
 pub enum PumpStatus {
     Continue,
-    Exit(#[proxy_enum(field_name = "code")] i32),
+    Exit(#[proxy_enum(field_name = code)] i32),
 }
 
 #[napi]
@@ -173,11 +173,11 @@ pub enum DeviceEvents { Always, WhenFocused, Never }
 pub enum ControlFlow {
     Poll,
     Wait,
-    WaitUntil(#[proxy_enum(field_name = "timeout")] Timeout),
+    WaitUntil(#[proxy_enum(field_name = timeout)] Timeout),
 }
 
-#[proxy_struct(origin_type = winit::event_loop::OwnedDisplayHandle)]
+#[proxy_wrap(origin_type = winit::event_loop::OwnedDisplayHandle)]
 pub struct OwnedDisplayHandle;
 
-#[proxy_struct(origin_type = winit::event_loop::AsyncRequestSerial)]
+#[proxy_wrap(origin_type = winit::event_loop::AsyncRequestSerial)]
 pub struct AsyncRequestSerial;

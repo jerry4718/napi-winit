@@ -9,28 +9,28 @@ use crate::utils::helpers::to_option_string;
 #[proxy_enum(origin_type = winit::keyboard::NativeKeyCode, skip_backward)]
 pub enum NativeKeyCode {
     Unidentified,
-    Android(#[proxy_enum(field_name = "code")] u32),
-    MacOS(#[proxy_enum(field_name = "code")] u16),
-    Windows(#[proxy_enum(field_name = "code")] u16),
-    Xkb(#[proxy_enum(field_name = "code")] u32),
+    Android(#[proxy_enum(field_name = code)] u32),
+    MacOS(#[proxy_enum(field_name = code)] u16),
+    Windows(#[proxy_enum(field_name = code)] u16),
+    Xkb(#[proxy_enum(field_name = code)] u32),
 }
 
 #[proxy_enum(origin_type = winit::keyboard::NativeKey, skip_backward)]
 pub enum NativeKey {
     Unidentified,
-    Android(#[proxy_enum(field_name = "code")] u32),
-    MacOS(#[proxy_enum(field_name = "code")] u16),
-    Windows(#[proxy_enum(field_name = "code")] u16),
-    Xkb(#[proxy_enum(field_name = "code")] u32),
-    Web(#[proxy_enum(field_name = "code")] String),
+    Android(#[proxy_enum(field_name = code)] u32),
+    MacOS(#[proxy_enum(field_name = code)] u16),
+    Windows(#[proxy_enum(field_name = code)] u16),
+    Xkb(#[proxy_enum(field_name = code)] u32),
+    Web(#[proxy_enum(field_name = code)] String),
 }
 
 #[proxy_enum(origin_type = winit::keyboard::Key::<SmolStr>, skip_backward)]
 pub enum Key {
-    Named(#[proxy_enum(field_name = "name")] NamedKey),
-    Character(#[proxy_enum(field_name = "ch")] String),
-    Unidentified(#[proxy_enum(field_name = "ch")] NativeKey),
-    Dead(#[proxy_enum(field_name = "ch", from_origin = to_option_string)] Option<String>),
+    Named(#[proxy_enum(field_name = name)] NamedKey),
+    Character(#[proxy_enum(field_name = ch)] String),
+    Unidentified(#[proxy_enum(field_name = ch)] NativeKey),
+    Dead(#[proxy_enum(field_name = ch, from_origin = to_option_string)] Option<String>),
 }
 
 #[proxy_enum(origin_type = winit::keyboard::PhysicalKey, skip_backward)]

@@ -3,12 +3,12 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_macro_input, Attribute, Ident, ItemStruct, Meta, Type};
 
-pub(crate) fn proxy_struct(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub(crate) fn proxy_wrap(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
 
-    let struct_input = parse_macro_input!(input as ItemStruct);
+    let wrap_input = parse_macro_input!(input as ItemStruct);
 
-    let out_quotes = temp_struct(&metas, &struct_input);
+    let out_quotes = wrap_info(&metas, &wrap_input);
 
     proc_macro::TokenStream::from(quote! { #out_quotes })
 }
@@ -20,17 +20,17 @@ macro_rules! map_meta_to_local {
     };
 }
 
-const ATTR_PROXY_STRUCT: &str = "proxy_struct";
+const ATTR_PROXY_WRAP: &str = "proxy_wrap";
 
 const ATTR_INCLUDES: &[&str] = &[
-    ATTR_PROXY_STRUCT,
+    ATTR_PROXY_WRAP,
 ];
 const META_ORIGIN_TYPE: &str = "origin_type";
 const META_FIELD_NAME: &str = "field_name";
 const META_SKIP_FORWARD: &str = "skip_forward";
 const META_SKIP_BACKWARD: &str = "skip_backward";
 
-struct TempStruct {
+struct WrapInfo {
     pub input: ItemStruct,
     pub reserved_attrs: Vec<Attribute>,
     pub origin_type: Type,
@@ -39,7 +39,7 @@ struct TempStruct {
     pub skip_backward: bool,
 }
 
-fn temp_struct(metas: &Vec<Meta>, item_struct: &ItemStruct) -> TempStruct {
+fn wrap_info(metas: &Vec<Meta>, item_struct: &ItemStruct) -> WrapInfo {
     let ItemStruct { attrs, ident, .. } = item_struct;
 
     let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
@@ -54,7 +54,7 @@ fn temp_struct(metas: &Vec<Meta>, item_struct: &ItemStruct) -> TempStruct {
         META_SKIP_BACKWARD => skip_backward,
     });
 
-    TempStruct {
+    WrapInfo {
         input: item_struct.clone(),
         reserved_attrs: surplus,
         origin_type: get_type_ty_or(&origin_type, &format_ident!("Origin{}", ident)),
@@ -64,7 +64,7 @@ fn temp_struct(metas: &Vec<Meta>, item_struct: &ItemStruct) -> TempStruct {
     }
 }
 
-impl ToTokens for TempStruct {
+impl ToTokens for WrapInfo {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             input, reserved_attrs, origin_type,
@@ -77,7 +77,7 @@ impl ToTokens for TempStruct {
         if *skip_forward { napi_metas.push(quote! {object_to_js = false}) }
         if *skip_backward { napi_metas.push(quote! {object_from_js = false}) }
 
-        let struct_body = match &field_name {
+        let wrapper_body = match &field_name {
             Some(ident) => quote! { { pub(crate) #ident: #origin_type } },
             None => quote! { (pub(crate) #origin_type); },
         };
@@ -85,7 +85,7 @@ impl ToTokens for TempStruct {
         append_to_tokens(tokens, quote! {
             #[napi( #( #napi_metas ),* )]
             #( #reserved_attrs )*
-            #vis struct #ident #struct_body
+            #vis struct #ident #wrapper_body
         });
 
         if !*skip_forward {

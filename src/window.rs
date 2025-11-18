@@ -4,7 +4,7 @@ use winit::window::{
     Fullscreen as OriginFullscreen,
 };
 
-use proc::{proxy_enum, proxy_flags, proxy_struct};
+use proc::{proxy_enum, proxy_flags, proxy_wrap};
 
 use crate::{
     cursor::{Cursor, CursorIcon},
@@ -318,7 +318,7 @@ pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
 #[derive(Clone)]
 pub enum Theme { Light, Dark }
 
-#[proxy_struct(origin_type = winit::window::Icon)]
+#[proxy_wrap(origin_type = winit::window::Icon)]
 #[derive(Clone)]
 pub struct Icon;
 
@@ -332,13 +332,13 @@ impl Icon {
     }
 }
 
-#[proxy_struct(origin_type = winit::window::WindowId)]
+#[proxy_wrap(origin_type = winit::window::WindowId)]
 pub struct WindowId;
 
-#[proxy_struct(origin_type = winit::window::ActivationToken)]
+#[proxy_wrap(origin_type = winit::window::ActivationToken)]
 pub struct ActivationToken;
 
-#[proxy_struct(origin_type = winit::window::Window, field_name = inner)]
+#[proxy_wrap(origin_type = winit::window::Window, field_name = inner)]
 pub struct Window;
 
 #[napi]
