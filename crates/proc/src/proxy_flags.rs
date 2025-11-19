@@ -22,24 +22,24 @@ pub(crate) fn proxy_flags(attrs: proc_macro::TokenStream, input: proc_macro::Tok
 
     let flags: Vec<_> = expr_tuple.elems.iter().map(|el| parse_as::<Ident>(el)).collect();
 
-    let temp_struct = TempStruct {
+    let proxy_flags = ProxyFlags {
         input,
         origin,
         flags,
     };
 
-    proc_macro::TokenStream::from(quote! { #temp_struct })
+    proc_macro::TokenStream::from(quote! { #proxy_flags })
 }
 
-struct TempStruct {
+struct ProxyFlags {
     pub input: ItemStruct,
     pub origin: Type,
     pub flags: Vec<Ident>,
 }
 
-impl ToTokens for TempStruct {
+impl ToTokens for ProxyFlags {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let TempStruct {
+        let ProxyFlags {
             input: ItemStruct { ident: name, attrs, .. },
             origin: origin_ty,
             flags,

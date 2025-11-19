@@ -8,10 +8,14 @@ version = "0.1.102"
 crate-type = ["cdylib"]
 
 [workspace]
-members = [ "./proc" ]
+members = [ "crates/macros","crates/proc"]
+
+[workspace.dependencies]
+macros = { path = "crates/macros" }
+
 
 [dependencies]
-proc = { path = "./proc" }
+proc = { path = "crates/proc" }
 threadpool = "1.8.1"
 once_cell = "1.21.3"
 

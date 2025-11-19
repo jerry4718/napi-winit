@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
 
-use proc::{proxy_enum, proxy_wrap};
+use proc::{proxy_enum, proxy_struct, proxy_wrap};
 
 use crate::{
     dpi::{Position, Size},
@@ -128,56 +128,30 @@ pub enum WindowEvent {
     RedrawRequested,
 }
 
+/**[winit::event::DeviceId]*/
 #[proxy_wrap(origin_type = winit::event::DeviceId)]
 pub struct DeviceId;
 
-#[napi(object, object_from_js = false)]
+/**[winit::event::RawKeyEvent]*/
+#[proxy_struct(origin_type = winit::event::RawKeyEvent, object, skip_backward)]
 pub struct RawKeyEvent {
     pub physical_key: PhysicalKey,
     pub state: ElementState,
 }
 
-impl From<winit::event::RawKeyEvent> for RawKeyEvent {
-    fn from(raw: winit::event::RawKeyEvent) -> Self {
-        let winit::event::RawKeyEvent { physical_key, state } = raw;
-        Self {
-            physical_key: physical_key.into(),
-            state: state.into(),
-        }
-    }
+/** [winit::event::KeyEvent] */
+#[proxy_struct(origin_type = winit::event::KeyEvent, object, skip_backward)]
+pub struct KeyEvent {
+    pub physical_key: PhysicalKey,
+    pub logical_key: Key,
+    #[proxy_struct(from_origin = option_into)]
+    pub text: Option<String>,
+    pub location: KeyLocation,
+    pub state: ElementState,
+    pub repeat: bool,
 }
 
-#[proxy_wrap(origin_type = winit::event::KeyEvent, field_name = origin)]
-pub struct KeyEvent;
-
-#[napi]
-impl KeyEvent {
-    #[napi(getter)]
-    pub fn physical_key(&self) -> PhysicalKey {
-        self.origin.physical_key.into()
-    }
-    #[napi(getter)]
-    pub fn logical_key(&self) -> Key {
-        self.origin.logical_key.clone().into()
-    }
-    #[napi(getter)]
-    pub fn text(&self) -> Option<String> {
-        self.origin.text.clone().map(String::from)
-    }
-    #[napi(getter)]
-    pub fn location(&self) -> KeyLocation {
-        self.origin.location.into()
-    }
-    #[napi(getter)]
-    pub fn state(&self) -> ElementState {
-        self.origin.state.into()
-    }
-    #[napi(getter)]
-    pub fn repeat(&self) -> bool {
-        self.origin.repeat
-    }
-}
-
+/** [winit::event::Modifiers] */
 #[proxy_wrap(origin_type = winit::event::Modifiers)]
 pub struct Modifiers;
 
@@ -194,7 +168,7 @@ pub enum Ime {
     Enabled,
     Preedit(
         #[proxy_enum(field_name = preedit)] String,
-        #[proxy_enum(field_name = position, from_origin = option_into)] Option<Position>
+        #[proxy_enum(field_name = position, from_origin = option_into)] Option<Position>,
     ),
     Commit(#[proxy_enum(field_name = commit)] String),
     Disabled,
@@ -216,6 +190,7 @@ pub enum MouseScrollDelta {
     PixelDelta(#[proxy_enum(field_name = delta)] Position),
 }
 
+/**[winit::event::InnerSizeWriter]*/
 #[proxy_wrap(origin_type = winit::event::InnerSizeWriter)]
 pub struct InnerSizeWriter;
 
@@ -227,8 +202,58 @@ pub enum TouchPhase {
     Cancelled,
 }
 
-#[proxy_wrap(origin_type = winit::event::Touch)]
-pub struct Touch;
+/**[winit::event::Touch]*/
+#[proxy_struct(origin_type = winit::event::Touch, object, skip_backward)]
+pub struct Touch {
+    pub device_id: DeviceId,
+    pub phase: TouchPhase,
+    pub location: Position,
+    /// Describes how hard the screen was pressed. May be `None` if the platform
+    /// does not support pressure sensitivity.
+    ///
+    /// ## Platform-specific
+    ///
+    /// - Only available on **iOS** 9.0+, **Windows** 8+, **Web**, and **Android**.
+    /// - **Android**: This will never be [None]. If the device doesn't support pressure
+    ///   sensitivity, force will either be 0.0 or 1.0. Also see the
+    ///   [android documentation](https://developer.android.com/reference/android/view/MotionEvent#AXIS_PRESSURE).
+    #[proxy_struct(from_origin = option_into)]
+    pub force: Option<Force>,
+    /// Unique identifier of a finger.
+    pub id: u64,
+}
+
+#[proxy_enum(origin_type = winit::event::Force)]
+pub enum Force {
+    /// On iOS, the force is calibrated so that the same number corresponds to
+    /// roughly the same amount of pressure on the screen regardless of the
+    /// device.
+    Calibrated {
+        /// The force of the touch, where a value of 1.0 represents the force of
+        /// an average touch (predetermined by the system, not user-specific).
+        ///
+        /// The force reported by Apple Pencil is measured along the axis of the
+        /// pencil. If you want a force perpendicular to the device, you need to
+        /// calculate this value using the `altitude_angle` value.
+        force: f64,
+        /// The maximum possible force for a touch.
+        ///
+        /// The value of this field is sufficiently high to provide a wide
+        /// dynamic range for values of the `force` field.
+        max_possible_force: f64,
+        /// The altitude (in radians) of the stylus.
+        ///
+        /// A value of 0 radians indicates that the stylus is parallel to the
+        /// surface. The value of this property is Pi/2 when the stylus is
+        /// perpendicular to the surface.
+        altitude_angle: Option<f64>,
+    },
+    /// If the platform reports the force as normalized, we have no way of
+    /// knowing how much pressure 1.0 corresponds to – we know it's the maximum
+    /// amount of force, but as to how much force, you might either have to
+    /// press really really hard, or not hard at all, depending on the device.
+    Normalized(#[proxy_enum(field_name = value)] f64),
+}
 
 #[proxy_enum(origin_type = winit::event::DeviceEvent, skip_backward)]
 pub enum DeviceEvent {

@@ -335,9 +335,11 @@ impl Icon {
 #[proxy_wrap(origin_type = winit::window::WindowId)]
 pub struct WindowId;
 
+/**[winit::window::ActivationToken]*/
 #[proxy_wrap(origin_type = winit::window::ActivationToken)]
 pub struct ActivationToken;
 
+/**[winit::window::Window]*/
 #[proxy_wrap(origin_type = winit::window::Window, field_name = inner)]
 pub struct Window;
 

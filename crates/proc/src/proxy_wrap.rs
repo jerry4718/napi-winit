@@ -2,15 +2,17 @@ use crate::utils::{append_to_tokens, get_ident_optional, get_type_ty_or, parse_m
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_macro_input, Attribute, Ident, ItemStruct, Meta, Type};
+use macros::define_const_str;
+use crate::conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert};
 
 pub(crate) fn proxy_wrap(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
 
-    let wrap_input = parse_macro_input!(input as ItemStruct);
+    let macro_input = parse_macro_input!(input as ItemStruct);
 
-    let out_quotes = wrap_info(&metas, &wrap_input);
+    let proxy_wrap = parse_proxy_wrap(&metas, &macro_input);
 
-    proc_macro::TokenStream::from(quote! { #out_quotes })
+    proc_macro::TokenStream::from(quote! { #proxy_wrap })
 }
 
 macro_rules! map_meta_to_local {
@@ -20,64 +22,59 @@ macro_rules! map_meta_to_local {
     };
 }
 
-const ATTR_PROXY_WRAP: &str = "proxy_wrap";
+define_const_str!(ATTR_PROXY_WRAP = proxy_wrap);
+const ATTR_INCLUDES: &[&str] = &[ATTR_PROXY_WRAP];
 
-const ATTR_INCLUDES: &[&str] = &[
-    ATTR_PROXY_WRAP,
-];
-const META_ORIGIN_TYPE: &str = "origin_type";
-const META_FIELD_NAME: &str = "field_name";
-const META_SKIP_FORWARD: &str = "skip_forward";
-const META_SKIP_BACKWARD: &str = "skip_backward";
+define_const_str!(
+    META_ORIGIN_TYPE = origin_type,
+    META_FIELD_NAME = field_name,
+);
 
-struct WrapInfo {
+struct ProxyWrap {
     pub input: ItemStruct,
     pub reserved_attrs: Vec<Attribute>,
     pub origin_type: Type,
     pub field_name: Option<Ident>,
-    pub skip_forward: bool,
-    pub skip_backward: bool,
+    pub conf_convert: ConfConvert,
 }
 
-fn wrap_info(metas: &Vec<Meta>, item_struct: &ItemStruct) -> WrapInfo {
+fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
     let ItemStruct { attrs, ident, .. } = item_struct;
 
     let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
     if matches!(matched.len(), n if n > 0) {
-        panic!("so many proxy_struct");
+        panic!("so many proxy_wrap");
     }
 
     map_meta_to_local!(&metas => {
         META_ORIGIN_TYPE => origin_type,
         META_FIELD_NAME => field_name,
-        META_SKIP_FORWARD => skip_forward,
-        META_SKIP_BACKWARD => skip_backward,
     });
 
-    WrapInfo {
+    ProxyWrap {
         input: item_struct.clone(),
         reserved_attrs: surplus,
         origin_type: get_type_ty_or(&origin_type, &format_ident!("Origin{}", ident)),
         field_name: get_ident_optional(&field_name),
-        skip_forward: skip_forward.is_some(),
-        skip_backward: skip_backward.is_some(),
+        conf_convert: parse_conf_convert(metas),
     }
 }
 
-impl ToTokens for WrapInfo {
+impl ToTokens for ProxyWrap {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            input, reserved_attrs, origin_type,
-            field_name, skip_forward, skip_backward
+            input, reserved_attrs, origin_type, field_name,
+            conf_convert,
         } = self;
 
         let ItemStruct { ident, vis, .. } = input;
+        let NormalConfConvert { skip_from_origin, skip_into_origin, skip_to_js, skip_from_js } = conf_convert.normal();
 
         let mut napi_metas = Vec::new();
-        if *skip_forward { napi_metas.push(quote! {object_to_js = false}) }
-        if *skip_backward { napi_metas.push(quote! {object_from_js = false}) }
+        if skip_to_js { napi_metas.push(quote! {object_to_js = false}) }
+        if skip_from_js { napi_metas.push(quote! {object_from_js = false}) }
 
-        let wrapper_body = match &field_name {
+        let wrap_body = match &field_name {
             Some(ident) => quote! { { pub(crate) #ident: #origin_type } },
             None => quote! { (pub(crate) #origin_type); },
         };
@@ -85,10 +82,10 @@ impl ToTokens for WrapInfo {
         append_to_tokens(tokens, quote! {
             #[napi( #( #napi_metas ),* )]
             #( #reserved_attrs )*
-            #vis struct #ident #wrapper_body
+            #vis struct #ident #wrap_body
         });
 
-        if !*skip_forward {
+        if !skip_from_origin {
             let from_code = match &field_name {
                 Some(field) => quote! { #ident { #field: value } },
                 None => quote! { #ident (value) },
@@ -103,7 +100,7 @@ impl ToTokens for WrapInfo {
             });
         }
 
-        if !*skip_backward {
+        if !skip_into_origin {
             let into_code = match &field_name {
                 Some(ident) => quote! { self.#ident },
                 None => quote! { self.0 },

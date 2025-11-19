@@ -176,8 +176,10 @@ pub enum ControlFlow {
     WaitUntil(#[proxy_enum(field_name = timeout)] Timeout),
 }
 
+/** [winit::event_loop::OwnedDisplayHandle] */
 #[proxy_wrap(origin_type = winit::event_loop::OwnedDisplayHandle)]
 pub struct OwnedDisplayHandle;
 
+/** [winit::event_loop::AsyncRequestSerial] */
 #[proxy_wrap(origin_type = winit::event_loop::AsyncRequestSerial)]
 pub struct AsyncRequestSerial;
