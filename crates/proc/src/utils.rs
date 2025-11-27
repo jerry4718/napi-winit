@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
-use syn::{parse, Attribute, ExprBlock, ExprClosure, ExprTuple, Ident, LitStr, Meta, MetaList, MetaNameValue, Token, Type};
+use syn::{parse, Attribute, Expr, ExprBlock, ExprClosure, ExprTuple, Ident, LitStr, Meta, MetaList, MetaNameValue, Token, Type};
 
 pub(crate) struct Metas {
     metas: Vec<Meta>,
@@ -29,7 +29,8 @@ pub(crate) fn parse_metas(input: proc_macro::TokenStream) -> Vec<Meta> {
 
 #[inline]
 pub(crate) fn parse_as<As: Parse + Spanned>(to_tokens: &dyn ToTokens) -> As {
-    parse::<As>(proc_macro::TokenStream::from(to_tokens.into_token_stream())).unwrap()
+    parse::<As>(proc_macro::TokenStream::from(to_tokens.into_token_stream()))
+        .expect(format!("failed to parse as {}", std::any::type_name::<As>()).as_str())
 }
 
 #[inline]
@@ -125,6 +126,15 @@ pub(crate) fn get_meta_value_as_lit_str(meta: &Meta) -> Option<LitStr> {
 
     Some(parse_as::<LitStr>(value))
 }
+
+#[inline]
+pub(crate) fn get_meta_value_as_expr(meta: &Meta) -> Option<Expr> {
+    let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
+    else { return None };
+
+    Some(parse_as::<Expr>(value))
+}
+
 #[inline]
 pub(crate) fn get_meta_value_as_expr_tuple(meta: &Meta) -> Option<ExprTuple> {
     let Meta::NameValue(MetaNameValue { ref value, .. }) = meta

@@ -1,9 +1,12 @@
-use crate::utils::{append_to_tokens, get_meta_value_as_ident, get_metas_by_attr_name, separate_attr_by_name};
+use crate::{
+    conf_usage::{get_meta_value_as_conf_usage, ConfUsage},
+    utils::{append_to_tokens, get_meta_value_as_ident, get_metas_by_attr_name, separate_attr_by_name}
+};
 use macros::{define_const_str, map_meta_to_local};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
-use syn::{Attribute, Expr, ExprClosure, ExprPath, Field, Fields, Meta, MetaNameValue};
+use syn::{Attribute, Field, Fields, Ident};
 
 pub(crate) struct ConfFields {
     pub like: FieldsLike,
@@ -13,22 +16,9 @@ pub(crate) struct ConfFields {
 pub(crate) struct ConfField {
     pub input: Field,
     pub reserved_attrs: Vec<Attribute>,
-    pub ident: Ident,
-    pub from_origin: Option<ConvUsage>,
-    pub into_origin: Option<ConvUsage>,
-}
-
-pub(crate) enum ConvUsage {
-    Path(ExprPath),
-    Closure(ExprClosure),
-}
-
-pub(crate) fn quote_conv_usage(ident: &Ident, conv_usage: &Option<ConvUsage>) -> TokenStream {
-    match conv_usage {
-        Some(ConvUsage::Path(path)) => quote_spanned! { path.span() => (#path(#ident)) },
-        Some(ConvUsage::Closure(closure)) => quote_spanned! { closure.span() => ((#closure)(#ident)) },
-        None => quote! { #ident.into() },
-    }
+    pub field_ident: Ident,
+    pub from_origin: Option<ConfUsage>,
+    pub into_origin: Option<ConfUsage>,
 }
 
 const META_FIELD_NAME: &str = "field_name";
@@ -51,23 +41,19 @@ pub(crate) fn parse_conf_fields(fields: &Fields, parent_attrs: &Vec<Attribute>, 
                     META_INTO_ORIGIN => into_origin,
                 });
 
-                let ident = match (ident, field_name) {
-                    (None, None) => format_ident!("field_{}", idx),
-                    (Some(ident), None) => ident.clone(),
-                    (_, Some(meta)) => {
-                        let Some(ident) = get_meta_value_as_ident(&meta)
-                        else { panic!("must assign a string literal") };
-                        ident
-                    }
-                };
+                let field_ident = field_name
+                    .map(|meta| get_meta_value_as_ident(&meta))
+                    .flatten()
+                    .or_else(|| ident.clone())
+                    .unwrap_or_else(|| format_ident!("field_{}", idx));
 
-                let from_origin = from_origin.map(|meta| get_meta_value_as_conv_usage(&meta)).flatten();
-                let into_origin = into_origin.map(|meta| get_meta_value_as_conv_usage(&meta)).flatten();
+                let from_origin = from_origin.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
+                let into_origin = into_origin.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
 
                 ConfField {
-                    input: (*field).clone(),
+                    input: field.clone(),
                     reserved_attrs: surplus,
-                    ident,
+                    field_ident,
                     from_origin,
                     into_origin,
                 }
@@ -76,20 +62,9 @@ pub(crate) fn parse_conf_fields(fields: &Fields, parent_attrs: &Vec<Attribute>, 
     }
 }
 
-fn get_meta_value_as_conv_usage(meta: &Meta) -> Option<ConvUsage> {
-    let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
-    else { return None };
-
-    match value {
-        Expr::Path(path) => Some(ConvUsage::Path(path.clone())),
-        Expr::Closure(closure) => Some(ConvUsage::Closure(closure.clone())),
-        _ => panic!("unexpected converter"),
-    }
-}
-
 impl ToTokens for ConfField {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, reserved_attrs, ident, .. } = self;
+        let Self { input, reserved_attrs, field_ident: ident, .. } = self;
         let Field { vis, ty, .. } = input;
 
         append_to_tokens(tokens, quote_spanned! { input.span() =>
@@ -135,8 +110,8 @@ where
     }
 }
 
-fn quote_ident(ConfField { ident, .. }: &ConfField) -> TokenStream {
-    quote! { #ident }
+fn quote_ident(ConfField { field_ident, .. }: &ConfField) -> TokenStream {
+    quote! { #field_ident }
 }
 
 define_const_str!(

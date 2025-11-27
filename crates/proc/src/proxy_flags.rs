@@ -103,82 +103,76 @@ impl ToTokens for ProxyFlags {
             }
         });
 
-        append_to_tokens(tokens, quote_spanned! { name.span() =>
+        let mut fns = TokenStream::default();
+
+        append_to_tokens(&mut fns, quote! {
+            #[napi(factory)]
+            pub fn all() -> Self {
+                Self { #( #flag_idents: true ),* }
+            }
+            #[napi(factory)]
+            pub fn empty() -> Self {
+                Self { #( #flag_idents: false ),* }
+            }
             #[napi]
-            impl #name {
-                #[napi(factory)]
-                pub fn all() -> Self {
-                    Self { #( #flag_idents: true ),* }
-                }
-                #[napi(factory)]
-                pub fn empty() -> Self {
-                    Self { #( #flag_idents: false ),* }
-                }
-                #[napi]
-                pub fn is_all(&self) -> bool {
-                    let Self { #( #flag_idents ),* } = self;
-                    true #( && *#flag_idents )*
-                }
-                #[napi]
-                pub fn is_empty(&self) -> bool {
-                    let Self { #( #flag_idents ),* } = self;
-                    true #( && !*#flag_idents )*
-                }
+            pub fn is_all(&self) -> bool {
+                let Self { #( #flag_idents ),* } = self;
+                true #( && *#flag_idents )*
+            }
+            #[napi]
+            pub fn is_empty(&self) -> bool {
+                let Self { #( #flag_idents ),* } = self;
+                true #( && !*#flag_idents )*
             }
         });
 
         spanned_from_flag_zip!(has_idents, ident = "has_{}" => #ident);
-        append_to_tokens(tokens, quote_spanned! { name.span() =>
-            #[napi]
-            impl #name {
-                #(
-                    #[napi]
-                    pub fn #has_idents(&self) -> bool {
-                        self.#flag_idents
-                    }
-                )*
-            }
+        append_to_tokens(&mut fns, quote! {
+            #(
+                #[napi]
+                pub fn #has_idents(&self) -> bool {
+                    self.#flag_idents
+                }
+            )*
         });
 
         spanned_from_flag_zip!(toggle_idents, ident = "toggle_{}" => #ident);
-        append_to_tokens(tokens, quote_spanned! { name.span() =>
-            #[napi]
-            impl #name {
-                #(
-                    #[napi(ts_return_type="this")]
-                    pub fn #toggle_idents(&mut self) -> &Self {
-                        self.#flag_idents = !self.#flag_idents;
-                        self
-                    }
-                )*
-            }
+        append_to_tokens(&mut fns, quote! {
+            #(
+                #[napi(ts_return_type="this")]
+                pub fn #toggle_idents(&mut self) -> &Self {
+                    self.#flag_idents = !self.#flag_idents;
+                    self
+                }
+            )*
         });
 
         spanned_from_flag_zip!(insert_idents, ident = "insert_{}" => #ident);
-        append_to_tokens(tokens, quote_spanned! { name.span() =>
-            #[napi]
-            impl #name {
-                #(
-                    #[napi(ts_return_type="this")]
-                    pub fn #insert_idents(&mut self) -> &Self {
-                        self.#flag_idents = true;
-                        self
-                    }
-                )*
-            }
+        append_to_tokens(&mut fns, quote! {
+            #(
+                #[napi(ts_return_type="this")]
+                pub fn #insert_idents(&mut self) -> &Self {
+                    self.#flag_idents = true;
+                    self
+                }
+            )*
         });
 
         spanned_from_flag_zip!(remove_idents, ident = "remove_{}" => #ident);
+        append_to_tokens(&mut fns, quote! {
+            #(
+                #[napi(ts_return_type="this")]
+                pub fn #remove_idents(&mut self) -> &Self {
+                    self.#flag_idents = false;
+                    self
+                }
+            )*
+        });
+
         append_to_tokens(tokens, quote_spanned! { name.span() =>
             #[napi]
             impl #name {
-                #(
-                    #[napi(ts_return_type="this")]
-                    pub fn #remove_idents(&mut self) -> &Self {
-                        self.#flag_idents = false;
-                        self
-                    }
-                )*
+                #fns
             }
         });
     }

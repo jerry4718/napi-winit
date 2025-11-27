@@ -1,10 +1,13 @@
-use crate::conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert};
-use crate::conf_fields::{parse_conf_fields, quote_conf_fields, quote_conv_usage, ConfField, ConfFields, Kind, With};
-use crate::utils::{append_to_tokens, get_type_ty_or, parse_metas, separate_attr_by_name};
+use crate::{
+    conf_usage::quote_option_conf_usage,
+    conf_fields::{parse_conf_fields, quote_conf_fields, ConfField, ConfFields, Kind, With},
+    conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert},
+    utils::{append_to_tokens, get_type_ty_or, parse_metas, separate_attr_by_name},
+};
 use macros::{define_const_str, map_meta_to_local};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse_macro_input, Attribute, ItemStruct, Meta, Type, Variant};
+use syn::{parse_macro_input, Attribute, ItemStruct, Meta, Type};
 
 pub(crate) fn proxy_struct(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -93,11 +96,11 @@ impl ToTokens for ProxyStruct {
 fn quote_from_origin(ident: &Ident, origin_type: &Type, conf_fields: &ConfFields) -> TokenStream {
     let dispose = quote_conf_fields(
         conf_fields, Kind::Dispose, With::Origin,
-        |ConfField { ident, .. }| quote! { #ident },
+        |ConfField { field_ident, .. }| quote! { #field_ident },
     );
     let compose = quote_conf_fields(
         conf_fields, Kind::Compose, With::Proxy,
-        |ConfField { ident, from_origin, .. }| quote_conv_usage(ident, from_origin),
+        |ConfField { field_ident, from_origin, .. }| quote_option_conf_usage(field_ident, from_origin),
     );
     quote! {
         impl From<#origin_type> for #ident {
@@ -112,11 +115,11 @@ fn quote_from_origin(ident: &Ident, origin_type: &Type, conf_fields: &ConfFields
 fn quote_into_origin(ident: &Ident, origin_type: &Type, conf_fields: &ConfFields) -> TokenStream {
     let dispose = quote_conf_fields(
         conf_fields, Kind::Dispose, With::Proxy,
-        |ConfField { ident, .. }| quote! { #ident },
+        |ConfField { field_ident, .. }| quote! { #field_ident },
     );
     let compose = quote_conf_fields(
         conf_fields, Kind::Compose, With::Origin,
-        |ConfField { ident, into_origin, .. }| quote_conv_usage(ident, into_origin),
+        |ConfField { field_ident, into_origin, .. }| quote_option_conf_usage(field_ident, into_origin),
     );
     quote! {
         impl Into<#origin_type> for #ident {
