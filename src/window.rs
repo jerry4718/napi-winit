@@ -4,9 +4,10 @@ use winit::window::{
     Fullscreen as OriginFullscreen,
 };
 
-use proc::{proxy_enum, proxy_flags, proxy_wrap};
+use proc::{proxy_enum, proxy_flags, proxy_impl, proxy_wrap};
 
 use crate::{
+    utils::helpers::{option_map, option_into, pipe, ref_clone_into, result_map, result_into, result_err_reason, vec_map, vec_map_into},
     cursor::{Cursor, CursorIcon},
     dpi::{Position, Size},
     monitor::MonitorHandle,
@@ -306,6 +307,7 @@ impl From<OriginFullscreen> for Fullscreen {
     }
 }
 
+/**[winit::window::WindowButtons]*/
 #[proxy_flags(origin = winit::window::WindowButtons, flags = (CLOSE, MINIMIZE, MAXIMIZE))]
 #[derive(Clone)]
 pub struct WindowButtons;
@@ -321,6 +323,22 @@ pub enum Theme { Light, Dark }
 #[proxy_wrap(origin_type = winit::window::Icon)]
 #[derive(Clone)]
 pub struct Icon;
+
+
+struct UnitStruct;
+
+struct TupleStruct ( u8 );
+
+fn x(tuple: TupleStruct, unit: UnitStruct) {
+    let TupleStruct { 0: original, .. } = tuple;
+    let t2 = TupleStruct { 0: original };
+
+    let UnitStruct { .. } = unit;
+    let u2 = UnitStruct {};
+
+    todo!()
+}
+
 
 #[napi]
 impl Icon {
@@ -349,269 +367,148 @@ impl Window {
     pub fn default_attributes() -> WindowAttributes {
         WindowAttributes::default()
     }
-
-    #[napi]
-    pub fn id(&self) -> WindowId {
-        self.inner.id().into()
-    }
-
-    #[napi]
-    pub fn scale_factor(&self) -> f64 {
-        self.inner.scale_factor()
-    }
-
-    #[napi]
-    pub fn request_redraw(&self) {
-        self.inner.request_redraw();
-    }
-
-    #[napi]
-    pub fn pre_present_notify(&self) {
-        self.inner.pre_present_notify();
-    }
-
-    #[napi]
-    pub fn reset_dead_keys(&self) {
-        self.inner.reset_dead_keys();
-    }
 }
 
-#[napi]
+#[proxy_impl(access_expr = self.inner)]
 impl Window {
-    #[napi]
-    pub fn inner_position(&self) -> Result<Position> {
-        self.inner.inner_position()
-            .map(Position::from)
-            .map_err(|e| napi_reason!("{e}"))
-    }
-
-    #[napi]
-    pub fn outer_position(&self) -> Result<Position> {
-        self.inner.outer_position()
-            .map(Position::from)
-            .map_err(|e| napi_reason!("{e}"))
-    }
-
-    #[napi]
-    pub fn set_outer_position(&self, position: Position) {
-        self.inner.set_outer_position(position);
-    }
-
-    #[napi]
-    pub fn inner_size(&self) -> Size {
-        Size::from(self.inner.inner_size())
-    }
-
-    #[napi]
-    pub fn request_inner_size(&self, size: Size) -> Option<Size> {
-        self.inner.request_inner_size(size).map(Size::from)
-    }
-
-    #[napi]
-    pub fn outer_size(&self) -> Size {
-        self.inner.outer_size().into()
-    }
-
-    #[napi]
-    pub fn set_min_inner_size(&self, min_size: Option<Size>) {
-        self.inner.set_min_inner_size(min_size)
-    }
-
-    #[napi]
-    pub fn set_max_inner_size(&self, min_size: Option<Size>) {
-        self.inner.set_max_inner_size(min_size)
-    }
-
-    #[napi]
-    pub fn resize_increments(&self) -> Option<Size> {
-        self.inner.resize_increments().map(Size::from)
-    }
-
-    #[napi]
-    pub fn set_resize_increments(&self, increments: Option<Size>) {
-        self.inner.set_resize_increments(increments)
-    }
+    fn id(&self) -> WindowId;
+    fn scale_factor(&self) -> f64;
+    fn request_redraw(&self);
+    fn pre_present_notify(&self);
+    fn reset_dead_keys(&self);
 }
 
-#[napi]
+/*
+    #[proxy_impl(conv_return = option_into)]
+    fn request_inner_size(&self, #[proxy_impl(skip_conv_arg)] size: Size) -> Option<Size>;
+
+    fn set_min_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
+*/
+
+#[proxy_impl(access_expr = self.inner)]
 impl Window {
-    #[napi]
-    pub fn set_title(&self, title: String) {
-        self.inner.set_title(title.as_str())
-    }
-    #[napi]
-    pub fn set_transparent(&self, transparent: bool) {
-        self.inner.set_transparent(transparent)
-    }
-    #[napi]
-    pub fn set_blur(&self, blur: bool) {
-        self.inner.set_blur(blur)
-    }
-    #[napi]
-    pub fn set_visible(&self, visible: bool) {
-        self.inner.set_visible(visible)
-    }
-    #[napi]
-    pub fn is_visible(&self) -> Option<bool> {
-        self.inner.is_visible()
-    }
-    #[napi]
-    pub fn set_resizable(&self, resizable: bool) {
-        self.inner.set_resizable(resizable)
-    }
-    #[napi]
-    pub fn is_resizable(&self) -> bool {
-        self.inner.is_resizable()
-    }
-    #[napi]
-    pub fn set_enabled_buttons(&self, buttons: &WindowButtons) {
-        self.inner.set_enabled_buttons(buttons.clone().into())
-    }
-    #[napi]
-    pub fn enabled_buttons(&self) -> WindowButtons {
-        self.inner.enabled_buttons().into()
-    }
-    #[napi]
-    pub fn set_minimized(&self, minimized: bool) {
-        self.inner.set_minimized(minimized)
-    }
-    #[napi]
-    pub fn is_minimized(&self) -> Option<bool> {
-        self.inner.is_minimized()
-    }
-    #[napi]
-    pub fn set_maximized(&self, maximized: bool) {
-        self.inner.set_maximized(maximized)
-    }
-    #[napi]
-    pub fn is_maximized(&self) -> bool {
-        self.inner.is_maximized()
-    }
-    #[napi]
-    pub fn set_fullscreen(&self, fullscreen: Option<Fullscreen>) {
-        self.inner.set_fullscreen(fullscreen.map(Into::into));
-    }
-    #[napi]
-    pub fn fullscreen(&self) -> Option<Fullscreen> {
-        self.inner.fullscreen().map(Fullscreen::from)
-    }
-    #[napi]
-    pub fn set_decorations(&self, decorations: bool) {
-        self.inner.set_decorations(decorations)
-    }
-    #[napi]
-    pub fn is_decorated(&self) -> bool {
-        self.inner.is_decorated()
-    }
-    #[napi]
-    pub fn set_window_level(&self, level: WindowLevel) {
-        self.inner.set_window_level(level.into())
-    }
-    #[napi]
-    pub fn set_window_icon(&self, window_icon: Option<&Icon>) {
-        self.inner.set_window_icon(window_icon.map(|icon| icon.clone().into()))
-    }
-    #[napi]
-    pub fn set_ime_cursor_area(&self, position: Position, size: Size) {
-        self.inner.set_ime_cursor_area(position, size)
-    }
-    #[napi]
-    pub fn set_ime_allowed(&self, allowed: bool) {
-        self.inner.set_ime_allowed(allowed)
-    }
-    #[napi]
-    pub fn set_ime_purpose(&self, purpose: ImePurpose) {
-        self.inner.set_ime_purpose(purpose.into())
-    }
-    #[napi]
-    pub fn focus_window(&self) {
-        self.inner.focus_window()
-    }
-    #[napi]
-    pub fn has_focus(&self) -> bool {
-        self.inner.has_focus()
-    }
-    #[napi]
-    pub fn request_user_attention(&self, request_type: Option<UserAttentionType>) {
-        self.inner.request_user_attention(request_type.map(Into::into))
-    }
-    #[napi]
-    pub fn set_theme(&self, theme: Option<Theme>) {
-        self.inner.set_theme(theme.map(Into::into))
-    }
-    #[napi]
-    pub fn theme(&self) -> Option<Theme> {
-        self.inner.theme().map(Into::into)
-    }
-    #[napi]
-    pub fn set_content_protected(&self, protected: bool) {
-        self.inner.set_content_protected(protected)
-    }
-    #[napi]
-    pub fn title(&self) -> String {
-        self.inner.title()
-    }
+    #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
+    fn inner_position(&self) -> Result<Position>;
+
+    #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
+    fn outer_position(&self) -> Result<Position>;
+
+    fn set_outer_position(&self, #[proxy_impl(skip_conv_arg)] position: Position);
+
+    fn inner_size(&self) -> Size;
+
+    #[proxy_impl(conv_return = option_map(Into::into))]
+    fn request_inner_size(&self, #[proxy_impl(skip_conv_arg)] size: Size) -> Option<Size>;
+
+    fn outer_size(&self) -> Size;
+
+    fn set_min_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
+
+    fn set_max_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
+
+    #[proxy_impl(conv_return = option_into)]
+    fn resize_increments(&self) -> Option<Size>;
+
+    fn set_resize_increments(&self, #[proxy_impl(skip_conv_arg)] increments: Option<Size>);
 }
 
-#[napi]
+#[proxy_impl(access_expr = self.inner)]
 impl Window {
-    #[napi]
-    pub fn set_cursor(&self, cursor: &Cursor) {
-        self.inner.set_cursor(cursor.clone())
-    }
-    // #[napi]
-    // pub fn set_cursor_icon(&self, icon: CursorIcon) {
-    //     self.inner.set_cursor_icon(icon.into())
-    // }
-    #[napi]
-    pub fn set_cursor_position(&self, position: Position) -> Result<()> {
-        self.inner.set_cursor_position(position)
-            .map_err(|e| napi_reason!("{e}"))
-    }
-    #[napi]
-    pub fn set_cursor_grab(&self, mode: CursorGrabMode) -> Result<()> {
-        self.inner.set_cursor_grab(mode.into())
-            .map_err(|e| napi_reason!("{e}"))
-    }
-    #[napi]
-    pub fn set_cursor_visible(&self, visible: bool) {
-        self.inner.set_cursor_visible(visible)
-    }
-    #[napi]
-    pub fn drag_window(&self) -> Result<()> {
-        self.inner.drag_window()
-            .map_err(|e| napi_reason!("{e}"))
-    }
-    #[napi]
-    pub fn drag_resize_window(&self, direction: ResizeDirection) -> Result<()> {
-        self.inner.drag_resize_window(direction.into())
-            .map_err(|e| napi_reason!("{e}"))
-    }
-    #[napi]
-    pub fn show_window_menu(&self, position: Position) {
-        self.inner.show_window_menu(position)
-    }
-    #[napi]
-    pub fn set_cursor_hittest(&self, hittest: bool) -> Result<()> {
-        self.inner.set_cursor_hittest(hittest)
-            .map_err(|e| napi_reason!("{e}"))
-    }
+    fn set_title(&self, #[proxy_impl(conv_arg = title.as_str())] title: String);
+
+    fn set_transparent(&self, transparent: bool);
+
+    fn set_blur(&self, blur: bool);
+
+    fn set_visible(&self, visible: bool);
+
+    fn is_visible(&self) -> Option<bool>;
+
+    fn set_resizable(&self, resizable: bool);
+
+    fn is_resizable(&self) -> bool;
+
+    fn set_enabled_buttons(&self, #[proxy_impl(conv_arg = buttons.clone().into())] buttons: &WindowButtons);
+
+    fn enabled_buttons(&self) -> WindowButtons;
+
+    fn set_minimized(&self, minimized: bool);
+
+    fn is_minimized(&self) -> Option<bool>;
+
+    fn set_maximized(&self, maximized: bool);
+    fn is_maximized(&self) -> bool;
+
+    fn set_fullscreen(&self, #[proxy_impl(conv_arg = option_into)] fullscreen: Option<Fullscreen>);
+
+    #[proxy_impl(conv_return = option_into)]
+    fn fullscreen(&self) -> Option<Fullscreen>;
+
+    fn set_decorations(&self, decorations: bool);
+    fn is_decorated(&self) -> bool;
+
+    fn set_window_level(&self, level: WindowLevel);
+
+    fn set_window_icon(&self, #[proxy_impl(conv_arg = [ window_icon.map(|icon| icon.clone().into()) ])] window_icon: Option<&Icon>);
+
+    fn set_ime_cursor_area(&self, #[proxy_impl(skip_conv_arg)] position: Position, #[proxy_impl(skip_conv_arg)] size: Size);
+
+    fn set_ime_allowed(&self, allowed: bool);
+
+    fn set_ime_purpose(&self, #[proxy_impl(conv_arg = purpose.into())] purpose: ImePurpose);
+
+    fn focus_window(&self);
+
+    fn has_focus(&self) -> bool;
+
+    fn request_user_attention(&self, #[proxy_impl(conv_arg = option_into)] request_type: Option<UserAttentionType>);
+
+    fn set_theme(&self, #[proxy_impl(conv_arg = option_into)] theme: Option<Theme>);
+
+    #[proxy_impl(conv_return = option_into)]
+    fn theme(&self) -> Option<Theme>;
+
+    fn set_content_protected(&self, protected: bool);
+
+    fn title(&self) -> String;
 }
 
-#[napi]
+#[proxy_impl(access_expr = self.inner)]
 impl Window {
-    #[napi]
-    pub fn current_monitor(&self) -> Option<MonitorHandle> {
-        self.inner.current_monitor().map(|m| m.into())
-    }
-    #[napi]
-    pub fn available_monitors(&self) -> Vec<MonitorHandle> {
-        self.inner.available_monitors().map(|m| m.into()).collect()
-    }
-    #[napi]
-    pub fn primary_monitor(&self) -> Option<MonitorHandle> {
-        self.inner.primary_monitor().map(|m| m.into())
-    }
+    fn set_cursor(&self, #[proxy_impl(conv_arg = Clone::clone)] cursor: &Cursor);
+
+    // fn set_cursor_icon(&self, icon: CursorIcon);
+
+    #[proxy_impl(conv_return = [ result_err_reason ])]
+    fn set_cursor_position(&self, #[proxy_impl(skip_conv_arg)] position: Position) -> Result<()>;
+
+    #[proxy_impl(conv_return = [ result_err_reason ])]
+    fn set_cursor_grab(&self, #[proxy_impl(conv_arg = mode.into())] mode: CursorGrabMode) -> Result<()>;
+
+    fn set_cursor_visible(&self, visible: bool);
+
+    #[proxy_impl(conv_return = [ result_err_reason ])]
+    fn drag_window(&self) -> Result<()>;
+
+    #[proxy_impl(conv_return = [ result_err_reason ])]
+    fn drag_resize_window(&self, #[proxy_impl(conv_arg = direction.into())] direction: ResizeDirection) -> Result<()>;
+
+    fn show_window_menu(&self, #[proxy_impl(skip_conv_arg)] position: Position);
+
+    #[proxy_impl(conv_return = [ result_err_reason ])]
+    fn set_cursor_hittest(&self, hittest: bool) -> Result<()>;
+}
+
+#[proxy_impl(access_expr = self.inner)]
+impl Window {
+    #[proxy_impl(conv_return = option_into)]
+    fn current_monitor(&self) -> Option<MonitorHandle>;
+
+    #[proxy_impl(conv_return = [ Iterator::collect::<Vec<_>>, vec_map(ref_clone_into) ])]
+    fn available_monitors(&self) -> Vec<MonitorHandle>;
+
+    #[proxy_impl(conv_return = option_into)]
+    fn primary_monitor(&self) -> Option<MonitorHandle>;
 }
 
 #[proxy_enum(origin_type = winit::window::ImePurpose, string_enum, non_exhaustive)]
