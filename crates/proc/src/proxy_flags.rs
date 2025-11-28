@@ -1,7 +1,7 @@
-use crate::utils::{append_to_tokens, get_meta_by_name, get_meta_value_as_expr_tuple, get_type_ty_or, parse_as, parse_metas};
+use crate::utils::{append_to_tokens, get_meta_by_name, get_meta_value_as, get_type_ty_or, parse_as, parse_metas};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::{parse_macro_input, Ident, ItemStruct, Type};
+use syn::{parse_macro_input, ExprTuple, Ident, ItemStruct, Type};
 
 pub(crate) fn proxy_flags(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -17,7 +17,7 @@ pub(crate) fn proxy_flags(attrs: proc_macro::TokenStream, input: proc_macro::Tok
     let Some(flags_meta) = bitflags
     else { panic!("`flags` must assigned on #[proxy_flags]") };
 
-    let Some(expr_tuple) = get_meta_value_as_expr_tuple(&flags_meta)
+    let Some(expr_tuple) = get_meta_value_as::<ExprTuple>(&flags_meta)
     else { panic!("value for `flags` must like a tuple (FLAG_A, FLAG_B, FLAG_C)") };
 
     let flags: Vec<_> = expr_tuple.elems.iter().map(|el| parse_as::<Ident>(el)).collect();

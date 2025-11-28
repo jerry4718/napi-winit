@@ -1,6 +1,6 @@
 use crate::{
+    utils::{get_meta_value_as, append_to_tokens, get_metas_by_attr_name, separate_attr_by_name},
     conf_usage::{get_meta_value_as_conf_usage, ConfUsage},
-    utils::{append_to_tokens, get_meta_value_as_ident, get_metas_by_attr_name, separate_attr_by_name}
 };
 use macros::{define_const_str, map_meta_to_local};
 use proc_macro2::TokenStream;
@@ -41,14 +41,14 @@ pub(crate) fn parse_conf_fields(fields: &Fields, parent_attrs: &Vec<Attribute>, 
                     META_INTO_ORIGIN => into_origin,
                 });
 
-                let field_ident = field_name
-                    .map(|meta| get_meta_value_as_ident(&meta))
+                let field_ident = field_name.as_ref()
+                    .map(get_meta_value_as)
                     .flatten()
                     .or_else(|| ident.clone())
                     .unwrap_or_else(|| format_ident!("field_{}", idx));
 
-                let from_origin = from_origin.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
-                let into_origin = into_origin.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
+                let from_origin = from_origin.as_ref().map(get_meta_value_as_conf_usage).flatten();
+                let into_origin = into_origin.as_ref().map(get_meta_value_as_conf_usage).flatten();
 
                 ConfField {
                     input: field.clone(),

@@ -1,9 +1,11 @@
-use crate::utils::{append_to_tokens, get_ident_optional, get_type_ty_or, parse_metas, separate_attr_by_name};
+use crate::{
+    conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert},
+    utils::{append_to_tokens, get_ident_optional, get_type_ty_or, parse_metas, separate_attr_by_name},
+};
+use macros::define_const_str;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_macro_input, Attribute, Ident, ItemStruct, Meta, Type};
-use macros::define_const_str;
-use crate::conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert};
 
 pub(crate) fn proxy_wrap(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);

@@ -1,6 +1,6 @@
 use crate::{
     conf_usage::{get_meta_value_as_conf_usage, quote_option_conf_usage},
-    utils::{append_to_tokens, get_meta_value_as_expr, get_metas_by_attr_name, parse_as, parse_metas, separate_attr_by_name},
+    utils::{append_to_tokens, get_meta_value_as, get_metas_by_attr_name, parse_as, parse_metas, separate_attr_by_name},
 };
 use macros::{define_const_str, map_meta_to_local};
 use proc_macro2::TokenStream;
@@ -11,7 +11,7 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated, token::Pub,
-    Attribute, Expr, FnArg, ImplItem, ImplItemFn, ItemImpl, Meta, Pat, PatIdent, PatType, Receiver, ReturnType, Signature, Token, TraitItem, TraitItemFn, Visibility,
+    Attribute, Expr, FnArg, ImplItem, ImplItemFn, ItemImpl, Meta, Pat, PatIdent, PatType, Receiver, ReturnType, Signature, Token, TraitItemFn, Visibility,
 };
 
 pub(crate) fn proxy_impl(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -58,11 +58,13 @@ define_const_str!(
 
 impl Parse for TraitFnLike {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)
+            .unwrap_or_else(|e| Vec::new());
+
         let vis = input.parse::<Visibility>().ok();
-        Ok(match input.parse::<TraitItem>()? {
-            TraitItem::Fn(TraitItemFn { attrs, sig, .. }) => Self { vis, attrs, sig },
-            _ => unimplemented!("not match TraitItem::Fn"),
-        })
+        let TraitItemFn { sig, .. } = input.parse::<TraitItemFn>()?;
+
+        Ok(Self { vis, attrs, sig })
     }
 }
 
@@ -87,7 +89,7 @@ fn parse_proxy_impl(metas: &Vec<Meta>, item_impl: &ItemImpl) -> ProxyImpl {
         input: item_impl.clone(),
         reserved_attrs: surplus,
         items: impl_items,
-        access_expr: access_expr.map(|meta| get_meta_value_as_expr(&meta)).flatten(),
+        access_expr: access_expr.as_ref().map(get_meta_value_as).flatten(),
     }
 }
 
@@ -114,19 +116,17 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
     };
 
     let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
-    if matches!(matched.len(), n if n > 1) {
-        panic!("so many proxy_impl 1");
-    }
 
     map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_IMPL) => {
         META_ACCESS_EXPR => access_expr,
         META_CONV_RETURN => conv_return,
     });
 
-    let conv_return = conv_return.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
+    let conv_return = conv_return.as_ref()
+        .map(get_meta_value_as_conf_usage).flatten();
 
-    let access_expr = access_expr
-        .map(|meta| get_meta_value_as_expr(&meta))
+    let access_expr = access_expr.as_ref()
+        .map(get_meta_value_as)
         .flatten()
         .or(body.access_expr.clone())
         .unwrap_or_else(|| parse_as::<Expr>(&"self.inner"));
