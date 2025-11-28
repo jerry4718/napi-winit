@@ -133,31 +133,27 @@ pub enum WindowEvent {
 pub struct DeviceId;
 
 /**[winit::event::RawKeyEvent]*/
-#[proxy_wrap(origin_type = winit::event::RawKeyEvent, skip_into_origin)]
+#[proxy_wrap(origin_type = winit::event::RawKeyEvent, skip_into_origin, no_setter)]
 pub struct RawKeyEvent {
-    #[proxy_wrap(no_setter)] pub physical_key: PhysicalKey,
-    #[proxy_wrap(no_setter)] pub state: ElementState,
+    pub physical_key: PhysicalKey,
+    pub state: ElementState,
 }
 
 /** [winit::event::KeyEvent] */
-#[proxy_wrap(origin_type = winit::event::KeyEvent, skip_into_origin)]
+#[proxy_wrap(origin_type = winit::event::KeyEvent, skip_into_origin, no_setter)]
 pub struct KeyEvent {
-    #[proxy_wrap(no_setter)]
     pub physical_key: PhysicalKey,
 
-    #[proxy_wrap(no_setter, get_ref, conv_get = [Clone::clone, Into::into])]
+    #[proxy_wrap(get_ref, conv_get = [Clone::clone, Into::into])]
     pub logical_key: Key,
 
-    #[proxy_wrap(no_setter, get_ref, conv_get = [Clone::clone, option_into])]
+    #[proxy_wrap(get_ref, conv_get = [Clone::clone, option_into])]
     pub text: Option<String>,
 
-    #[proxy_wrap(no_setter)]
     pub location: KeyLocation,
 
-    #[proxy_wrap(no_setter)]
     pub state: ElementState,
 
-    #[proxy_wrap(no_setter)]
     pub repeat: bool,
 }
 

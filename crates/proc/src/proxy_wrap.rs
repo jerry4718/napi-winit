@@ -34,12 +34,22 @@ define_const_str!(
     META_FIELD_NAME = field_name,
 );
 
+define_const_str!(
+    META_NO_GETTER = no_getter,
+    META_CONV_GET = conv_get,
+    META_GET_REF = get_ref,
+    META_NO_SETTER = no_setter,
+    META_CONV_SET = conv_set,
+);
+
 struct ProxyWrap {
     pub input: ItemStruct,
     pub reserved_attrs: Vec<Attribute>,
     pub origin_type: Type,
     pub field_name: Option<Ident>,
     pub conf_convert: ConfConvert,
+    pub no_getter: bool,
+    pub no_setter: bool,
 }
 
 fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
@@ -53,6 +63,8 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
     map_meta_to_local!(&metas => {
         META_ORIGIN_TYPE => origin_type,
         META_FIELD_NAME => field_name,
+        META_NO_GETTER => no_getter,
+        META_NO_SETTER => no_setter,
     });
 
     ProxyWrap {
@@ -61,22 +73,16 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
         origin_type: get_type_ty_or(&origin_type, &format_ident!("Origin{}", ident)),
         field_name: get_ident_optional(&field_name),
         conf_convert: parse_conf_convert(metas),
+        no_getter: no_getter.is_some(),
+        no_setter: no_setter.is_some(),
     }
 }
-
-define_const_str!(
-    META_NO_GETTER = no_getter,
-    META_CONV_GET = conv_get,
-    META_GET_REF = get_ref,
-    META_NO_SETTER = no_setter,
-    META_CONV_SET = conv_set,
-);
 
 impl ToTokens for ProxyWrap {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             input, reserved_attrs, origin_type, field_name,
-            conf_convert,
+            no_getter: root_no_getter, no_setter: root_no_setter, conf_convert,
         } = self;
 
         let ItemStruct { ident, vis, fields, .. } = input;
@@ -130,7 +136,10 @@ impl ToTokens for ProxyWrap {
 
                     let mut fns = TokenStream::default();
 
-                    if no_getter.is_none() {
+                    let no_getter = *root_no_getter || no_getter.is_some();
+                    let no_setter = *root_no_setter || no_setter.is_some();
+
+                    if !no_getter {
                         let getter = format_ident!("___get_{}", ident);
                         let use_ref = get_ref.map(|_| { quote! { ref } });
                         let conv_get = conv_get.as_ref().map(get_meta_value_as_conf_usage).flatten();
@@ -146,7 +155,7 @@ impl ToTokens for ProxyWrap {
                         });
                     }
 
-                    if no_setter.is_none() {
+                    if !no_setter {
                         let setter = format_ident!("___set_{}", ident);
                         let conv_set = conv_set.as_ref().map(get_meta_value_as_conf_usage).flatten();
 
