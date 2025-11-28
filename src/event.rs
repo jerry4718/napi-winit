@@ -133,10 +133,10 @@ pub enum WindowEvent {
 pub struct DeviceId;
 
 /**[winit::event::RawKeyEvent]*/
-#[proxy_struct(origin_type = winit::event::RawKeyEvent, object, skip_backward)]
+#[proxy_wrap(origin_type = winit::event::RawKeyEvent, skip_into_origin)]
 pub struct RawKeyEvent {
-    pub physical_key: PhysicalKey,
-    pub state: ElementState,
+    #[proxy_wrap(no_setter)] pub physical_key: PhysicalKey,
+    #[proxy_wrap(no_setter)] pub state: ElementState,
 }
 
 /** [winit::event::KeyEvent] */

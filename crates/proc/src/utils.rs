@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
@@ -85,4 +86,13 @@ pub(crate) fn separate_attr_by_name(attrs: &Vec<Attribute>, names: &[&str]) -> (
 
 pub(crate) fn append_to_tokens<T: ToTokens>(dst: &mut TokenStream, from: T) {
     from.to_tokens(dst);
+}
+
+pub(crate) fn to_case<T: AsRef<str>>(input: T, case: Case<'static>) -> String {
+    if input.as_ref().starts_with('_') {
+        let trimmed = input.as_ref().trim_start_matches('_');
+        trimmed.to_case(case)
+    } else {
+        input.as_ref().to_case(case)
+    }
 }

@@ -1,11 +1,13 @@
 use crate::{
     conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert},
-    utils::{append_to_tokens, get_ident_optional, get_type_ty_or, parse_metas, separate_attr_by_name},
+    conf_usage::{get_meta_value_as_conf_usage, quote_option_conf_usage},
+    utils::{append_to_tokens, get_ident_optional, get_metas_by_attr_name, get_type_ty_or, parse_metas, separate_attr_by_name, to_case},
 };
+use convert_case::Case;
 use macros::define_const_str;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
-use syn::{parse_macro_input, Attribute, Ident, ItemStruct, Meta, Type};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
+use syn::{parse_macro_input, Attribute, Field, Ident, ItemStruct, LitStr, Meta, Type};
 
 pub(crate) fn proxy_wrap(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
@@ -62,6 +64,13 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
     }
 }
 
+define_const_str!(
+    META_NO_GETTER = no_getter,
+    META_CONV_GET = conv_get,
+    META_NO_SETTER = no_setter,
+    META_CONV_SET = conv_set,
+);
+
 impl ToTokens for ProxyWrap {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
@@ -69,7 +78,7 @@ impl ToTokens for ProxyWrap {
             conf_convert,
         } = self;
 
-        let ItemStruct { ident, vis, .. } = input;
+        let ItemStruct { ident, vis, fields, .. } = input;
         let NormalConfConvert { skip_from_origin, skip_into_origin, skip_to_js, skip_from_js } = conf_convert.normal();
 
         let mut napi_metas = Vec::new();
@@ -81,11 +90,84 @@ impl ToTokens for ProxyWrap {
             None => quote! { (pub(crate) #origin_type); },
         };
 
+        let inner_expr = match &field_name {
+            Some(ident) => quote! { self.#ident },
+            None => quote! { self.0 },
+        };
+
         append_to_tokens(tokens, quote! {
             #[napi( #( #napi_metas ),* )]
             #( #reserved_attrs )*
             #vis struct #ident #wrap_body
         });
+
+        if !fields.is_empty() {
+            let fields = fields.iter().zip(0..fields.len())
+                .map(|(field, fdx)| {
+                    let Field { attrs, ident: origin_ident, ty, .. } = field;
+
+                    let pat_pos = origin_ident.clone()
+                        .map(|ident| quote! { #ident })
+                        .unwrap_or_else(|| quote! { #fdx });
+
+                    let ident = origin_ident.clone()
+                        .unwrap_or_else(|| format_ident!("field_{}", fdx));
+
+                    let js_name_string = to_case(quote! { #ident }.to_string(), Case::Camel);
+
+                    let js_name = LitStr::new(&*js_name_string, ident.span());
+
+                    let (matched, _) = separate_attr_by_name(attrs, ATTR_INCLUDES);
+
+                    map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_WRAP) => {
+                        META_NO_GETTER => no_getter,
+                        META_CONV_GET => conv_get,
+                        META_NO_SETTER => no_setter,
+                        META_CONV_SET => conv_set,
+                    });
+
+                    let mut fns = TokenStream::default();
+
+                    if no_getter.is_none() {
+                        let getter = format_ident!("___get_{}", ident);
+                        let conv_get = conv_get.as_ref().map(get_meta_value_as_conf_usage).flatten();
+
+                        let local_ident = quote! { val };
+                        let convert_code = quote_option_conf_usage(&local_ident, &conv_get);
+                        append_to_tokens(&mut fns, quote_spanned! { ident.span() =>
+                            #[napi(getter, js_name = #js_name)]
+                            pub fn #getter (&self) -> #ty {
+                                let #origin_type { #pat_pos: #local_ident, .. } = #inner_expr;
+                                #convert_code
+                            }
+                        });
+                    }
+
+                    if no_setter.is_none() {
+                        let setter = format_ident!("___set_{}", ident);
+                        let conv_set = conv_set.as_ref().map(get_meta_value_as_conf_usage).flatten();
+
+                        let local_ident = quote! { val };
+                        let convert_code = quote_option_conf_usage(&local_ident, &conv_set);
+
+                        append_to_tokens(&mut fns, quote_spanned! { ident.span() =>
+                            #[napi(setter, js_name = #js_name)]
+                            pub fn #setter (&self, #local_ident: #ty) {
+                                #inner_expr.#pat_pos = #convert_code;
+                            }
+                        });
+                    }
+
+                    fns
+                })
+                .collect::<Vec<_>>();
+            append_to_tokens(tokens, quote! {
+                #[napi]
+                impl #ident {
+                    #( #fields )*
+                }
+            });
+        }
 
         if !skip_from_origin {
             let from_code = match &field_name {
