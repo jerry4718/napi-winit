@@ -140,14 +140,24 @@ pub struct RawKeyEvent {
 }
 
 /** [winit::event::KeyEvent] */
-#[proxy_struct(origin_type = winit::event::KeyEvent, object, skip_backward)]
+#[proxy_wrap(origin_type = winit::event::KeyEvent, skip_into_origin)]
 pub struct KeyEvent {
+    #[proxy_wrap(no_setter)]
     pub physical_key: PhysicalKey,
+
+    #[proxy_wrap(no_setter, get_ref, conv_get = [Clone::clone, Into::into])]
     pub logical_key: Key,
-    #[proxy_struct(from_origin = option_into)]
+
+    #[proxy_wrap(no_setter, get_ref, conv_get = [Clone::clone, option_into])]
     pub text: Option<String>,
+
+    #[proxy_wrap(no_setter)]
     pub location: KeyLocation,
+
+    #[proxy_wrap(no_setter)]
     pub state: ElementState,
+
+    #[proxy_wrap(no_setter)]
     pub repeat: bool,
 }
 

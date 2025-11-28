@@ -67,6 +67,7 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
 define_const_str!(
     META_NO_GETTER = no_getter,
     META_CONV_GET = conv_get,
+    META_GET_REF = get_ref,
     META_NO_SETTER = no_setter,
     META_CONV_SET = conv_set,
 );
@@ -122,6 +123,7 @@ impl ToTokens for ProxyWrap {
                     map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_WRAP) => {
                         META_NO_GETTER => no_getter,
                         META_CONV_GET => conv_get,
+                        META_GET_REF => get_ref,
                         META_NO_SETTER => no_setter,
                         META_CONV_SET => conv_set,
                     });
@@ -130,6 +132,7 @@ impl ToTokens for ProxyWrap {
 
                     if no_getter.is_none() {
                         let getter = format_ident!("___get_{}", ident);
+                        let use_ref = get_ref.map(|_| { quote! { ref } });
                         let conv_get = conv_get.as_ref().map(get_meta_value_as_conf_usage).flatten();
 
                         let local_ident = quote! { val };
@@ -137,7 +140,7 @@ impl ToTokens for ProxyWrap {
                         append_to_tokens(&mut fns, quote_spanned! { ident.span() =>
                             #[napi(getter, js_name = #js_name)]
                             pub fn #getter (&self) -> #ty {
-                                let #origin_type { #pat_pos: #local_ident, .. } = #inner_expr;
+                                let #origin_type { #pat_pos: #use_ref #local_ident, .. } = #inner_expr;
                                 #convert_code
                             }
                         });
