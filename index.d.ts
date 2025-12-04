@@ -39,6 +39,7 @@ export declare namespace Timeout {
   export function fromNanos(nanos: number): Timeout
 }
 
+/** [winit::window::ActivationToken] */
 export declare class ActivationToken {
 
 }
@@ -64,6 +65,7 @@ export declare class Application {
   static withAsyncFx2Safe(options: ApplicationOptions): Application
 }
 
+/** [winit::event_loop::AsyncRequestSerial]  */
 export declare class AsyncRequestSerial {
 
 }
@@ -81,6 +83,7 @@ export declare class CustomCursorSource {
 
 }
 
+/** [winit::event::DeviceId] */
 export declare class DeviceId {
 
 }
@@ -96,10 +99,12 @@ export declare class Icon {
   static fromRgba(rgba: Uint8Array, width: number, height: number): Icon
 }
 
+/** [winit::event::InnerSizeWriter] */
 export declare class InnerSizeWriter {
 
 }
 
+/** [winit::event::KeyEvent]  */
 export declare class KeyEvent {
   get physicalKey(): PhysicalKey
   get logicalKey(): Key
@@ -109,6 +114,7 @@ export declare class KeyEvent {
   get repeat(): boolean
 }
 
+/** [winit::event::Modifiers]  */
 export declare class Modifiers {
   get state(): ModifiersState
 }
@@ -136,26 +142,32 @@ export declare class ModifiersState {
   removeSuper(): this
 }
 
+/** [winit::monitor::MonitorHandle] */
 export declare class MonitorHandle {
 
 }
 
+/** [winit::event_loop::OwnedDisplayHandle]  */
 export declare class OwnedDisplayHandle {
 
 }
 
-export declare class Touch {
-
+/** [winit::event::RawKeyEvent] */
+export declare class RawKeyEvent {
+  get physicalKey(): PhysicalKey
+  get state(): ElementState
 }
 
 export declare class UserPayload {
 
 }
 
+/** [winit::monitor::VideoModeHandle] */
 export declare class VideoModeHandle {
 
 }
 
+/** [winit::window::Window] */
 export declare class Window {
   static defaultAttributes(): WindowAttributes
   id(): WindowId
@@ -239,6 +251,7 @@ export declare class WindowAttributes {
   withCursor(cursor: Cursor): this
 }
 
+/** [winit::window::WindowButtons] */
 export declare class WindowButtons {
   static all(): WindowButtons
   static empty(): WindowButtons
@@ -402,6 +415,31 @@ export type Event =
   | { type: 'AboutToWait' }
   | { type: 'LoopExiting' }
   | { type: 'MemoryWarning' }
+
+export type Force =
+  | { type: 'Calibrated', /**
+   * The force of the touch, where a value of 1.0 represents the force of
+   * an average touch (predetermined by the system, not user-specific).
+   *
+   * The force reported by Apple Pencil is measured along the axis of the
+   * pencil. If you want a force perpendicular to the device, you need to
+   * calculate this value using the `altitude_angle` value.
+   */
+  force: number, /**
+   * The maximum possible force for a touch.
+   *
+   * The value of this field is sufficiently high to provide a wide
+   * dynamic range for values of the `force` field.
+   */
+  maxPossibleForce: number, /**
+   * The altitude (in radians) of the stylus.
+   *
+   * A value of 0 radians indicates that the stylus is parallel to the
+   * surface. The value of this property is Pi/2 when the stylus is
+   * perpendicular to the surface.
+   */
+altitudeAngle?: number }
+| { type: 'Normalized', value: number }
 
 export declare const enum Fullscreen {
   Exclusive = 0,
@@ -990,11 +1028,6 @@ export type PumpStatus =
   | { type: 'Continue' }
   | { type: 'Exit', code: number }
 
-export interface RawKeyEvent {
-  physicalKey: PhysicalKey
-  state: ElementState
-}
-
 export declare const enum ResizeDirection {
   East = 'East',
   North = 'North',
@@ -1024,6 +1057,27 @@ export declare const enum Theme {
 export interface Timeout {
   secs: bigint
   nanos: number
+}
+
+/** [winit::event::Touch] */
+export interface Touch {
+  deviceId: DeviceId
+  phase: TouchPhase
+  location: Position
+  /**
+   * Describes how hard the screen was pressed. May be `None` if the platform
+   * does not support pressure sensitivity.
+   *
+   * ## Platform-specific
+   *
+   * - Only available on **iOS** 9.0+, **Windows** 8+, **Web**, and **Android**.
+   * - **Android**: This will never be [None]. If the device doesn't support pressure
+   *   sensitivity, force will either be 0.0 or 1.0. Also see the
+   *   [android documentation](https://developer.android.com/reference/android/view/MotionEvent#AXIS_PRESSURE).
+   */
+  force?: Force
+  /** Unique identifier of a finger. */
+  id: bigint
 }
 
 export declare const enum TouchPhase {

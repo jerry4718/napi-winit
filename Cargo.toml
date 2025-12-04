@@ -2,13 +2,16 @@
 authors = ["jerry4718 <jerry4718@qq.com>"]
 edition = "2021"
 name = "napi-winit"
-version = "0.1.102"
+version = "0.1.103"
 
 [lib]
 crate-type = ["cdylib"]
 
 [workspace]
-members = [ "crates/macros","crates/proc"]
+members = [
+    "crates/macros",
+    "crates/proc"
+]
 
 [workspace.dependencies]
 macros = { path = "crates/macros" }
@@ -21,31 +24,31 @@ once_cell = "1.21.3"
 
 [dependencies.winit]
 version = "0.30.12"
-features = [ "rwh_05", "rwh_06" ]
+features = ["rwh_05", "rwh_06"]
 
 [dependencies.tokio]
 version = "1.45.1"
-features = [ "time" ]
+features = ["time"]
 # features = [ "rt", "rt-multi-thread","time" ]
 
 [dependencies.rwh_05]
 package = "raw-window-handle"
 version = "0.5.2"
-features = [ "std" ]
+features = ["std"]
 
 [dependencies.rwh_06]
 package = "raw-window-handle"
 version = "0.6.2"
-features = [ "std" ]
+features = ["std"]
 
 [dependencies.napi]
-version = "3.4.0"
+version = "3.6.1"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.3.0"
+version = "3.4.0"
 features = ["type-def"]
 
 #[dependencies.ctor]
@@ -71,7 +74,7 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.2.4"
+napi-build = "2.3.1"
 
 [profile.release]
 lto = true
