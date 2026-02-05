@@ -1,17 +1,10 @@
 #![deny(clippy::all)]
 #![allow(unused_imports, unused_variables, dead_code)]
 
-// #[cfg(not(target_env = "msvc"))]
-// use jemallocator::Jemalloc;
-
-// #[cfg(not(target_env = "msvc"))]
-// #[global_allocator]
-// static GLOBAL: Jemalloc = Jemalloc;
-
 #[macro_use]
 extern crate napi_derive;
 
-use once_cell::sync::Lazy;
+use std::sync::OnceLock;
 use crate::event::UserPayload;
 
 mod dpi;
@@ -27,6 +20,8 @@ mod r#macro;
 mod application;
 mod utils;
 
-pub static THREAD_POOL: Lazy<threadpool::ThreadPool> = Lazy::new(|| {
-    threadpool::ThreadPool::default()
-});
+pub static THREAD_POOL: OnceLock<threadpool::ThreadPool> = OnceLock::new();
+
+fn get_thread_pool() -> &'static threadpool::ThreadPool {
+    THREAD_POOL.get_or_init(|| threadpool::ThreadPool::default())
+}

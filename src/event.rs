@@ -5,7 +5,7 @@ use proc::{proxy_enum, proxy_struct, proxy_wrap};
 use crate::{
     dpi::{Position, Size},
     event_loop::AsyncRequestSerial,
-    extra::time::Timeout,
+    extra::time::Instant,
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
     utils::helpers::{option_into, path_buf_to_string},
     window::{ActivationToken, Theme, WindowId},
@@ -34,16 +34,17 @@ pub enum Event {
     MemoryWarning,
 }
 
+/** [winit::event::StartCause] */
 #[proxy_enum(origin_type = winit::event::StartCause, skip_backward)]
 pub enum StartCause {
     ResumeTimeReached {
-        start: Timeout,
-        requested_resume: Timeout,
+        start: Instant,
+        requested_resume: Instant,
     },
     WaitCancelled {
-        start: Timeout,
+        start: Instant,
         #[proxy_enum(from_origin = option_into)]
-        requested_resume: Option<Timeout>,
+        requested_resume: Option<Instant>,
     },
     Poll,
     Init,
