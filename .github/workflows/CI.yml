@@ -28,11 +28,11 @@ jobs:
 #    name: Lint
 #    runs-on: ubuntu-latest
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #      - name: setup pnpm
 #        uses: pnpm/action-setup@v4
 #      - name: Setup node
-#        uses: actions/setup-node@v4
+#        uses: actions/setup-node@v6
 #        with:
 #          node-version: 22
 #          cache: 'pnpm'
@@ -101,11 +101,11 @@ jobs:
     name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -115,7 +115,7 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index/
@@ -125,10 +125,10 @@ jobs:
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
-      - uses: goto-bus-stop/setup-zig@v2
+      - uses: mlugg/setup-zig@v2
         if: ${{ contains(matrix.settings.target, 'musl') }}
         with:
-          version: 0.13.0
+          version: 0.15.2
       - name: Install cargo-zigbuild
         uses: taiki-e/install-action@v2
         if: ${{ contains(matrix.settings.target, 'musl') }}
@@ -143,7 +143,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Setup node x86
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
           node-version: 22
@@ -153,14 +153,14 @@ jobs:
         run: ${{ matrix.settings.build }}
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.settings.target != 'wasm32-wasip1-threads'
         with:
           name: bindings-${{ matrix.settings.target }}
           path: '*.node'
           if-no-files-found: error
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.settings.target == 'wasm32-wasip1-threads'
         with:
           name: bindings-${{ matrix.settings.target }}
@@ -170,16 +170,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Build FreeBSD
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build
         id: build
-        uses: cross-platform-actions/action@v0.28.0
+        uses: cross-platform-actions/action@v0.32.0
         env:
           DEBUG: napi:*
           RUSTUP_IO_THREADS: 1
         with:
           operating_system: freebsd
-          version: '14.2'
+          version: '14.3'
           memory: 8G
           cpu_count: 3
           environment_variables: 'DEBUG RUSTUP_IO_THREADS'
@@ -189,8 +189,7 @@ jobs:
             sudo npm install -g corepack
             curl https://sh.rustup.rs -sSf --output rustup.sh
             sh rustup.sh -y --profile minimal --default-toolchain beta
-            corepack prepare
-            corepack enable
+            sudo corepack enable
             source "$HOME/.cargo/env"
             echo "~~~~ rustc --version ~~~~"
             rustc --version
@@ -208,7 +207,7 @@ jobs:
             rm -rf node_modules
             rm -rf target
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bindings-freebsd
           path: ${{ env.APP_NAME }}.*.node
@@ -236,11 +235,11 @@ jobs:
           - '22'
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
@@ -248,7 +247,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: bindings-${{ matrix.settings.target }}
           path: .
@@ -276,11 +275,11 @@ jobs:
           - '22'
     runs-on: ${{ contains(matrix.target, 'aarch64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
@@ -308,7 +307,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --force
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: bindings-${{ matrix.target }}
           path: .
@@ -334,18 +333,18 @@ jobs:
 #      - build
 #    runs-on: ubuntu-latest
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #      - name: setup pnpm
 #        uses: pnpm/action-setup@v4
 #      - name: Setup node
-#        uses: actions/setup-node@v4
+#        uses: actions/setup-node@v6
 #        with:
-#          node-version: 20
+#          node-version: 22
 #          cache: pnpm
 #      - name: Install dependencies
 #        run: pnpm install
 #      - name: Download artifacts
-#        uses: actions/download-artifact@v4
+#        uses: actions/download-artifact@v7
 #        with:
 #          name: bindings-wasm32-wasip1-threads
 #          path: .
@@ -366,18 +365,18 @@ jobs:
       - test-linux-binding
 #      - test-wasi
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: pnpm
       - name: Install dependencies
         run: pnpm install
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
       - name: create npm dirs
