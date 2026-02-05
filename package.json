@@ -19,7 +19,8 @@
   ],
   "files": [
     "index.d.ts",
-    "index.js"
+    "index.js",
+    "*.node"
   ],
   "napi": {
     "binaryName": "napi-winit",
@@ -51,7 +52,13 @@
     "build:debug": "napi build --platform --strip",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
-    "version": "napi version"
+    "version": "napi version",
+    "example:hello": "pnpm --filter examples.hello-world start",
+    "example:control-flow": "pnpm --filter examples.control-flow start",
+    "example:animation": "pnpm --filter examples.animation start",
+    "example:keyboard-mouse": "pnpm --filter examples.keyboard-mouse start",
+    "example:multi-window": "pnpm --filter examples.multi-window start",
+    "example:fullscreen": "pnpm --filter examples.fullscreen start"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.4.1",

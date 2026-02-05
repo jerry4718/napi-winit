@@ -1,0 +1,17 @@
+{
+  "name": "examples.hello-world",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ./start.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "The simplest napi-winit window example",
+  "dependencies": {
+    "@ylcc/napi-winit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16"
+  }
+}

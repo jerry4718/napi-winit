@@ -1,0 +1,18 @@
+{
+  "name": "examples.keyboard-mouse",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ./start.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Keyboard and mouse event handling example",
+  "dependencies": {
+    "@ylcc/napi-winit": "workspace:*",
+    "examples.util": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16"
+  }
+}
