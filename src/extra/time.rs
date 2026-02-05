@@ -40,50 +40,57 @@ pub struct Duration {
 mod duration {
     use super::*;
 
-    const MILLIS_PER_SEC: f64 = 1_000.0;
-    const MICROS_PER_SEC: f64 = 1_000_000.0;
     const NANOS_PER_SEC: f64 = 1_000_000_000.0;
     const NANOS_PER_MILLI: f64 = 1_000_000.0;
     const NANOS_PER_MICRO: f64 = 1_000.0;
 
     #[napi]
     pub fn from_secs(secs: f64) -> Duration {
-        Duration::from(StdDuration::from_secs_f64(secs))
+        let i = secs.trunc();
+        let f = secs.fract();
+        Duration::from(
+            StdDuration::from_secs(i as u64)
+                + StdDuration::from_nanos((f * NANOS_PER_SEC).round() as u64),
+        )
     }
 
     #[napi]
     pub fn from_millis(millis: f64) -> Duration {
-        let secs = millis / MILLIS_PER_SEC;
-        let nanos = (millis % 1.0) * NANOS_PER_MILLI;
-        from_secs_and_nanos(secs, nanos)
+        let i = millis.trunc();
+        let f = millis.fract();
+        Duration::from(
+            StdDuration::from_millis(i as u64)
+                + StdDuration::from_nanos((f * NANOS_PER_MILLI).round() as u64),
+        )
     }
 
     #[napi]
     pub fn from_micros(micros: f64) -> Duration {
-        let secs = micros / MICROS_PER_SEC;
-        let nanos = (micros % 1.0) * NANOS_PER_MICRO;
-        from_secs_and_nanos(secs, nanos)
+        let i = micros.trunc();
+        let f = micros.fract();
+        Duration::from(
+            StdDuration::from_micros(i as u64)
+                + StdDuration::from_nanos((f * NANOS_PER_MICRO).round() as u64),
+        )
     }
 
     #[napi]
     pub fn from_nanos(nanos: f64) -> Duration {
-        let secs = nanos / NANOS_PER_SEC;
-        let nanos = (nanos % 1.0) * NANOS_PER_SEC;
-        from_secs_and_nanos(secs, nanos)
-    }
-
-    pub fn from_secs_and_nanos(secs: f64, nanos: f64) -> Duration {
-        Duration::from(StdDuration::from_secs_f64(secs) + StdDuration::from_nanos(nanos as u64))
+        Duration::from(StdDuration::from_nanos(nanos.round() as u64))
     }
 
     #[napi]
-    pub fn add(base: Duration, other: Duration) -> Duration {
-        Duration::from(StdDuration::from(base) + StdDuration::from(other))
+    pub fn add(base: Duration, other: Duration) -> Result<Duration> {
+        StdDuration::from(base).checked_add(StdDuration::from(other))
+            .map(Duration::from)
+            .ok_or_else(|| napi_reason!("overflow when adding durations"))
     }
 
     #[napi]
-    pub fn sub(base: Duration, other: Duration) -> Duration {
-        Duration::from(StdDuration::from(base) - StdDuration::from(other))
+    pub fn sub(base: Duration, other: Duration) -> Result<Duration> {
+        StdDuration::from(base).checked_sub(StdDuration::from(other))
+            .map(Duration::from)
+            .ok_or_else(|| napi_reason!("overflow when subtracting durations"))
     }
 
     #[napi]
@@ -133,32 +140,39 @@ mod instant {
     }
 
     #[napi]
-    pub fn after_secs(secs: f64) -> Instant {
+    pub fn after_secs(secs: f64) -> Result<Instant> {
         add(now(), duration::from_secs(secs))
     }
 
     #[napi]
-    pub fn after_millis(millis: f64) -> Instant {
+    pub fn after_millis(millis: f64) -> Result<Instant> {
         add(now(), duration::from_millis(millis))
     }
 
     #[napi]
-    pub fn after_micros(micros: f64) -> Instant {
+    pub fn after_micros(micros: f64) -> Result<Instant> {
         add(now(), duration::from_micros(micros))
     }
 
     #[napi]
-    pub fn after_nanos(nanos: f64) -> Instant {
+    pub fn after_nanos(nanos: f64) -> Result<Instant> {
         add(now(), duration::from_nanos(nanos))
     }
 
     #[napi]
-    pub fn add(base: Instant, other: Duration) -> Instant {
-        Instant::from(StdInstant::from(base) + StdDuration::from(other))
+    pub fn add(base: Instant, other: Duration) -> Result<Instant> {
+        StdInstant::from(base)
+            .checked_add(StdDuration::from(other))
+            .map(Instant::from)
+            .ok_or_else(|| napi_reason!("overflow when adding duration to instant"))
     }
+
     #[napi]
-    pub fn sub(base: Instant, other: Duration) -> Instant {
-        Instant::from(StdInstant::from(base) - StdDuration::from(other))
+    pub fn sub(base: Instant, other: Duration) -> Result<Instant> {
+        StdInstant::from(base)
+            .checked_sub(StdDuration::from(other))
+            .map(Instant::from)
+            .ok_or_else(|| napi_reason!("overflow when subtracting duration from instant"))
     }
 
     impl From<StdInstant> for Instant {

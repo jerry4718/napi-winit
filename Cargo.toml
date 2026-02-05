@@ -1,6 +1,6 @@
 [package]
 authors = ["jerry4718 <jerry4718@qq.com>"]
-edition = "2021"
+edition = "2024"
 name = "napi-winit"
 version = "0.2.101"
 

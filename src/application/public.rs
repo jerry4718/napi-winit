@@ -281,11 +281,11 @@ pub(crate) enum Runner<'env> {
 impl<'env> Runner<'env> {
     pub fn handler(&mut self, env: Env) -> &mut dyn ApplicationHandler<UserPayload> {
         match self {
-            Runner::AsyncFx(ref mut handler) => handler,
-            Runner::SyncFx(ref mut handler) => handler,
-            Runner::AsyncRef(ref mut handler) => handler,
-            Runner::SyncRef(ref mut handler) => handler,
-            Runner::SafeCall(ref mut handler) => handler,
+            Runner::AsyncFx(handler) => handler,
+            Runner::SyncFx(handler) => handler,
+            Runner::AsyncRef(handler) => handler,
+            Runner::SyncRef(handler) => handler,
+            Runner::SafeCall(handler) => handler,
         }
     }
 }

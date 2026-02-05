@@ -51,7 +51,7 @@ pub(crate) fn get_meta_by_name(metas: &Vec<Meta>, name: &str) -> Option<Meta> {
 
 pub(crate) fn get_meta_value_as<As: Parse>(meta: &Meta) -> Option<As> {
     match meta {
-        Meta::NameValue(MetaNameValue { ref value, .. }) => Some(parse_as::<As>(value)),
+        Meta::NameValue(MetaNameValue { value, .. }) => Some(parse_as::<As>(value)),
         _ => None,
     }
 }
