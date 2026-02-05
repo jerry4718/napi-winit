@@ -4,5 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["."]
+  "include": [
+    "."
+  ]
 }

@@ -324,22 +324,6 @@ pub enum Theme { Light, Dark }
 #[derive(Clone)]
 pub struct Icon;
 
-
-struct UnitStruct;
-
-struct TupleStruct ( u8 );
-
-fn x(tuple: TupleStruct, unit: UnitStruct) {
-    let TupleStruct { 0: original, .. } = tuple;
-    let t2 = TupleStruct { 0: original };
-
-    let UnitStruct { .. } = unit;
-    let u2 = UnitStruct {};
-
-    todo!()
-}
-
-
 #[napi]
 impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
@@ -350,8 +334,25 @@ impl Icon {
     }
 }
 
+/**[winit::window::WindowId]*/
 #[proxy_wrap(origin_type = winit::window::WindowId)]
 pub struct WindowId;
+
+#[napi]
+impl WindowId {
+    pub fn raw_u64(&self) -> u64 {
+        Into::<u64>::into(self.0)
+    }
+
+    #[napi]
+    pub fn raw(&self) -> BigInt {
+        BigInt::from(self.raw_u64())
+    }
+    #[napi]
+    pub fn raw_string(&self) -> String {
+        self.raw_u64().to_string()
+    }
+}
 
 /**[winit::window::ActivationToken]*/
 #[proxy_wrap(origin_type = winit::window::ActivationToken)]

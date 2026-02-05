@@ -58,8 +58,7 @@ pub(crate) fn get_meta_value_as<As: Parse>(meta: &Meta) -> Option<As> {
 
 pub(crate) fn get_type_ty_or<Input: ToTokens>(meta: &Option<Meta>, input: &Input) -> Type {
     meta.as_ref()
-        .map(get_meta_value_as::<Type>)
-        .flatten()
+        .and_then(get_meta_value_as::<Type>)
         .or_else(|| Some(parse_as::<Type>(input)))
         .expect("cannot parse meta value as type")
 }

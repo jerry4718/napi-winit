@@ -1,55 +1,185 @@
 use napi::bindgen_prelude::*;
-use std::time::{Duration, Instant};
+use std::time::{Duration as StdDuration, Instant as StdInstant, SystemTime};
+use crate::napi_reason;
+use std::sync::OnceLock;
+
+struct TimeAnchor {
+    instant: StdInstant,
+    system: SystemTime,
+}
+
+static TIME_ANCHOR: OnceLock<TimeAnchor> = OnceLock::new();
+
+fn anchor() -> &'static TimeAnchor {
+    TIME_ANCHOR.get_or_init(|| TimeAnchor {
+        instant: StdInstant::now(),
+        system: SystemTime::now(),
+    })
+}
+
+fn instant_to_system(instant: StdInstant) -> SystemTime {
+    let delta = instant.duration_since(anchor().instant);
+    anchor().system + delta
+}
+
+fn system_to_instant(time: SystemTime) -> StdInstant {
+    let delta = time
+        .duration_since(anchor().system)
+        .expect("system time before anchor");
+    anchor().instant + delta
+}
 
 #[napi(object)]
-pub struct Timeout {
-    pub secs: BigInt,
+#[derive(Clone)]
+pub struct Duration {
+    pub secs: f64,
     pub nanos: u32,
 }
 
-#[napi(js_name = "Timeout")]
-pub mod timeout {
+#[napi(js_name = "Duration")]
+mod duration {
     use super::*;
 
     #[napi]
-    pub fn from_millis(millis: f64) -> Timeout {
-        Timeout::from(Duration::from_millis(millis as u64))
+    pub fn from_secs(secs: f64) -> Duration {
+        Duration::from(StdDuration::from_secs(secs as u64))
+    }
+
+    #[napi]
+    pub fn from_millis(millis: f64) -> Duration {
+        Duration::from(StdDuration::from_millis(millis as u64))
+    }
+
+    #[napi]
+    pub fn from_micros(micros: f64) -> Duration {
+        Duration::from(StdDuration::from_micros(micros as u64))
+    }
+
+    #[napi]
+    pub fn from_nanos(nanos: f64) -> Duration {
+        Duration::from(StdDuration::from_nanos(nanos as u64))
+    }
+
+    #[napi]
+    pub fn add(base: Duration, other: Duration) -> Duration {
+        Duration {
+            secs: base.secs + other.secs,
+            nanos: base.nanos + other.nanos,
+        }
+    }
+
+    #[napi]
+    pub fn sub(base: Duration, other: Duration) -> Duration {
+        Duration {
+            secs: base.secs - other.secs,
+            nanos: base.nanos - other.nanos,
+        }
+    }
+
+    #[napi]
+    pub fn mul(base: Duration, other: f64) -> Duration {
+        Duration {
+            secs: base.secs * other,
+            nanos: (base.nanos as f64 * other) as u32,
+        }
+    }
+
+    #[napi]
+    pub fn div(base: Duration, other: f64) -> Duration {
+        Duration {
+            secs: base.secs / other,
+            nanos: (base.nanos as f64 / other) as u32,
+        }
+    }
+
+    impl From<StdDuration> for Duration {
+        fn from(value: StdDuration) -> Self {
+            Duration { secs: value.as_secs() as f64, nanos: value.subsec_nanos() }
+        }
+    }
+
+    impl From<Duration> for StdDuration {
+        fn from(value: Duration) -> Self {
+            StdDuration::from_secs(value.secs as u64) + StdDuration::from_nanos(value.nanos as u64)
+        }
+    }
+
+    impl From<&Duration> for StdDuration {
+        fn from(value: &Duration) -> Self {
+            StdDuration::from(value.clone())
+        }
+    }
+}
+
+#[napi(object)]
+#[derive(Clone)]
+pub struct Instant {
+    pub secs: f64,
+    pub nanos: u32,
+}
+
+#[napi(js_name = "Instant")]
+mod instant {
+    use super::*;
+
+    #[napi]
+    pub fn now() -> Instant {
+        let duration = StdInstant::now().duration_since(anchor().instant);
+        Instant { secs: duration.as_secs() as f64, nanos: duration.subsec_nanos() }
+    }
+
+    #[napi]
+    pub fn after_secs(secs: f64) -> Instant {
+        add(now(), duration::from_secs(secs))
+    }
+
+    #[napi]
+    pub fn after_millis(millis: f64) -> Instant {
+        add(now(), duration::from_millis(millis))
+    }
+
+    #[napi]
+    pub fn after_micros(micros: f64) -> Instant {
+        add(now(), duration::from_micros(micros))
+    }
+
+    #[napi]
+    pub fn after_nanos(nanos: f64) -> Instant {
+        add(now(), duration::from_nanos(nanos))
+    }
+    
+    #[napi]
+    pub fn add(base: Instant, other: Duration) -> Instant {
+        Instant {
+            secs: base.secs + other.secs,
+            nanos: base.nanos + other.nanos,
+        }
     }
     #[napi]
-    pub fn from_micros(micros: f64) -> Timeout {
-        Timeout::from(Duration::from_micros(micros as u64))
-    }
-    #[napi]
-    pub fn from_nanos(nanos: f64) -> Timeout {
-        Timeout::from(Duration::from_nanos(nanos as u64))
-    }
-
-    impl From<Duration> for Timeout {
-        fn from(duration: Duration) -> Self {
-            let secs = duration.as_secs();
-            let nanos = duration.subsec_nanos();
-            Self { secs: BigInt::from(secs), nanos }
+    pub fn sub(base: Instant, other: Duration) -> Instant {
+        Instant {
+            secs: base.secs - other.secs,
+            nanos: base.nanos - other.nanos,
         }
     }
 
-    impl From<Timeout> for Duration {
-        fn from(timeout: Timeout) -> Self {
-            let (signed, secs, lossless) = timeout.secs.get_u64();
-            if signed { panic!("get_u64 has signed") }
-            if !lossless { panic!("get_u64 not lossless") }
-            Duration::new(secs, timeout.nanos)
+    impl From<StdInstant> for Instant {
+        fn from(value: StdInstant) -> Self {
+            let duration = value.duration_since(anchor().instant);
+            Instant { secs: duration.as_secs() as f64, nanos: duration.subsec_nanos() }
         }
     }
 
-    impl From<Instant> for Timeout {
-        fn from(instant: Instant) -> Self {
-            Self::from(Instant::now() - instant)
+    impl From<Instant> for StdInstant {
+        fn from(value: Instant) -> Self {
+            let duration = StdDuration::from_secs(value.secs as u64) + StdDuration::from_nanos(value.nanos as u64);
+            anchor().instant + duration
         }
     }
 
-    impl From<Timeout> for Instant {
-        fn from(timeout: Timeout) -> Self {
-            Instant::now() + Duration::from(timeout)
+    impl From<&Instant> for StdInstant {
+        fn from(value: &Instant) -> Self {
+            StdInstant::from(value.clone())
         }
     }
 }

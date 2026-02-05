@@ -1,42 +1,38 @@
 #[napi(js_name = "Extra")]
 pub mod namespace {
     use std::future::Future;
-    use std::time::Duration;
-    use napi::{
-        bindgen_prelude::*,
-        Error,
-        threadsafe_function::ThreadsafeFunction,
-    };
+    use std::time::Duration as StdDuration;
+    use napi::bindgen_prelude::*;
     use crate::{
-        extra::time::Timeout,
+        extra::time::Duration,
         handle_res,
-        THREAD_POOL,
-        utils::alias::ThreadsafeNoCallee
+        get_thread_pool,
+        utils::alias::ThreadsafeNoCallee,
     };
     #[napi]
 
     pub fn tokio_interval(
-        timeout: Timeout,
+        duration: Duration,
         #[napi(ts_arg_type = "() => (Promise<void> | void)")]
         exec: Function<(), ()>,
     ) {
-        let duration = Duration::from(timeout);
+        let duration = StdDuration::from(duration);
         let task = exec.build_threadsafe_function().build().unwrap();
         spawn(inner_loop(duration, task));
     }
 
     #[napi]
     pub fn thread_interval(
-        timeout: Timeout,
+        duration: Duration,
         #[napi(ts_arg_type = "() => (Promise<void> | void)")]
         exec: Function<(), ()>,
     ) {
-        let duration = Duration::from(timeout);
+        let duration = StdDuration::from(duration);
         let task = exec.build_threadsafe_function().build().unwrap();
-        THREAD_POOL.execute(move || block_on(inner_loop(duration, task)))
+        get_thread_pool().execute(move || block_on(inner_loop(duration, task)))
     }
 
-    async fn inner_loop(duration: Duration, exec: ThreadsafeNoCallee<(), ()>) -> () {
+    async fn inner_loop(duration: StdDuration, exec: ThreadsafeNoCallee<(), ()>) -> () {
         loop {
             let sleep = tokio::time::sleep(duration);
             let result = exec.call_async(()).await;

@@ -1,6 +1,6 @@
 #[napi(js_name = "Extra")]
 pub mod namespace {
-    use crate::{handle_res, THREAD_POOL};
+    use crate::{handle_res, get_thread_pool};
     use napi::bindgen_prelude::*;
     use napi::Env;
 
@@ -30,7 +30,7 @@ pub mod namespace {
         }
         #[napi(factory)]
         pub fn main() -> Self {
-            Self { pool: THREAD_POOL.clone() }
+            Self { pool: get_thread_pool().clone() }
         }
 
         #[napi(ts_args_type = "callback: () => (Promise<void> | void)")]

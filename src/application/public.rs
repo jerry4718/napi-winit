@@ -13,6 +13,7 @@ use crate::{
     window::WindowId,
     utils::alias::ThreadsafeNoCallee,
 };
+use crate::window::Window;
 
 #[napi(object, object_to_js = false)]
 pub struct ApplicationOptions<'env> {

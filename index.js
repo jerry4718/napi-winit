@@ -572,8 +572,9 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
+module.exports.Duration = nativeBinding.Duration
 module.exports.Extra = nativeBinding.Extra
-module.exports.Timeout = nativeBinding.Timeout
+module.exports.Instant = nativeBinding.Instant
 module.exports.ActivationToken = nativeBinding.ActivationToken
 module.exports.ActiveEventLoop = nativeBinding.ActiveEventLoop
 module.exports.Application = nativeBinding.Application

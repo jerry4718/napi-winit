@@ -89,7 +89,7 @@ fn parse_proxy_impl(metas: &Vec<Meta>, item_impl: &ItemImpl) -> ProxyImpl {
         input: item_impl.clone(),
         reserved_attrs: surplus,
         items: impl_items,
-        access_expr: access_expr.as_ref().map(get_meta_value_as).flatten(),
+        access_expr: access_expr.as_ref().and_then(get_meta_value_as),
     }
 }
 
@@ -122,12 +122,10 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
         META_CONV_RETURN => conv_return,
     });
 
-    let conv_return = conv_return.as_ref()
-        .map(get_meta_value_as_conf_usage).flatten();
+    let conv_return = conv_return.as_ref().and_then(get_meta_value_as_conf_usage);
 
     let access_expr = access_expr.as_ref()
-        .map(get_meta_value_as)
-        .flatten()
+        .and_then(get_meta_value_as)
         .or(body.access_expr.clone())
         .unwrap_or_else(|| parse_as::<Expr>(&"self.inner"));
 
@@ -160,7 +158,7 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
                                 return quote! { #name };
                             }
 
-                            let conv_arg = conv_arg.map(|meta| get_meta_value_as_conf_usage(&meta)).flatten();
+                            let conv_arg = conv_arg.and_then(|meta| get_meta_value_as_conf_usage(&meta));
 
                             quote_option_conf_usage(name, &conv_arg)
                         }

@@ -2,9 +2,8 @@ use napi::bindgen_prelude::*;
 
 use std::{
     ptr::NonNull,
-    time::{Duration, Instant},
+    time::Duration,
 };
-
 use winit::platform::{
     pump_events::EventLoopExtPumpEvents,
     run_on_demand::EventLoopExtRunOnDemand,
@@ -16,7 +15,7 @@ use crate::{
     application::public::{Application, Runner},
     cursor::{CustomCursor, CustomCursorSource},
     event::UserPayload,
-    extra::time::Timeout,
+    extra::time::Instant,
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
@@ -169,11 +168,12 @@ impl ActiveEventLoop {
 #[proxy_enum(origin_type = winit::event_loop::DeviceEvents, string_enum, skip_forward)]
 pub enum DeviceEvents { Always, WhenFocused, Never }
 
+// /** [winit::event_loop::ControlFlow] */
 #[proxy_enum(origin_type = winit::event_loop::ControlFlow)]
 pub enum ControlFlow {
     Poll,
     Wait,
-    WaitUntil(#[proxy_enum(field_name = timeout)] Timeout),
+    WaitUntil(#[proxy_enum(field_name = timeout)] Instant),
 }
 
 /** [winit::event_loop::OwnedDisplayHandle] */

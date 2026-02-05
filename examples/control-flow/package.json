@@ -7,8 +7,11 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Event loop control flow modes example",
   "dependencies": {
-    "@ylcc/napi-winit": "file:../../"
+    "@ylcc/napi-winit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16"
   }
 }
