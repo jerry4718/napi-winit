@@ -1,6 +1,6 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.2.100",
+  "version": "0.2.101",
   "license": "MIT",
   "description": "winit napi bindings",
   "type": "commonjs",
