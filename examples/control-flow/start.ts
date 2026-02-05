@@ -1,23 +1,32 @@
-import { Application, type ControlFlow, EventLoop, Extra, Timeout, Window, WindowAttributes } from "@ylcc/napi-winit";
+import {
+    Application,
+    type ControlFlow,
+    Duration,
+    EventLoop,
+    Extra,
+    Instant,
+    Window,
+    WindowAttributes
+} from "@ylcc/napi-winit";
 import process from "node:process";
 
-const { SoftSurface, threadInterval, tokioSleep } = Extra;
+const {BufferSurface, tokioSleep} = Extra;
 
-const event_loop = new EventLoop();
+const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
     .withActive(true)
     .withFullscreen(null)
     .withResizable(true)
     .withInnerSize({type: 'Logical', width: 480, height: 320})
-    .withPosition({ type: "Logical", x: 500, y: 500 })
+    .withPosition({type: "Logical", x: 500, y: 500})
     .withTransparent(false)
     .withTitle(
         "Press 1, 2, 3 to change control flow mode. Press R to toggle redraw requests.",
     );
 
 let window: Window;
-let surface: Extra.SoftSurface;
+let surface: Extra.BufferSurface;
 
 let mode: ControlFlow["type"] = "WaitUntil";
 let wait_cancelled: boolean = false;
@@ -25,7 +34,7 @@ let close_requested: boolean = false;
 let request_redraw: boolean = false;
 
 let buffer = new Uint32Array(0);
-let last_line =  new Uint32Array(0);
+let last_line = new Uint32Array(0);
 let old_width: number = 0, old_height: number = 0;
 
 function prePresentNotify() {
@@ -52,7 +61,7 @@ function update_buffer(width: number, height: number) {
     }
 }
 
-function writeWithSize(width: number, height: number, view: Uint32Array) {
+function presentWriter(view: Uint32Array, width: number, height: number) {
     update_buffer(width, height);
     // console.log(view);
     view.set(buffer);
@@ -61,7 +70,7 @@ function writeWithSize(width: number, height: number, view: Uint32Array) {
 }
 
 function present() {
-    surface.presentWithWriter(writeWithSize);
+    surface.presentWithWriter(presentWriter);
 }
 
 const frame_stamps: number[] = [];
@@ -83,20 +92,29 @@ function redraw() {
 }
 
 let prev = 0;
+
 function print_fps() {
     const now = Date.now();
     if (now - prev <= 30) return;
     prev = now;
-    console.log({ fps: fps() });
+    console.log({fps: fps()});
 }
 
 const app = Application.withSyncRef({
     onNewEvents: (_eventLoop, cause) => {
-        wait_cancelled = (cause.type === "WaitCancelled" && mode === "WaitUntil");
+        wait_cancelled = (mode === "WaitUntil" && cause.type === "WaitCancelled");
+
+        if (mode === "WaitUntil" && cause.type === "WaitCancelled") {
+            console.log({mode, wait_cancelled, cause: cause});
+        }
+
+        if (mode === "Wait" && cause.type === "ResumeTimeReached") {
+            console.log({mode, wait_cancelled, cause: cause});
+        }
     },
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
-        surface = new SoftSurface(window);
+        surface = new BufferSurface(window);
     },
     onWindowEvent: (_eventLoop, _windowId, event) => {
         if (event.type === "CloseRequested") {
@@ -105,7 +123,7 @@ const app = Application.withSyncRef({
         }
         if (event.type === "KeyboardInput") {
             const keyEvent = event.event;
-            const { state, logicalKey, text } = keyEvent;
+            const {state, logicalKey, text} = keyEvent;
 
             if (logicalKey.type === "Character" && state === "Released") {
                 if (logicalKey.ch === "1") {
@@ -129,7 +147,7 @@ const app = Application.withSyncRef({
                     close_requested = true;
                 }
             }
-            console.log({ state, text, mode });
+            console.log({state, text, mode});
             return;
         }
         if (event.type === "RedrawRequested") {
@@ -137,7 +155,6 @@ const app = Application.withSyncRef({
             print_fps();
             return;
         }
-        // console.log({ _windowId, event: event.type });
     },
     onAboutToWait: async (eventLoop) => {
         if (request_redraw && !wait_cancelled && !close_requested) {
@@ -145,14 +162,14 @@ const app = Application.withSyncRef({
         }
 
         if (mode === "Wait") {
-            eventLoop.setControlFlow({ type: "Wait" });
+            eventLoop.setControlFlow({type: "Wait"});
         }
         if (mode === "WaitUntil" && wait_cancelled) {
-            eventLoop.setControlFlow({ type: "WaitUntil", timeout: Timeout.fromNanos(1_000_000 / 120) });
+            eventLoop.setControlFlow({type: "WaitUntil", timeout: Instant.afterNanos(1_000_000 / 120)});
         }
         if (mode === "Poll") {
-            await tokioSleep(Timeout.fromMillis(100));
-            eventLoop.setControlFlow({ type: "Poll" });
+            await tokioSleep(Duration.fromMillis(100));
+            eventLoop.setControlFlow({type: "Poll"});
         }
 
         if (close_requested) {
@@ -162,16 +179,21 @@ const app = Application.withSyncRef({
 });
 
 function pump() {
-    const status = event_loop.pumpAppEvents(0, app);
+    const status = eventLoop.pumpAppEvents(0, app);
     if (status.type === "Continue") {
         return;
     }
+    console.log('\n✨ Application exited');
     process.exit(status.code);
 }
 
-while (true) {
-    await new Promise(res => setTimeout(res, 1_000 / 120))
-    // await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
-    pump()
+async function run() {
+    while (true) {
+        // await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
+        pump();
+        await new Promise(resolve => setTimeout(resolve, 1000 / 60));
+    }
+    // threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
 }
-// threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
+
+run().catch(console.error);

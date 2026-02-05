@@ -1,0 +1,12 @@
+{
+  "name": "examples.util",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    "./text-renderer": "./text-renderer.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Shared utilities for napi-winit examples"
+}

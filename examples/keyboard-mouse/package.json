@@ -1,5 +1,5 @@
 {
-  "name": "examples.control-flow",
+  "name": "examples.keyboard-mouse",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -7,9 +7,10 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "Event loop control flow modes example",
+  "description": "Keyboard and mouse event handling example",
   "dependencies": {
-    "@ylcc/napi-winit": "workspace:*"
+    "@ylcc/napi-winit": "workspace:*",
+    "examples.util": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.16"

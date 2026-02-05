@@ -1,5 +1,5 @@
 {
-  "name": "examples.control-flow",
+  "name": "examples.hello-world",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -7,7 +7,7 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "Event loop control flow modes example",
+  "description": "The simplest napi-winit window example",
   "dependencies": {
     "@ylcc/napi-winit": "workspace:*"
   },
