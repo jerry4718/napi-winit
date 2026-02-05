@@ -40,56 +40,60 @@ pub struct Duration {
 mod duration {
     use super::*;
 
+    const MILLIS_PER_SEC: f64 = 1_000.0;
+    const MICROS_PER_SEC: f64 = 1_000_000.0;
+    const NANOS_PER_SEC: f64 = 1_000_000_000.0;
+    const NANOS_PER_MILLI: f64 = 1_000_000.0;
+    const NANOS_PER_MICRO: f64 = 1_000.0;
+
     #[napi]
     pub fn from_secs(secs: f64) -> Duration {
-        Duration::from(StdDuration::from_secs(secs as u64))
+        Duration::from(StdDuration::from_secs_f64(secs))
     }
 
     #[napi]
     pub fn from_millis(millis: f64) -> Duration {
-        Duration::from(StdDuration::from_millis(millis as u64))
+        let secs = millis / MILLIS_PER_SEC;
+        let nanos = (millis % 1.0) * NANOS_PER_MILLI;
+        from_secs_and_nanos(secs, nanos)
     }
 
     #[napi]
     pub fn from_micros(micros: f64) -> Duration {
-        Duration::from(StdDuration::from_micros(micros as u64))
+        let secs = micros / MICROS_PER_SEC;
+        let nanos = (micros % 1.0) * NANOS_PER_MICRO;
+        from_secs_and_nanos(secs, nanos)
     }
 
     #[napi]
     pub fn from_nanos(nanos: f64) -> Duration {
-        Duration::from(StdDuration::from_nanos(nanos as u64))
+        let secs = nanos / NANOS_PER_SEC;
+        let nanos = (nanos % 1.0) * NANOS_PER_SEC;
+        from_secs_and_nanos(secs, nanos)
+    }
+
+    pub fn from_secs_and_nanos(secs: f64, nanos: f64) -> Duration {
+        Duration::from(StdDuration::from_secs_f64(secs) + StdDuration::from_nanos(nanos as u64))
     }
 
     #[napi]
     pub fn add(base: Duration, other: Duration) -> Duration {
-        Duration {
-            secs: base.secs + other.secs,
-            nanos: base.nanos + other.nanos,
-        }
+        Duration::from(StdDuration::from(base) + StdDuration::from(other))
     }
 
     #[napi]
     pub fn sub(base: Duration, other: Duration) -> Duration {
-        Duration {
-            secs: base.secs - other.secs,
-            nanos: base.nanos - other.nanos,
-        }
+        Duration::from(StdDuration::from(base) - StdDuration::from(other))
     }
 
     #[napi]
     pub fn mul(base: Duration, other: f64) -> Duration {
-        Duration {
-            secs: base.secs * other,
-            nanos: (base.nanos as f64 * other) as u32,
-        }
+        Duration::from(StdDuration::from(base).mul_f64(other))
     }
 
     #[napi]
     pub fn div(base: Duration, other: f64) -> Duration {
-        Duration {
-            secs: base.secs / other,
-            nanos: (base.nanos as f64 / other) as u32,
-        }
+        Duration::from(StdDuration::from(base).div_f64(other))
     }
 
     impl From<StdDuration> for Duration {
@@ -147,20 +151,14 @@ mod instant {
     pub fn after_nanos(nanos: f64) -> Instant {
         add(now(), duration::from_nanos(nanos))
     }
-    
+
     #[napi]
     pub fn add(base: Instant, other: Duration) -> Instant {
-        Instant {
-            secs: base.secs + other.secs,
-            nanos: base.nanos + other.nanos,
-        }
+        Instant::from(StdInstant::from(base) + StdDuration::from(other))
     }
     #[napi]
     pub fn sub(base: Instant, other: Duration) -> Instant {
-        Instant {
-            secs: base.secs - other.secs,
-            nanos: base.nanos - other.nanos,
-        }
+        Instant::from(StdInstant::from(base) - StdDuration::from(other))
     }
 
     impl From<StdInstant> for Instant {
