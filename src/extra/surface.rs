@@ -6,20 +6,6 @@ fn flat_result<T, E>(result: Result<T, E>) -> (Option<E>, Option<T>) {
     }
 }
 
-#[inline]
-fn get_or_insert_with_result<T, E, F>(with: &mut Option<T>, f: F) -> Result<&mut T, E>
-where
-    F: FnOnce() -> Result<T, E>,
-{
-    if let Some(ref mut context) = with { return Ok(context); }
-
-    let (err, res) = flat_result(f());
-
-    if let Some(e) = err { return Err(e); }
-
-    Ok(with.insert(res.unwrap()))
-}
-
 #[napi(js_name = "Extra")]
 pub mod namespace {
     use super::*;
@@ -27,7 +13,7 @@ pub mod namespace {
         window::Window,
         napi_reason,
         ok_or_reason,
-        utils::alias::ThreadsafeNoCallee
+        utils::alias::ThreadsafeNoCallee,
     };
     use napi::{
         bindgen_prelude::*,
@@ -41,16 +27,16 @@ pub mod namespace {
         slice,
     };
     use std::ops::DerefMut;
-    #[napi]
 
-    struct SoftSurface<'scope> {
+    #[napi]
+    struct BufferSurface<'scope> {
         pub(crate) window: &'scope winit::window::Window,
         pub(crate) context: Option<Context<&'scope winit::window::Window>>,
         pub(crate) surface: Option<Surface<&'scope winit::window::Window, &'scope winit::window::Window>>,
     }
 
     #[napi]
-    impl<'scope> SoftSurface<'scope> {
+    impl<'scope> BufferSurface<'scope> {
         #[napi(constructor)]
         pub fn new(window: &'scope mut Window) -> Self {
             Self {
@@ -62,12 +48,12 @@ pub mod namespace {
     }
 
     #[napi]
-    impl SoftSurface<'_> {
+    impl BufferSurface<'_> {
         #[napi]
         pub fn present_with_typed(&mut self, input: Uint32Array) -> Result<()> {
             let src_len = input.len();
 
-            op_present(self, |width, height, buffer| {
+            self.present(|width, height, buffer| {
                 let dest_len = buffer.len();
 
                 if src_len != dest_len {
@@ -80,52 +66,30 @@ pub mod namespace {
         }
 
         #[napi]
-        pub fn present_with_buffer(&mut self, buffer: Buffer) -> Result<()> {
-            let buf_len = buffer.len();
-            if buf_len % 4 != 0 {
-                return Err(napi_reason!("input buffer length not align to 32 bits"));
-            }
-
-            let src_ptr = buffer.as_ptr().cast::<u32>().cast_mut();
-            let src_len = buf_len / 4;
-
-            op_present(self, |width, height, buffer| {
-                let dest_len = buffer.len();
-
-                if src_len != dest_len {
-                    return Err(napi_reason!("source slice length ({src_len}) does not match destination slice length ({dest_len})"));
-                }
-
-                buffer.copy_from_slice(unsafe { slice::from_raw_parts(src_ptr, src_len) });
-                Ok(())
-            })
-        }
-
-        #[napi]
         pub fn present_with_writer<'scope>(
             &mut self, env: Env,
-            #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
-            write: Function<'scope, FnArgs<(u32, u32, Uint32Array)>, ()>,
+            #[napi(ts_arg_type = "(view: Uint32Array, width: number, height: number) => void")]
+            write: Function<'scope, FnArgs<(Uint32Array, u32, u32)>, Unknown<'scope>>,
         ) -> Result<()> {
-            op_present(self, |width, height, buffer| {
+            self.present(|width, height, buffer| {
                 let buf_len = buffer.len();
                 let buf_slice = buffer.deref_mut();
 
                 let view = unsafe {
                     Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
                 };
-                ok_or_reason!(write.call(FnArgs::from((width.get(), height.get(), view))));
+                ok_or_reason!(write.call(FnArgs::from((view, width.get(), height.get()))));
                 Ok(())
             })
         }
 
         #[napi]
-        pub fn present_with_tsfn<'scope>(
+        pub fn present_with_threadsafe_writer<'scope>(
             &mut self, env: Env,
-            #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
-            write: ThreadsafeNoCallee<FnArgs<(u32, u32, Uint32Array)>, ()>,
+            #[napi(ts_arg_type = "(view: Uint32Array, width: number, height: number) => void")]
+            write: ThreadsafeNoCallee<FnArgs<(Uint32Array, u32, u32)>, Unknown<'scope>>,
         ) -> Result<()> {
-            op_present(self, |width, height, buffer| {
+            self.present(|width, height, buffer| {
                 let buf_len = buffer.len();
                 let buf_slice = buffer.deref_mut();
 
@@ -133,56 +97,58 @@ pub mod namespace {
                     Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
                 };
 
-                let status = write.call(FnArgs::from((width.get(), height.get(), view)), ThreadsafeFunctionCallMode::Blocking);
+                let status = write.call(FnArgs::from((view, width.get(), height.get())), ThreadsafeFunctionCallMode::Blocking);
                 if Status::Ok != status { dbg!(status); };
                 Ok(())
             })
         }
     }
 
-    fn op_present<F>(surf: &mut SoftSurface, mut write_fn: F) -> Result<()>
-    where
-        F: FnMut(NonZero<u32>, NonZero<u32>, &mut softbuffer::Buffer<&winit::window::Window, &winit::window::Window>) -> Result<()>,
-    {
-        let context = match surf.context {
-            Some(ref mut context) => context,
-            None => match Context::new(surf.window) {
-                Ok(context) => surf.context.insert(context),
-                Err(e) => return Err(napi_reason!("Failed to create buffer context: {e}")),
+    impl BufferSurface<'_> {
+        pub(crate) fn present<F>(&mut self, mut write_fn: F) -> Result<()>
+        where
+            F: FnMut(NonZero<u32>, NonZero<u32>, &mut softbuffer::Buffer<&winit::window::Window, &winit::window::Window>) -> Result<()>,
+        {
+            let context = match self.context {
+                Some(ref mut context) => context,
+                None => match Context::new(self.window) {
+                    Ok(context) => self.context.insert(context),
+                    Err(e) => return Err(napi_reason!("Failed to create buffer context: {e}")),
+                }
+            };
+
+            let surface = match self.surface {
+                Some(ref mut surface) => surface,
+                None => match Surface::new(&context, self.window) {
+                    Ok(surface) => self.surface.insert(surface),
+                    Err(e) => return Err(napi_reason!("Failed to create buffer surface: {e}")),
+                }
+            };
+
+            let size = self.window.inner_size();
+
+            let Some(width) = NonZeroU32::new(size.width)
+            else { return Err(napi_reason!("invalid window size [width: {}]", size.width)) };
+
+            let Some(height) = NonZeroU32::new(size.height)
+            else { return Err(napi_reason!("invalid window size [height: {}]", size.height)) };
+
+            if let Err(e) = surface.resize(width, height) {
+                return Err(napi_reason!("failed to resize surface: {e}"));
             }
-        };
 
-        let surface = match surf.surface {
-            Some(ref mut surface) => surface,
-            None => match Surface::new(&context, surf.window) {
-                Ok(surface) => surf.surface.insert(surface),
-                Err(e) => return Err(napi_reason!("Failed to create buffer surface: {e}")),
+            let (err, res) = flat_result(surface.buffer_mut());
+
+            if let Some(e) = err {
+                return Err(napi_reason!("failed to access buffer: {e}"));
             }
-        };
 
-        let size = surf.window.inner_size();
+            let Some(mut buffer) = res else { unreachable!("never handled") };
 
-        let Some(width) = NonZeroU32::new(size.width)
-        else { return Err(napi_reason!("invalid window size [width: {}]", size.width)) };
+            ok_or_reason!(write_fn(width, height, &mut buffer); "{}");
 
-        let Some(height) = NonZeroU32::new(size.height)
-        else { return Err(napi_reason!("invalid window size [height: {}]", size.height)) };
-
-        if let Err(e) = surface.resize(width, height) {
-            return Err(napi_reason!("failed to resize surface: {e}"));
+            buffer.present()
+                .map_err(|e| napi_reason!("failed to access buffer: {e}"))
         }
-
-        let (err, res) = flat_result(surface.buffer_mut());
-
-        if let Some(e) = err {
-            return Err(napi_reason!("failed to access buffer: {e}"));
-        }
-
-        let Some(mut buffer) = res else { unreachable!("never handled") };
-
-        ok_or_reason!(write_fn(width, height, &mut buffer); "{}");
-
-        buffer.present()
-            .map_err(|e| napi_reason!("failed to access buffer: {e}"))
     }
 }
