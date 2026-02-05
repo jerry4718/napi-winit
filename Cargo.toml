@@ -2,7 +2,7 @@
 authors = ["jerry4718 <jerry4718@qq.com>"]
 edition = "2021"
 name = "napi-winit"
-version = "0.1.103"
+version = "0.2.100"
 
 [lib]
 crate-type = ["cdylib"]
