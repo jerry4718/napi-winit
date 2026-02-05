@@ -32,6 +32,8 @@ const ATTR_INCLUDES: &[&str] = &[ATTR_PROXY_WRAP];
 define_const_str!(
     META_ORIGIN_TYPE = origin_type,
     META_FIELD_NAME = field_name,
+    META_USE_NON_NULL = UseNonNull,
+    META_USE_BOX = UseBox,
 );
 
 define_const_str!(
@@ -50,6 +52,8 @@ struct ProxyWrap {
     pub conf_convert: ConfConvert,
     pub no_getter: bool,
     pub no_setter: bool,
+    pub use_non_null: bool,
+    pub use_box: bool,
 }
 
 fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
@@ -63,6 +67,8 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
     map_meta_to_local!(&metas => {
         META_ORIGIN_TYPE => origin_type,
         META_FIELD_NAME => field_name,
+        META_USE_NON_NULL => use_non_null,
+        META_USE_BOX => use_box,
         META_NO_GETTER => no_getter,
         META_NO_SETTER => no_setter,
     });
@@ -75,6 +81,8 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
         conf_convert: parse_conf_convert(metas),
         no_getter: no_getter.is_some(),
         no_setter: no_setter.is_some(),
+        use_non_null: use_non_null.is_some(),
+        use_box: use_box.is_some(),
     }
 }
 
@@ -83,6 +91,7 @@ impl ToTokens for ProxyWrap {
         let Self {
             input, reserved_attrs, origin_type, field_name,
             no_getter: root_no_getter, no_setter: root_no_setter, conf_convert,
+            use_non_null, use_box,
         } = self;
 
         let ItemStruct { ident, vis, fields, .. } = input;
@@ -92,14 +101,28 @@ impl ToTokens for ProxyWrap {
         if skip_to_js { napi_metas.push(quote! {object_to_js = false}) }
         if skip_from_js { napi_metas.push(quote! {object_from_js = false}) }
 
-        let wrap_body = match &field_name {
-            Some(ident) => quote! { { pub(crate) #ident: #origin_type } },
-            None => quote! { (pub(crate) #origin_type); },
+        let wrapped_type = match use_non_null {
+            true => quote! { std::ptr::NonNull<#origin_type> },
+            false => quote! { #origin_type },
         };
 
-        let inner_expr = match &field_name {
-            Some(ident) => quote! { self.#ident },
-            None => quote! { self.0 },
+        let wrap_body = match &field_name {
+            Some(ident) => quote! { { pub(crate) #ident: #wrapped_type } },
+            None => quote! { (pub(crate) #wrapped_type); },
+        };
+
+        let inner_expr = match (&field_name, use_non_null) {
+            (Some(ident), false) => quote! { self.#ident },
+            (None, false) => quote! { self.0 },
+            (Some(ident), true) => quote! { unsafe { self.#ident.as_ref() } },
+            (None, true) => quote! { unsafe { self.0.as_ref() } },
+        };
+
+        let inner_mut_expr = match (&field_name, use_non_null) {
+            (Some(ident), false) => quote! { self.#ident },
+            (None, false) => quote! { self.0 },
+            (Some(ident), true) => quote! { unsafe { self.#ident.as_mut() } },
+            (None, true) => quote! { unsafe { self.0.as_mut() } },
         };
 
         append_to_tokens(tokens, quote! {
@@ -142,7 +165,7 @@ impl ToTokens for ProxyWrap {
                     if !no_getter {
                         let getter = format_ident!("___get_{}", ident);
                         let use_ref = get_ref.map(|_| { quote! { ref } });
-                        let conv_get = conv_get.as_ref().map(get_meta_value_as_conf_usage).flatten();
+                        let conv_get = conv_get.as_ref().and_then(get_meta_value_as_conf_usage);
 
                         let local_ident = quote! { val };
                         let convert_code = quote_option_conf_usage(&local_ident, &conv_get);
@@ -157,7 +180,7 @@ impl ToTokens for ProxyWrap {
 
                     if !no_setter {
                         let setter = format_ident!("___set_{}", ident);
-                        let conv_set = conv_set.as_ref().map(get_meta_value_as_conf_usage).flatten();
+                        let conv_set = conv_set.as_ref().and_then(get_meta_value_as_conf_usage);
 
                         let local_ident = quote! { val };
                         let convert_code = quote_option_conf_usage(&local_ident, &conv_set);
@@ -165,7 +188,7 @@ impl ToTokens for ProxyWrap {
                         append_to_tokens(&mut fns, quote_spanned! { ident.span() =>
                             #[napi(setter, js_name = #js_name)]
                             pub fn #setter (&self, #local_ident: #ty) {
-                                #inner_expr.#pat_pos = #convert_code;
+                                #inner_mut_expr.#pat_pos = #convert_code;
                             }
                         });
                     }

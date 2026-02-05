@@ -34,7 +34,7 @@ pub(crate) fn quote_conf_usage(from: &dyn ToTokens, conf_usage: &ConfUsage) -> T
 }
 
 pub(crate) fn get_meta_value_as_conf_usage(meta: &Meta) -> Option<ConfUsage> {
-    let Meta::NameValue(MetaNameValue { ref value, .. }) = meta
+    let Meta::NameValue(MetaNameValue { value, .. }) = meta
     else { return None };
 
     Some(expr_to_conf_usage(value))
