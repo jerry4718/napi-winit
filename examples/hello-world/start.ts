@@ -37,6 +37,10 @@ const app = Application.withSyncRef({
         if (event.type === 'KeyboardInput') {
             const {logicalKey, state} = event.event;
 
+            if (state === 'Released' && logicalKey.type === 'Character' && logicalKey.ch.toLowerCase() === 'r') {
+                window.requestRedraw();
+            }
+
             // Exit on ESC key
             if (state === 'Released' && logicalKey.type === 'Named' && logicalKey.name === 'Escape') {
                 console.log('🚪 ESC pressed, exiting application');
@@ -49,9 +53,7 @@ const app = Application.withSyncRef({
         }
 
         if (event.type === 'RedrawRequested') {
-            surface.presentWithWriter((_width, _height, view) => {
-                view.fill(0x000000);
-            });
+            surface.presentWithWriter(view => view.fill(0x000000));
         }
     },
 

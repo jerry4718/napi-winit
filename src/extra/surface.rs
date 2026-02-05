@@ -68,8 +68,8 @@ pub mod namespace {
         #[napi]
         pub fn present_with_writer<'scope>(
             &mut self, env: Env,
-            #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
-            write: Function<'scope, FnArgs<(u32, u32, Uint32Array)>, ()>,
+            #[napi(ts_arg_type = "(view: Uint32Array, width: number, height: number) => void")]
+            write: Function<'scope, FnArgs<(Uint32Array, u32, u32)>, Unknown<'scope>>,
         ) -> Result<()> {
             self.present(|width, height, buffer| {
                 let buf_len = buffer.len();
@@ -78,7 +78,7 @@ pub mod namespace {
                 let view = unsafe {
                     Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
                 };
-                ok_or_reason!(write.call(FnArgs::from((width.get(), height.get(), view))));
+                ok_or_reason!(write.call(FnArgs::from((view, width.get(), height.get()))));
                 Ok(())
             })
         }
@@ -86,8 +86,8 @@ pub mod namespace {
         #[napi]
         pub fn present_with_threadsafe_writer<'scope>(
             &mut self, env: Env,
-            #[napi(ts_arg_type = "(width: number, height: number, view: Uint32Array) => void")]
-            write: ThreadsafeNoCallee<FnArgs<(u32, u32, Uint32Array)>, ()>,
+            #[napi(ts_arg_type = "(view: Uint32Array, width: number, height: number) => void")]
+            write: ThreadsafeNoCallee<FnArgs<(Uint32Array, u32, u32)>, Unknown<'scope>>,
         ) -> Result<()> {
             self.present(|width, height, buffer| {
                 let buf_len = buffer.len();
@@ -97,7 +97,7 @@ pub mod namespace {
                     Uint32Array::with_external_data(buf_slice.as_mut_ptr(), buf_len, move |ptr, size| {})
                 };
 
-                let status = write.call(FnArgs::from((width.get(), height.get(), view)), ThreadsafeFunctionCallMode::Blocking);
+                let status = write.call(FnArgs::from((view, width.get(), height.get())), ThreadsafeFunctionCallMode::Blocking);
                 if Status::Ok != status { dbg!(status); };
                 Ok(())
             })

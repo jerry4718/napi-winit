@@ -161,7 +161,7 @@ const app = Application.withSyncRef({
         if (event.type === 'RedrawRequested') {
             windowInfo.window.prePresentNotify();
 
-            windowInfo.surface.presentWithWriter((width, height, view) => {
+            windowInfo.surface.presentWithWriter((view, width, height) => {
                 // Fill window color
                 view.fill(windowInfo.color);
 

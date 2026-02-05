@@ -133,7 +133,7 @@ const app = Application.withSyncRef({
         if (event.type === 'RedrawRequested') {
             window.prePresentNotify();
 
-            surface.presentWithWriter((width, height, view) => {
+            surface.presentWithWriter((view, width, height) => {
                 frameCount++;
 
                 // Dark background

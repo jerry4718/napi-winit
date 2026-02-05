@@ -270,7 +270,7 @@ import { Extra, Duration, Instant } from '@ylcc/napi-winit';
 const surface = new Extra.BufferSurface(window);
 
 // Method 1: Draw with writer callback
-surface.presentWithWriter((width, height, view) => {
+surface.presentWithWriter((view, width, height) => {
     // view is Uint32Array - each element is 0xAARRGGBB
     for (let i = 0; i < view.length; i++) {
         view[i] = 0xFF00FF00; // Green color
@@ -611,7 +611,7 @@ const app = Application.withSyncRef({
             window.prePresentNotify();
             
             // Render frame
-            surface.presentWithWriter((width, height, view) => {
+            surface.presentWithWriter((view, width, height) => {
                 frameCount++;
                 
                 // Clear to dark background (ARGB format: 0xAARRGGBB)

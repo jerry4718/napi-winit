@@ -61,7 +61,7 @@ function update_buffer(width: number, height: number) {
     }
 }
 
-function writeWithSize(width: number, height: number, view: Uint32Array) {
+function presentWriter(view: Uint32Array, width: number, height: number) {
     update_buffer(width, height);
     // console.log(view);
     view.set(buffer);
@@ -70,7 +70,7 @@ function writeWithSize(width: number, height: number, view: Uint32Array) {
 }
 
 function present() {
-    surface.presentWithWriter(writeWithSize);
+    surface.presentWithWriter(presentWriter);
 }
 
 const frame_stamps: number[] = [];

@@ -212,7 +212,7 @@ const app = Application.withSyncRef({
         if (event.type === 'RedrawRequested') {
             window.prePresentNotify();
 
-            surface.presentWithWriter((width, height, view) => {
+            surface.presentWithWriter((view, width, height) => {
                 // Clear background
                 view.fill(0xFF2a2a3e);
 

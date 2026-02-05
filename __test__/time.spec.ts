@@ -55,7 +55,7 @@ test('Duration: overflow/underflow errors', (t) => {
     })
 
     // Large overflow (using a very large value)
-    const dLarge = {secs: 1e19, nanos: 0} // Large enough to overflow u64 if doubled
+    const dLarge = Duration.fromSecs(18e19); // Large enough to overflow u64 if doubled
     t.throws(() => Duration.add(dLarge, dLarge), {
         message: /adding durations/
     })
@@ -85,13 +85,13 @@ test('Instant: arithmetic success', (t) => {
 
 test('Instant: overflow/underflow errors', (t) => {
     const now = Instant.now()
-    const hugeDuration = {secs: 1e19, nanos: 0}
+    const hugeDuration = Duration.fromSecs(18e19);
 
     t.throws(() => Instant.add(now, hugeDuration), {
         message: /adding duration to instant/
     })
 
-    const pastDuration = {secs: 1e19, nanos: 0}
+    const pastDuration = Duration.fromSecs(18e19);
     t.throws(() => Instant.sub(now, pastDuration), {
         message: /subtracting duration from instant/
     })

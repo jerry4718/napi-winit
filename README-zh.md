@@ -270,7 +270,7 @@ import { Extra, Duration, Instant } from '@ylcc/napi-winit';
 const surface = new Extra.BufferSurface(window);
 
 // 方法 1：使用回调函数绘制
-surface.presentWithWriter((width, height, view) => {
+surface.presentWithWriter((view, width, height) => {
     // view 是 Uint32Array - 每个元素是 0xAARRGGBB
     for (let i = 0; i < view.length; i++) {
         view[i] = 0xFF00FF00; // 绿色
@@ -644,7 +644,7 @@ const app = Application.withSyncRef({
             window.prePresentNotify();
             
             // 渲染帧
-            surface.presentWithWriter((width, height, view) => {
+            surface.presentWithWriter((view, width, height) => {
                 frameCount++;
                 
                 // 清空为暗色背景（ARGB 格式：0xAARRGGBB）

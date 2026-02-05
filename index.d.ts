@@ -15,8 +15,8 @@ export declare namespace Extra {
   export class BufferSurface {
     constructor(window: Window)
     presentWithTyped(input: Uint32Array): void
-    presentWithWriter(write: (width: number, height: number, view: Uint32Array) => void): void
-    presentWithThreadsafeWriter(write: (width: number, height: number, view: Uint32Array) => void): void
+    presentWithWriter(write: (view: Uint32Array, width: number, height: number) => void): void
+    presentWithThreadsafeWriter(write: (view: Uint32Array, width: number, height: number) => void): void
   }
   export class ThreadPool {
     constructor(numThreads: number)
