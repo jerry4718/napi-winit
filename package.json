@@ -1,6 +1,6 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.1.103",
+  "version": "0.2.100",
   "license": "MIT",
   "description": "winit napi bindings",
   "type": "commonjs",
@@ -19,7 +19,8 @@
   ],
   "files": [
     "index.d.ts",
-    "index.js"
+    "index.js",
+    "*.node"
   ],
   "napi": {
     "binaryName": "napi-winit",

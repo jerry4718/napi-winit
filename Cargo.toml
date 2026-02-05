@@ -1,8 +1,8 @@
 [package]
 authors = ["jerry4718 <jerry4718@qq.com>"]
-edition = "2021"
+edition = "2024"
 name = "napi-winit"
-version = "0.1.103"
+version = "0.2.100"
 
 [lib]
 crate-type = ["cdylib"]
@@ -20,14 +20,13 @@ macros = { path = "crates/macros" }
 [dependencies]
 proc = { path = "crates/proc" }
 threadpool = "1.8.1"
-once_cell = "1.21.3"
 
 [dependencies.winit]
 version = "0.30.12"
 features = ["rwh_05", "rwh_06"]
 
 [dependencies.tokio]
-version = "1.45.1"
+version = "1.49.0"
 features = ["time"]
 # features = [ "rt", "rt-multi-thread","time" ]
 
@@ -42,20 +41,17 @@ version = "0.6.2"
 features = ["std"]
 
 [dependencies.napi]
-version = "3.6.1"
+version = "3.8.2"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.4.0"
+version = "3.5.1"
 features = ["type-def"]
 
-#[dependencies.ctor]
-#version = "0.4.2"
-
 [dependencies.softbuffer]
-version = "0.4.6"
+version = "0.4.8"
 default-features = false
 features = [
     "x11",

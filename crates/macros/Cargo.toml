@@ -1,6 +1,6 @@
 [package]
 name = "macros"
-version = "0.1.103"
+version = "0.2.100"
 edition = "2024"
 
 [dependencies]
