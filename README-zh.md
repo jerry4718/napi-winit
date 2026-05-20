@@ -66,7 +66,7 @@ const attrs = new WindowAttributes()
     .withTitle('Hello napi-winit');
 
 // 创建应用程序并设置事件处理器
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         // 应用准备就绪时创建窗口
         const window = eventLoop.createWindow(attrs);
@@ -96,7 +96,7 @@ const app = Application.withSyncRef({
 // 运行事件循环
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`退出，代码: ${status.code}`);
             break;
@@ -119,7 +119,7 @@ run().catch(console.error);
 const eventLoop = new EventLoop();
 
 // 处理应用事件
-const status = eventLoop.pumpAppEvents(0, app);
+const status = eventLoop.pumpAppEvents(null, app);
 
 // 设置控制流
 eventLoop.setControlFlow(controlFlow);
@@ -204,7 +204,7 @@ window.setImeAllowed(true); // 允许输入法
 应用程序类，用于处理应用级别的事件。
 
 ```typescript
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onNewEvents: (eventLoop, cause) => {
         // 新事件到达时调用
     },
@@ -503,7 +503,7 @@ let window;
 let mode: ControlFlow['type'] = 'Wait';
 let waitCancelled = false;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         console.log('窗口已创建。按 1（Wait）、2（WaitUntil）、3（Poll）');
@@ -573,7 +573,7 @@ const app = Application.withSyncRef({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`退出，代码: ${status.code}`);
             break;
@@ -607,7 +607,7 @@ let requestRedraw = false;
 let rectangleX = 0;
 let velocityX = 2;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
@@ -720,7 +720,7 @@ function hslToRgb(h: number, s: number, l: number): number {
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`退出，代码: ${status.code}`);
             break;
@@ -767,7 +767,7 @@ napi-winit 为以下平台提供预构建的二进制文件：
 // 推荐：控制轮询频率
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') break;
         await new Promise(resolve => setTimeout(resolve, 1000 / 60)); // 60 FPS
     }
@@ -787,7 +787,7 @@ onAboutToWait: (eventLoop) => {
 let window: Window | null = null;
 let surface: Extra.BufferSurface | null = null;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);

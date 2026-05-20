@@ -2,7 +2,7 @@
 authors = ["jerry4718 <jerry4718@qq.com>"]
 edition = "2024"
 name = "napi-winit"
-version = "0.2.100"
+version = "0.2.101"
 
 [lib]
 crate-type = ["cdylib"]
@@ -41,13 +41,13 @@ version = "0.6.2"
 features = ["std"]
 
 [dependencies.napi]
-version = "3.8.2"
+version = "3.9.0"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.5.1"
+version = "3.5.6"
 features = ["type-def"]
 
 [dependencies.softbuffer]
@@ -70,7 +70,7 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.3.1"
+napi-build = "2.3.2"
 
 [profile.release]
 lto = true

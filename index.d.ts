@@ -71,11 +71,7 @@ export declare class ActiveEventLoop {
 }
 
 export declare class Application {
-  static withAsyncRef(options: ApplicationOptions): Application
-  static withSyncRef(options: ApplicationOptions): Application
-  static withAsyncFx(options: ApplicationOptions): Application
-  static withSyncFx(options: ApplicationOptions): Application
-  static withAsyncFx2Safe(options: ApplicationOptions): Application
+  static withOptions(options: ApplicationCallbacks): Application
 }
 
 /** [winit::event_loop::AsyncRequestSerial]  */
@@ -105,7 +101,7 @@ export declare class EventLoop {
   constructor()
   runApp(app: Application): void
   runAppOnDemand(app: Application): void
-  pumpAppEvents(millis: number, app: Application): PumpStatus
+  pumpAppEvents(timeout: Duration | undefined | null, app: Application): PumpStatus
 }
 
 export declare class Icon {
@@ -157,7 +153,52 @@ export declare class ModifiersState {
 
 /** [winit::monitor::MonitorHandle] */
 export declare class MonitorHandle {
-
+  /**
+   * Returns a human-readable name of the monitor.
+   *
+   * Returns `None` if the monitor doesn't exist anymore.
+   */
+  name(): string | null
+  /** Returns the monitor's resolution. */
+  size(): Size
+  /**
+   * Returns the top-left corner position of the monitor relative to the larger full
+   * screen area.
+   */
+  position(): Position
+  /**
+   * The monitor refresh rate used by the system.
+   *
+   * Return `Some` if succeed, or `None` if failed, which usually happens when the monitor
+   * the window is on is removed.
+   *
+   * When using exclusive fullscreen, the refresh rate of the [`winit::monitor::VideoModeHandle`] that was
+   * used to enter fullscreen should be used instead.
+   */
+  refreshRateMillihertz(): number | null
+  /**
+   * Returns the scale factor of the underlying monitor. To map logical pixels to physical
+   * pixels and vice versa, use [`Window::scale_factor`].
+   *
+   * See the [`dpi`] module for more information.
+   *
+   * ## Platform-specific
+   *
+   * - **X11:** Can be overridden using the `WINIT_X11_SCALE_FACTOR` environment variable.
+   * - **Wayland:** May differ from [`Window::scale_factor`].
+   * - **Android:** Always returns 1.0.
+   *
+   * [`Window::scale_factor`]: crate::window::Window::scale_factor
+   */
+  scaleFactor(): number
+  /**
+   * Returns all fullscreen video modes supported by this monitor.
+   *
+   * ## Platform-specific
+   *
+   * - **Web:** Always returns an empty iterator
+   */
+  videoModes(): Array<VideoModeHandle>
 }
 
 /** [winit::event_loop::OwnedDisplayHandle]  */
@@ -177,7 +218,26 @@ export declare class UserPayload {
 
 /** [winit::monitor::VideoModeHandle] */
 export declare class VideoModeHandle {
-
+  /** Returns the resolution of this video mode. */
+  size(): Size
+  /**
+   * Returns the bit depth of this video mode, as in how many bits you have
+   * available per color. This is generally 24 bits or 32 bits on modern
+   * systems, depending on whether the alpha channel is counted or not.
+   *
+   * ## Platform-specific
+   *
+   * - **Wayland / Orbital:** Always returns 32.
+   * - **iOS:** Always returns 32.
+   */
+  bitDepth(): number
+  /** Returns the refresh rate of this video mode in mHz. */
+  refreshRateMillihertz(): number
+  /**
+   * Returns the monitor that this video mode is valid for. Each monitor has
+   * a separate set of valid video modes.
+   */
+  monitor(): MonitorHandle
 }
 
 /** [winit::window::Window] */
@@ -211,8 +271,6 @@ export declare class Window {
   isMinimized(): boolean | null
   setMaximized(maximized: boolean): void
   isMaximized(): boolean
-  setFullscreen(fullscreen?: Fullscreen | undefined | null): void
-  fullscreen(): Fullscreen | null
   setDecorations(decorations: boolean): void
   isDecorated(): boolean
   setWindowLevel(level: WindowLevel): void
@@ -227,6 +285,8 @@ export declare class Window {
   theme(): Theme | null
   setContentProtected(protected: boolean): void
   title(): string
+  setFullscreen(fullscreen?: Fullscreen | undefined | null): void
+  fullscreen(): Fullscreen | null
   setCursor(cursor: Cursor): void
   setCursorPosition(position: Position): void
   setCursorGrab(mode: CursorGrabMode): void
@@ -290,64 +350,16 @@ export declare class WindowId {
   rawString(): string
 }
 
-export interface ApplicationOptions {
-  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => (void | Promise<void>)
-  onResumed: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => (void | Promise<void>)
-  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => (void | Promise<void>)
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => (void | Promise<void>)
-  onAboutToWait?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onSuspended?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onExiting?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-  onMemoryWarning?: (eventLoop: ActiveEventLoop) => (void | Promise<void>)
-}
-
-export interface ApplicationOptionsFxAsync {
-  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => Promise<undefined> | null
-  onResumed: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => Promise<undefined> | null
-  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => Promise<undefined> | null
-  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => Promise<undefined> | null
-  onAboutToWait?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onSuspended?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onExiting?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onMemoryWarning?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-}
-
-export interface ApplicationOptionsFxSync {
-  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => unknown
-  onResumed: (arg0: ActiveEventLoop) => unknown
-  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => unknown
-  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => unknown
-  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => unknown
-  onAboutToWait?: (arg0: ActiveEventLoop) => unknown
-  onSuspended?: (arg0: ActiveEventLoop) => unknown
-  onExiting?: (arg0: ActiveEventLoop) => unknown
-  onMemoryWarning?: (arg0: ActiveEventLoop) => unknown
-}
-
-export interface ApplicationOptionsRefAsync {
-  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => Promise<undefined> | null
-  onResumed: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => Promise<undefined> | null
-  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => Promise<undefined> | null
-  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => Promise<undefined> | null
-  onAboutToWait?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onSuspended?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onExiting?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-  onMemoryWarning?: (arg0: ActiveEventLoop) => Promise<undefined> | null
-}
-
-export interface ApplicationOptionsRefSync {
-  onNewEvents?: (arg0: ActiveEventLoop, arg1: StartCause) => unknown
-  onResumed: (arg0: ActiveEventLoop) => unknown
-  onUserEvent?: (arg0: ActiveEventLoop, arg1: UserPayload) => unknown
-  onWindowEvent: (arg0: ActiveEventLoop, arg1: WindowId, arg2: WindowEvent) => unknown
-  onDeviceEvent?: (arg0: ActiveEventLoop, arg1: DeviceId, arg2: DeviceEvent) => unknown
-  onAboutToWait?: (arg0: ActiveEventLoop) => unknown
-  onSuspended?: (arg0: ActiveEventLoop) => unknown
-  onExiting?: (arg0: ActiveEventLoop) => unknown
-  onMemoryWarning?: (arg0: ActiveEventLoop) => unknown
+export interface ApplicationCallbacks {
+  onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => unknown
+  onResumed: (eventLoop: ActiveEventLoop) => unknown
+  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => unknown
+  onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => unknown
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => unknown
+  onAboutToWait?: (eventLoop: ActiveEventLoop) => unknown
+  onSuspended?: (eventLoop: ActiveEventLoop) => unknown
+  onExiting?: (eventLoop: ActiveEventLoop) => unknown
+  onMemoryWarning?: (eventLoop: ActiveEventLoop) => unknown
 }
 
 export type ControlFlow =
@@ -461,10 +473,9 @@ export type Force =
 altitudeAngle?: number }
 | { type: 'Normalized', value: number }
 
-export declare const enum Fullscreen {
-  Exclusive = 0,
-  Borderless = 1
-}
+export type Fullscreen =
+  | { type: 'Exclusive', videoMode: VideoModeHandle }
+  | { type: 'Borderless', monitor?: MonitorHandle }
 
 export type Ime =
   | { type: 'Enabled' }

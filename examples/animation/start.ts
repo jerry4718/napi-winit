@@ -48,7 +48,7 @@ const frameTimes: number[] = [];
 let lastFpsUpdate = Date.now();
 let currentFps = 0;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
@@ -186,7 +186,7 @@ const app = Application.withSyncRef({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`\n✨ Application exited, total frames: ${frameCount}`);
             break;

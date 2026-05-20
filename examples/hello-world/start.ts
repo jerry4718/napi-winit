@@ -18,7 +18,7 @@ let window: Window;
 let surface: Extra.BufferSurface;
 
 // Create application
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         // Create window when app starts
         window = eventLoop.createWindow(attrs);
@@ -66,7 +66,7 @@ const app = Application.withSyncRef({
 // Run event loop
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`\n✨ Application exited with code: ${status.code}`);
             break;

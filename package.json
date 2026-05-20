@@ -1,6 +1,6 @@
 {
   "name": "@ylcc/napi-winit",
-  "version": "0.2.100",
+  "version": "0.2.101",
   "license": "MIT",
   "description": "winit napi bindings",
   "type": "commonjs",
@@ -61,8 +61,8 @@
     "example:fullscreen": "pnpm --filter examples.fullscreen start"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.4.1",
-    "@oxc-node/core": "^0.0.34",
+    "@napi-rs/cli": "^3.6.2",
+    "@oxc-node/core": "^0.1.0",
     "ava": "^6.4.1",
     "typescript": "^5.9.3"
   },

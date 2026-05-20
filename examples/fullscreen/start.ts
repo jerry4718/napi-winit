@@ -1,4 +1,4 @@
-import {Application, EventLoop, Extra, Fullscreen, Window, WindowAttributes} from '@ylcc/napi-winit';
+import {Application, EventLoop, Extra, MonitorHandle, Window, WindowAttributes} from '@ylcc/napi-winit';
 import {drawCenteredText, drawText} from 'examples.util/text-renderer';
 
 console.log('🖥️  Fullscreen Mode Example');
@@ -43,7 +43,9 @@ function initStars(count: number, width: number, height: number) {
     }
 }
 
-const app = Application.withSyncRef({
+let prevMonitorIndex = -1;
+
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
@@ -76,7 +78,10 @@ const app = Application.withSyncRef({
                     isFullscreen = !isFullscreen;
 
                     if (isFullscreen) {
-                        window.setFullscreen(Fullscreen.Borderless);
+                        const monitors =  eventLoop.availableMonitors();
+                        prevMonitorIndex ++;
+                        const selected = monitors[prevMonitorIndex % monitors.length];
+                        window.setFullscreen({ type: "Borderless", monitor: selected });
                         console.log('🖥️  Switched to fullscreen mode');
                     } else {
                         window.setFullscreen(null);
@@ -218,7 +223,7 @@ const app = Application.withSyncRef({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log('\n✨ Application exited');
             break;

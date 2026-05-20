@@ -15,16 +15,15 @@ const eventLoop = new EventLoop();
 
 // Window management
 interface WindowInfo {
+    id: string;
     window: Window;
     surface: Extra.BufferSurface;
-    id: WindowId;
-    title: string;
     color: number;
     order: number;
 }
 
-const windows = new Map<string, WindowInfo>();
-let windowCounter = 0;
+const windows: WindowInfo[] = [];
+let countWindowCreated = 0;
 let focusedWindowId: WindowId | null = null;
 
 // Predefined colors
@@ -41,53 +40,59 @@ const colors = [
 ];
 
 function createNewWindow(activeEventLoop: any) {
-    const color = colors[windowCounter % colors.length];
-    const order = ++windowCounter;
+    const color = colors[windows.length % colors.length];
+    const order = ++countWindowCreated;
 
     const attrs = new WindowAttributes()
         .withInnerSize({type: 'Logical', width: 400, height: 300})
         // .withPosition({type: 'Logical', x: 100 + (index - 1) * 50, y: 100 + (index - 1) * 50})
-        .withTitle(`Window ${order}`);
+        .withTitle(`Window order: ${order}`);
 
     const window = activeEventLoop.createWindow(attrs);
     const surface = new Extra.BufferSurface(window);
-    const windowId = window.id();
+    const windowId = window.id().rawString();
 
     const windowInfo: WindowInfo = {
+        id: windowId,
         window,
         surface,
-        id: windowId,
-        title: `Window ${order}`,
         color,
         order
     };
 
-    windows.set(windowId.rawString(), windowInfo);
+    windows.push(windowInfo);
 
     // Request redraw
-    window.requestRedraw();
+    redrawWindows();
 
-    console.log(`✅ Created window ${order}, total: ${windows.size} windows`);
+    console.log(`✅ Created window order: ${order}, total: ${windows.length} windows`);
 
     return windowInfo;
 }
 
 function closeWindow(windowId: WindowId) {
     const windowIdString = windowId.rawString();
-    const windowInfo = windows.get(windowIdString);
+    const windowInfo = windows.find((info) => info.id === windowIdString);
     if (windowInfo) {
-        console.log(`🚪 Closing ${windowInfo.title}`);
-        windows.delete(windowIdString);
+        console.log(`🚪 Closing window order: ${windowInfo.order}`);
+        windows.splice(windows.indexOf(windowInfo), 1);
+        redrawWindows();
 
-        if (windows.size === 0) {
+        if (windows.length === 0) {
             console.log('⚠️  All windows closed, exiting application');
         } else {
-            console.log(`📊 Remaining ${windows.size} windows`);
+            console.log(`📊 Remaining ${windows.length} windows`);
         }
     }
 }
 
-const app = Application.withSyncRef({
+function redrawWindows() {
+    for (const info of windows.values()) {
+        info.window.requestRedraw();
+    }
+}
+
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         // Create initial window
         createNewWindow(eventLoop);
@@ -95,13 +100,13 @@ const app = Application.withSyncRef({
     },
 
     onWindowEvent: (eventLoop, windowId, event) => {
-        const windowInfo = windows.get(windowId.rawString());
+        const windowInfo = windows.find((info) => info.id === windowId.rawString());
 
         if (!windowInfo) return;
 
         if (event.type === 'CloseRequested') {
             closeWindow(windowId);
-            if (windows.size === 0) {
+            if (windows.length === 0) {
                 eventLoop.exit();
             }
             return;
@@ -110,51 +115,46 @@ const app = Application.withSyncRef({
         if (event.type === 'Focused') {
             if (event.focused) {
                 focusedWindowId = windowId;
-                console.log(`🎯 ${windowInfo.title} gained focus`);
+                console.log(`🎯 Window gained focus order: ${windowInfo.order}`);
             }
         }
 
         if (event.type === 'KeyboardInput') {
             const {logicalKey, state} = event.event;
 
-            if (state === 'Released') {
-                if (logicalKey.type === 'Character') {
-                    const ch = logicalKey.ch.toLowerCase();
+            if (state === 'Released' && logicalKey.type === 'Character') {
+                const ch = logicalKey.ch.toLowerCase();
 
-                    // N key creates new window
-                    if (ch === 'n') {
-                        if (windows.size < 9) {
-                            createNewWindow(eventLoop);
-                        } else {
-                            console.log('⚠️  Maximum 9 windows supported');
-                        }
+                // N key creates new window
+                if (ch === 'n') {
+                    if (windows.length < 9) {
+                        createNewWindow(eventLoop);
+                    } else {
+                        console.log('⚠️  Maximum 9 windows supported');
                     }
-                    // C key closes current window
-                    else if (ch === 'c') {
-                        if (focusedWindowId) {
-                            closeWindow(focusedWindowId);
-                            if (windows.size === 0) {
-                                eventLoop.exit();
-                            }
-                        }
-                    }
-                    // Number keys switch windows
-                    else if (ch >= '1' && ch <= '9') {
-                        const targetIndex = parseInt(ch);
-                        for (const [id, info] of windows.entries()) {
-                            if (info.order === targetIndex) {
-                                info.window.focusWindow();
-                                console.log(`🔍 Switched to ${info.title}`);
-                                break;
-                            }
+                }
+                // C key closes current window
+                else if (ch === 'c') {
+                    if (focusedWindowId) {
+                        closeWindow(focusedWindowId);
+                        if (windows.length === 0) {
+                            eventLoop.exit();
                         }
                     }
                 }
-
-                if (logicalKey.type === 'Named' && logicalKey.name === 'Escape') {
-                    console.log('🚪 Exiting application, closing all windows');
-                    eventLoop.exit();
+                // Number keys switch windows
+                else if (ch >= '1' && ch <= '9') {
+                    const windowInfo = windows[parseInt(ch)];
+                    windowInfo?.window?.focusWindow()
                 }
+            }
+
+            if (logicalKey.type === 'Named' && logicalKey.name === 'Tab') {
+            }
+
+            if (logicalKey.type === 'Named' && logicalKey.name === 'Escape') {
+                console.log('🚪 Exiting application, closing all windows');
+                eventLoop.exit();
             }
         }
 
@@ -170,12 +170,12 @@ const app = Application.withSyncRef({
                 const centerY = Math.floor(height / 2);
 
                 // Draw large number
-                const numStr = windowInfo.order.toString();
-                const largeNumX = Math.floor(centerX - (numStr.length * 6 * 5) / 2);
-                drawLargeText(view, width, height, numStr, largeNumX, centerY - 30, 5, 0xFFFFFFFF);
+                const centerText = `Index: ${windows.findIndex(info => info.id === windowId.rawString())}`;
+                const centerTextX = Math.floor(centerX - (centerText.length * 6 * 5) / 2);
+                drawLargeText(view, width, height, centerText, centerTextX, centerY - 30, 5, 0xFFFFFFFF);
 
                 // Draw window title
-                const titleText = windowInfo.title;
+                const titleText = `Window id: ${windowInfo.id}`;
                 const titleX = Math.floor(centerX - titleText.length * 3);
                 drawText(view, width, titleText, titleX, centerY + 40);
 
@@ -183,7 +183,7 @@ const app = Application.withSyncRef({
                 drawText(view, width, 'N: New  C: Close  ESC: Exit', 10, height - 20);
 
                 // Draw window count
-                drawText(view, width, `Windows: ${numStr}/${windowCounter}`, 10, 10);
+                drawText(view, width, `Window Count: ${windows.length}, Current Order: ${windowInfo.order}`, 10, 10);
             });
         }
 
@@ -199,9 +199,9 @@ const app = Application.withSyncRef({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
-            console.log(`\n✨ Application exited, created ${windowCounter} windows total`);
+            console.log(`\n✨ Application exited, created ${countWindowCreated} windows total`);
             break;
         }
         await new Promise(resolve => setTimeout(resolve, 1000 / 60));

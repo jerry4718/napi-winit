@@ -1,9 +1,6 @@
 use napi::bindgen_prelude::*;
 
-use std::{
-    ptr::NonNull,
-    time::Duration,
-};
+use std::ptr::NonNull;
 
 use winit::platform::{
     pump_events::EventLoopExtPumpEvents,
@@ -13,10 +10,10 @@ use winit::platform::{
 use proc::{proxy_enum, proxy_wrap};
 
 use crate::{
-    application::public::{Application, Runner},
+    application::Application,
     cursor::{CustomCursor, CustomCursorSource},
     event::UserPayload,
-    extra::time::Instant,
+    extra::time::{Instant, Duration},
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
@@ -44,47 +41,21 @@ pub enum PumpStatus {
 impl EventLoop {
     // with_user_event
     #[napi]
-    pub fn run_app(&mut self, env: Env, app: &mut Application) -> Result<()> {
-        let this = unsafe { Box::from_raw(self as *const _ as *mut EventLoop) };
-
-        let result = match app.runner {
-            Runner::AsyncFx(ref mut handler) => this.inner.run_app(handler),
-            Runner::SyncFx(ref mut handler) => this.inner.run_app(handler),
-            Runner::AsyncRef(ref mut handler) => this.inner.run_app(handler),
-            Runner::SyncRef(ref mut handler) => this.inner.run_app(handler),
-            Runner::SafeCall(ref mut handler) => this.inner.run_app(handler),
-        };
-
-        result.map_err(|e| napi_reason!("{e}"))
+    pub unsafe fn run_app(&mut self, env: Env, app: &mut Application) -> Result<()> {
+        let event_loop = unsafe { Box::from_raw(self as *const _ as *mut EventLoop) };
+        event_loop.inner.run_app(app).map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
     pub fn run_app_on_demand(&mut self, env: Env, app: &mut Application) -> Result<()> {
-        let result = match app.runner {
-            Runner::AsyncFx(ref mut handler) => self.inner.run_app_on_demand(handler),
-            Runner::SyncFx(ref mut handler) => self.inner.run_app_on_demand(handler),
-            Runner::AsyncRef(ref mut handler) => self.inner.run_app_on_demand(handler),
-            Runner::SyncRef(ref mut handler) => self.inner.run_app_on_demand(handler),
-            Runner::SafeCall(ref mut handler) => self.inner.run_app_on_demand(handler),
-        };
-
-        result.map_err(|e| napi_reason!("{e}"))
+        self.inner.run_app_on_demand(app).map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
-    pub fn pump_app_events(&mut self, env: Env, millis: f64, app: &mut Application) -> PumpStatus {
-        let timeout = Some(Duration::from_millis(millis as u64));
-
-        let result = match app.runner {
-            Runner::AsyncFx(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-            Runner::SyncFx(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-            Runner::AsyncRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-            Runner::SyncRef(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-            Runner::SafeCall(ref mut handler) => self.inner.pump_app_events(timeout, handler),
-        };
-
-        PumpStatus::from(result)
+    pub fn pump_app_events(&mut self, env: Env, timeout: Option<Duration>, app: &mut Application) -> PumpStatus {
+        PumpStatus::from(self.inner.pump_app_events(timeout.map(Duration::into), app))
     }
+
     // create_proxy
     // owned_display_handle
     // listen_device_events

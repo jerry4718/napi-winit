@@ -13,6 +13,7 @@ console.log('⌨️  Keyboard Operations:');
 console.log('   - Press any key to see keycode');
 console.log('   - C: Clear canvas');
 console.log('   - H: Hide/show cursor');
+console.log('   - N: Next color');
 console.log('   - Shift/Ctrl/Alt: Check modifier keys');
 console.log('   - ESC: Exit');
 console.log('');
@@ -53,7 +54,7 @@ const colors = [
 ];
 let currentColorIndex = 0;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
@@ -282,7 +283,7 @@ function drawCircleOutline(view: Uint32Array, width: number, height: number, cx:
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`\n✨ Application exited, drew ${points.length} points`);
             break;

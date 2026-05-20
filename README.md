@@ -66,7 +66,7 @@ const attrs = new WindowAttributes()
     .withTitle('Hello napi-winit');
 
 // Create application with event handlers
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         // Create window when application is ready
         const window = eventLoop.createWindow(attrs);
@@ -96,7 +96,7 @@ const app = Application.withSyncRef({
 // Run event loop
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`Exiting with code: ${status.code}`);
             break;
@@ -119,7 +119,7 @@ The event loop is the core of the window system, responsible for handling all wi
 const eventLoop = new EventLoop();
 
 // Process application events
-const status = eventLoop.pumpAppEvents(0, app);
+const status = eventLoop.pumpAppEvents(null, app);
 
 // Set control flow
 eventLoop.setControlFlow(controlFlow);
@@ -204,7 +204,7 @@ window.setImeAllowed(true); // Allow IME input
 Application class for handling application-level events.
 
 ```typescript
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onNewEvents: (eventLoop, cause) => {
         // Called when new events arrive
     },
@@ -503,7 +503,7 @@ const attrs = new WindowAttributes()
 let window: Window;
 let mode: ControlFlow['type'] = 'Wait';
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
     },
@@ -540,7 +540,7 @@ const app = Application.withSyncRef({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`Exit, code: ${status.code}`);
             break;
@@ -574,7 +574,7 @@ let requestRedraw = false;
 let rectangleX = 0;
 let velocityX = 2;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
@@ -687,7 +687,7 @@ function hslToRgb(h: number, s: number, l: number): number {
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') {
             console.log(`Exited with code: ${status.code}`);
             break;
@@ -734,7 +734,7 @@ The library automatically detects the available display server at runtime.
 // Good: Control pump frequency
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(0, app);
+        const status = eventLoop.pumpAppEvents(null, app);
         if (status.type === 'Exit') break;
         await new Promise(resolve => setTimeout(resolve, 1000 / 60)); // 60 FPS
     }
@@ -754,7 +754,7 @@ Always properly clean up resources:
 let window: Window | null = null;
 let surface: Extra.BufferSurface | null = null;
 
-const app = Application.withSyncRef({
+const app = Application.withOptions({
     onResumed: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);

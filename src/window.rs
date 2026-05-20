@@ -1,7 +1,8 @@
 use napi::bindgen_prelude::*;
 
-use winit::window::{
-    Fullscreen as OriginFullscreen,
+use winit::{
+    monitor::{MonitorHandle as OriginMonitorHandle, VideoModeHandle as OriginVideoModeHandle},
+    window::{Fullscreen as OriginFullscreen},
 };
 
 use proc::{proxy_enum, proxy_flags, proxy_impl, proxy_wrap};
@@ -10,7 +11,7 @@ use crate::{
     utils::helpers::{option_map, option_into, pipe, ref_clone_into, result_map, result_into, result_err_reason, vec_map, vec_map_into},
     cursor::{Cursor, CursorIcon},
     dpi::{Position, Size},
-    monitor::MonitorHandle,
+    monitor::{MonitorHandle, VideoModeHandle},
     napi_reason,
 };
 
@@ -38,7 +39,7 @@ pub struct WindowAttributes {
     pub(crate) cursor: Cursor,
     // #[cfg(feature = "rwh_06")]
     // pub(crate) parent_window: Option<SendSyncRawWindowHandle>,
-    pub(crate) fullscreen: Option<Fullscreen>,
+    pub(crate) fullscreen: Option<OriginFullscreen>,
     // Platform-specific configuration.
     // #[allow(dead_code)]
     // pub(crate) platform_specific: PlatformSpecificWindowAttributes,
@@ -185,7 +186,7 @@ impl WindowAttributes {
 
     #[napi(ts_return_type = "this")]
     pub fn with_fullscreen(&mut self, fullscreen: Option<Fullscreen>) -> &Self {
-        self.fullscreen = fullscreen;
+        self.fullscreen = fullscreen.map(Fullscreen::into_origin);
         self
     }
 
@@ -283,26 +284,34 @@ impl WindowAttributes {
 }
 
 #[napi]
-#[derive(Clone)]
 pub enum Fullscreen {
-    Exclusive,
-    Borderless,
+    Exclusive { video_mode: Reference<VideoModeHandle> },
+    Borderless { monitor: Option<Reference<MonitorHandle>> },
 }
 
-impl Into<OriginFullscreen> for Fullscreen {
-    fn into(self) -> OriginFullscreen {
-        match self {
-            Self::Exclusive => unimplemented!("Fullscreen::Exclusive has not implemented"),
-            Self::Borderless => OriginFullscreen::Borderless(None),
+impl Fullscreen {
+    pub(crate) fn from_origin(origin: OriginFullscreen, env: Env) -> Result<Self> {
+        match origin {
+            OriginFullscreen::Exclusive(video_mode) => {
+                VideoModeHandle::from(video_mode).into_reference(env)
+                    .map(|video_mode| Self::Exclusive { video_mode })
+            }
+            OriginFullscreen::Borderless(monitor) => {
+                let Some(monitor) = monitor else { return Ok(Self::Borderless { monitor: None }) };
+                MonitorHandle::from(monitor).into_reference(env)
+                    .map(|monitor| Self::Borderless { monitor: Some(monitor) })
+            }
         }
     }
-}
-
-impl From<OriginFullscreen> for Fullscreen {
-    fn from(value: OriginFullscreen) -> Self {
-        match value {
-            OriginFullscreen::Exclusive(_) => Self::Exclusive,
-            OriginFullscreen::Borderless(_) => Self::Borderless,
+    pub(crate) fn into_origin(self) -> OriginFullscreen {
+        match self {
+            Self::Exclusive { video_mode } => {
+                OriginFullscreen::Exclusive((*video_mode).clone().into())
+            }
+            Self::Borderless { monitor } => {
+                let Some(monitor) = monitor else { return OriginFullscreen::Borderless(None) };
+                OriginFullscreen::Borderless(Some((*monitor).clone().into()))
+            }
         }
     }
 }
@@ -379,13 +388,6 @@ impl Window {
     fn reset_dead_keys(&self);
 }
 
-/*
-    #[proxy_impl(conv_return = option_into)]
-    fn request_inner_size(&self, #[proxy_impl(skip_conv_arg)] size: Size) -> Option<Size>;
-
-    fn set_min_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
-*/
-
 #[proxy_impl(access_expr = self.inner)]
 impl Window {
     #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
@@ -440,10 +442,10 @@ impl Window {
     fn set_maximized(&self, maximized: bool);
     fn is_maximized(&self) -> bool;
 
-    fn set_fullscreen(&self, #[proxy_impl(conv_arg = option_into)] fullscreen: Option<Fullscreen>);
+    // fn set_fullscreen(&self, #[proxy_impl(conv_arg = option_into)] fullscreen: Option<Fullscreen>);
 
-    #[proxy_impl(conv_return = option_into)]
-    fn fullscreen(&self) -> Option<Fullscreen>;
+    // #[proxy_impl(conv_return = option_into)]
+    // fn fullscreen(&self) -> Option<Fullscreen>;
 
     fn set_decorations(&self, decorations: bool);
     fn is_decorated(&self) -> bool;
@@ -472,6 +474,20 @@ impl Window {
     fn set_content_protected(&self, protected: bool);
 
     fn title(&self) -> String;
+}
+
+#[napi]
+impl Window {
+    #[napi]
+    pub fn set_fullscreen(&self, fullscreen: Option<Fullscreen>) {
+        self.inner.set_fullscreen(fullscreen.map(Fullscreen::into_origin));
+    }
+
+    #[napi]
+    pub fn fullscreen(&self, env: Env) -> Result<Option<Fullscreen>> {
+        let Some(fullscreen) = self.inner.fullscreen() else { return Ok(None) };
+        Fullscreen::from_origin(fullscreen, env).map(|inner| Some(inner))
+    }
 }
 
 #[proxy_impl(access_expr = self.inner)]

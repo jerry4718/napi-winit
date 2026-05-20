@@ -97,10 +97,12 @@ function print_fps() {
     const now = Date.now();
     if (now - prev <= 30) return;
     prev = now;
-    console.log({fps: fps()});
+    // console.log({fps: fps()});
 }
 
-const app = Application.withSyncRef({
+let prevAboutToWait = 0;
+
+const app = Application.withOptions({
     onNewEvents: (_eventLoop, cause) => {
         wait_cancelled = (mode === "WaitUntil" && cause.type === "WaitCancelled");
 
@@ -113,6 +115,12 @@ const app = Application.withSyncRef({
         }
     },
     onResumed: (eventLoop) => {
+        const primaryMonitor = eventLoop.primaryMonitor();
+        if (primaryMonitor) {
+            const {type, x, y} = primaryMonitor.position();
+            const {width, height} = primaryMonitor.size();
+            attrs.withPosition({type, x: x + width / 4, y: y + height / 4});
+        }
         window = eventLoop.createWindow(attrs);
         surface = new BufferSurface(window);
     },
@@ -157,6 +165,11 @@ const app = Application.withSyncRef({
         }
     },
     onAboutToWait: async (eventLoop) => {
+
+        const now = performance.now();
+        console.log(`onAboutToWait: ${now - prevAboutToWait}`);
+        prevAboutToWait = now;
+
         if (request_redraw && !wait_cancelled && !close_requested) {
             window?.requestRedraw();
         }
@@ -165,7 +178,7 @@ const app = Application.withSyncRef({
             eventLoop.setControlFlow({type: "Wait"});
         }
         if (mode === "WaitUntil" && wait_cancelled) {
-            eventLoop.setControlFlow({type: "WaitUntil", timeout: Instant.afterNanos(1_000_000 / 120)});
+            eventLoop.setControlFlow({type: "WaitUntil", timeout: Instant.afterNanos(1)});
         }
         if (mode === "Poll") {
             await tokioSleep(Duration.fromMillis(100));
@@ -179,7 +192,7 @@ const app = Application.withSyncRef({
 });
 
 function pump() {
-    const status = eventLoop.pumpAppEvents(0, app);
+    const status = eventLoop.pumpAppEvents(null, app);
     if (status.type === "Continue") {
         return;
     }
@@ -189,9 +202,8 @@ function pump() {
 
 async function run() {
     while (true) {
-        // await tokioSleep(Timeout.fromNanos(1_000_000 / 60));
         pump();
-        await new Promise(resolve => setTimeout(resolve, 1000 / 60));
+        await new Promise(resolve => setTimeout(resolve, 1000 / 120));
     }
     // threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
 }

@@ -56,6 +56,14 @@ where
     |input: Vec<T>| input.iter().map(conv).collect::<Vec<U>>()
 }
 
+#[inline]
+pub(crate) fn iter_map<T, IT: Iterator<Item = T>, U, Conv>(conv: Conv) -> impl FnOnce(IT) -> Vec<U>
+where
+    Conv: FnMut(T) -> U,
+{
+    |input| input.map(conv).collect::<Vec<U>>()
+}
+
 pub(crate) fn pipe<Mid, T, U>(conv1: impl Fn(T) -> Mid, conv2: impl Fn(Mid) -> U) -> impl Fn(T) -> U {
     move |input: T| conv2(conv1(input))
 }
