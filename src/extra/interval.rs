@@ -4,7 +4,7 @@ pub mod namespace {
     use std::time::Duration as StdDuration;
     use napi::bindgen_prelude::*;
     use crate::{
-        extra::time::Duration,
+        extra::time::{try_std_duration, Duration},
         handle_res,
         get_thread_pool,
         utils::alias::ThreadsafeNoCallee,
@@ -15,10 +15,11 @@ pub mod namespace {
         duration: Duration,
         #[napi(ts_arg_type = "() => (Promise<void> | void)")]
         exec: Function<(), ()>,
-    ) {
-        let duration = StdDuration::from(duration);
+    ) -> Result<()> {
+        let duration = try_std_duration(&duration)?;
         let task = exec.build_threadsafe_function().build().unwrap();
         spawn(inner_loop(duration, task));
+        Ok(())
     }
 
     #[napi]
@@ -26,10 +27,11 @@ pub mod namespace {
         duration: Duration,
         #[napi(ts_arg_type = "() => (Promise<void> | void)")]
         exec: Function<(), ()>,
-    ) {
-        let duration = StdDuration::from(duration);
+    ) -> Result<()> {
+        let duration = try_std_duration(&duration)?;
         let task = exec.build_threadsafe_function().build().unwrap();
-        get_thread_pool().execute(move || block_on(inner_loop(duration, task)))
+        get_thread_pool().execute(move || block_on(inner_loop(duration, task)));
+        Ok(())
     }
 
     async fn inner_loop(duration: StdDuration, exec: ThreadsafeNoCallee<(), ()>) -> () {

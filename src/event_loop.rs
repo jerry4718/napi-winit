@@ -12,7 +12,7 @@ use proc::{proxy_enum, proxy_wrap};
 use crate::{
     application::Application,
     cursor::{CustomCursor, CustomCursorSource},
-    extra::time::{Instant, Duration},
+    extra::time::{try_std_duration, try_std_instant, Instant, Duration},
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
@@ -54,8 +54,10 @@ impl EventLoop {
     }
 
     #[napi]
-    pub fn pump_app_events(&mut self, env: Env, timeout: Option<Duration>, app: &mut Application) -> PumpStatus {
-        PumpStatus::from(self.inner.pump_app_events(timeout.map(Duration::into), app))
+    pub fn pump_app_events(&mut self, env: Env, timeout: Option<Duration>, app: &mut Application) -> Result<PumpStatus> {
+        timeout.map(|duration| try_std_duration(&duration))
+            .transpose()
+            .map(|timeout| PumpStatus::from(self.inner.pump_app_events(timeout, app)))
     }
 
     // create_proxy
@@ -117,8 +119,12 @@ impl ActiveEventLoop {
         inner_ref!(self).system_theme().map(|theme| theme.into())
     }
     #[napi]
-    pub fn set_control_flow(&self, control_flow: ControlFlow) {
-        inner_ref!(self).set_control_flow(control_flow.into())
+    pub fn set_control_flow(&self, control_flow: ControlFlow) -> Result<()> {
+        match &control_flow {
+            ControlFlow::WaitUntil { timeout } => try_std_instant(timeout).map(|_| ()),
+            _ => Ok(()),
+        }
+        .map(|()| inner_ref!(self).set_control_flow(control_flow.into()))
     }
     #[napi]
     pub fn control_flow(&self) -> ControlFlow {

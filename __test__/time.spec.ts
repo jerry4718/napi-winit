@@ -110,3 +110,46 @@ test('Extra: tokioSleep with Duration', async (t) => {
     // 100ms sleep should take at least 45ms (allowing system jitter)
     t.true(totalMillis >= 100)
 })
+
+test('Duration: negative and NaN are rejected', (t) => {
+    t.throws(() => Duration.fromSecs(-1), { message: /non-negative finite/ })
+    t.throws(() => Duration.fromMillis(-0.5), { message: /non-negative finite/ })
+    t.throws(() => Duration.fromMicros(NaN), { message: /non-negative finite/ })
+    t.throws(() => Duration.fromNanos(Infinity), { message: /non-negative finite/ })
+})
+
+test('Duration: mul/div invalid factors are rejected', (t) => {
+    const d = Duration.fromSecs(1)
+
+    t.throws(() => Duration.mul(d, -2), { message: /invalid duration multiplication/ })
+    t.throws(() => Duration.mul(d, NaN), { message: /invalid duration multiplication/ })
+    t.throws(() => Duration.mul(d, Infinity), { message: /invalid duration multiplication/ })
+    t.throws(() => Duration.div(d, 0), { message: /invalid duration division/ })
+    t.throws(() => Duration.div(d, -1), { message: /invalid duration division/ })
+})
+
+test('Instant: invalid values are rejected', (t) => {
+    t.throws(() => Instant.add({ secs: -1, nanos: 0 }, Duration.fromSecs(1)), {
+        message: /non-negative finite/
+    })
+    t.throws(() => Instant.add({ secs: NaN, nanos: 0 }, Duration.fromSecs(1)), {
+        message: /non-negative finite/
+    })
+    t.throws(() => Instant.add({ secs: 1e300, nanos: 0 }, Duration.fromSecs(0)), {
+        message: /within the monotonic clock range/
+    })
+})
+
+test('Instant: duration_since', (t) => {
+    const start = Instant.now()
+    const end = Instant.add(start, Duration.fromMillis(50))
+
+    const diff = Instant.durationSince(end, start)
+    t.true(diff.secs >= 0)
+    t.true(diff.secs * 1000 + diff.nanos / 1_000_000 >= 50)
+
+    // Reversed order must be rejected instead of panicking or returning a negative span
+    t.throws(() => Instant.durationSince(start, end), {
+        message: /not earlier than the base instant/
+    })
+})

@@ -47,6 +47,7 @@ export declare namespace Instant {
   export function afterMillis(millis: number): Instant
   export function afterNanos(nanos: number): Instant
   export function afterSecs(secs: number): Instant
+  export function durationSince(base: Instant, other: Instant): Duration
   export function now(): Instant
   export function sub(base: Instant, other: Duration): Instant
 }
