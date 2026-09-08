@@ -21,7 +21,7 @@ console.log('');
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({type: 'Logical', width: 800, height: 600})
+    .withSurfaceSize({type: 'Logical', width: 800, height: 600})
     .withTitle('Keyboard Mouse Example - C:Clear  H:Cursor  ESC:Exit');
 
 let window: Window;
@@ -40,7 +40,7 @@ let modifiers = {
     shift: false,
     ctrl: false,
     alt: false,
-    super: false
+    meta: false
 };
 
 // Random colors
@@ -55,7 +55,7 @@ const colors = [
 let currentColorIndex = 0;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
         window.requestRedraw();
@@ -113,7 +113,7 @@ const app = Application.withOptions({
                 shift: mods.hasShift(),
                 ctrl: mods.hasControl(),
                 alt: mods.hasAlt(),
-                super: mods.hasSuper()
+                meta: mods.hasMeta()
             };
 
             // Detect changes
@@ -127,8 +127,8 @@ const app = Application.withOptions({
             if (newModifiers.alt !== modifiers.alt) {
                 changes.push(`Alt: ${newModifiers.alt ? 'pressed' : 'released'}`);
             }
-            if (newModifiers.super !== modifiers.super) {
-                changes.push(`Super: ${newModifiers.super ? 'pressed' : 'released'}`);
+            if (newModifiers.meta !== modifiers.meta) {
+                changes.push(`Meta: ${newModifiers.meta ? 'pressed' : 'released'}`);
             }
 
             if (changes.length > 0) {
@@ -147,7 +147,7 @@ const app = Application.withOptions({
         }
 
         // Mouse move
-        if (event.type === 'CursorMoved') {
+        if (event.type === 'PointerMoved') {
             const pos = event.position;
             cursorX = Math.floor(pos.x);
             cursorY = Math.floor(pos.y);
@@ -155,24 +155,25 @@ const app = Application.withOptions({
         }
 
         // Mouse enter/leave window
-        if (event.type === 'CursorEntered') {
+        if (event.type === 'PointerEntered') {
             cursorInWindow = true;
             console.log('🖱️  Mouse entered window');
         }
 
-        if (event.type === 'CursorLeft') {
+        if (event.type === 'PointerLeft') {
             cursorInWindow = false;
             console.log('🖱️  Mouse left window');
         }
 
         // Mouse button
-        if (event.type === 'MouseInput') {
-            const {button: {type: button}, state: btnState} = event;
+        if (event.type === 'PointerButton') {
+            const {state: btnState, button} = event;
+            const mouseButton = button.type === 'Mouse' ? button.button : undefined;
 
-            if (btnState === 'Pressed') {
-                console.log(`🖱️  Mouse ${button} at (${cursorX}, ${cursorY})`);
+            if (btnState === 'Pressed' && mouseButton) {
+                console.log(`🖱️  Mouse ${mouseButton} at (${cursorX}, ${cursorY})`);
 
-                if (button === 'Left') {
+                if (mouseButton?.type === 'Left') {
                     // Add draw point
                     points.push({
                         x: cursorX,
@@ -180,7 +181,7 @@ const app = Application.withOptions({
                         color: colors[currentColorIndex]
                     });
                     window.requestRedraw();
-                } else if (button === 'Right') {
+                } else if (mouseButton?.type === 'Right') {
                     // Right click to clear nearby points
                     const threshold = 20;
                     const before = points.length;
@@ -237,7 +238,7 @@ const app = Application.withOptions({
                 if (modifiers.shift) modStr += 'Shift ';
                 if (modifiers.ctrl) modStr += 'Ctrl ';
                 if (modifiers.alt) modStr += 'Alt ';
-                if (modifiers.super) modStr += 'Super ';
+                if (modifiers.meta) modStr += 'Meta ';
                 if (modStr) {
                     drawText(view, width, `Mods: ${modStr}`, 10, 55);
                 }

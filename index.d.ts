@@ -24,9 +24,8 @@ export declare namespace Extra {
     static main(): ThreadPool
     execute(callback: () => (Promise<void> | void)): void
   }
-  export function getRwh05Options(window: Window): SurfaceOptions
   export interface SurfaceOptions {
-    system: SurfaceSystem
+    system: Extra.SurfaceSystem
     windowHandle: bigint
     displayHandle: bigint
   }
@@ -92,6 +91,11 @@ export declare class CustomCursorSource {
 
 }
 
+/** [winit::data_transfer::DataTransferId] */
+export declare class DataTransferId {
+
+}
+
 /** [winit::event::DeviceId] */
 export declare class DeviceId {
 
@@ -104,13 +108,13 @@ export declare class EventLoop {
   pumpAppEvents(timeout: Duration | undefined | null, app: Application): PumpStatus
 }
 
-export declare class Icon {
-  static fromRgba(rgba: Uint8Array, width: number, height: number): Icon
+/** [winit::event::FingerId] */
+export declare class FingerId {
+
 }
 
-/** [winit::event::InnerSizeWriter] */
-export declare class InnerSizeWriter {
-
+export declare class Icon {
+  static fromRgba(rgba: Uint8Array, width: number, height: number): Icon
 }
 
 /** [winit::event::KeyEvent]  */
@@ -136,19 +140,19 @@ export declare class ModifiersState {
   hasShift(): boolean
   hasControl(): boolean
   hasAlt(): boolean
-  hasSuper(): boolean
+  hasMeta(): boolean
   toggleShift(): this
   toggleControl(): this
   toggleAlt(): this
-  toggleSuper(): this
+  toggleMeta(): this
   insertShift(): this
   insertControl(): this
   insertAlt(): this
-  insertSuper(): this
+  insertMeta(): this
   removeShift(): this
   removeControl(): this
   removeAlt(): this
-  removeSuper(): this
+  removeMeta(): this
 }
 
 /** [winit::monitor::MonitorHandle] */
@@ -159,23 +163,16 @@ export declare class MonitorHandle {
    * Returns `None` if the monitor doesn't exist anymore.
    */
   name(): string | null
-  /** Returns the monitor's resolution. */
-  size(): Size
-  /**
-   * Returns the top-left corner position of the monitor relative to the larger full
-   * screen area.
-   */
-  position(): Position
   /**
    * The monitor refresh rate used by the system.
    *
    * Return `Some` if succeed, or `None` if failed, which usually happens when the monitor
    * the window is on is removed.
    *
-   * When using exclusive fullscreen, the refresh rate of the [`winit::monitor::VideoModeHandle`] that was
+   * When using exclusive fullscreen, the refresh rate of the [`winit::monitor::VideoMode`] that was
    * used to enter fullscreen should be used instead.
    */
-  refreshRateMillihertz(): number | null
+  position(): Position | null
   /**
    * Returns the scale factor of the underlying monitor. To map logical pixels to physical
    * pixels and vice versa, use [`Window::scale_factor`].
@@ -198,7 +195,17 @@ export declare class MonitorHandle {
    *
    * - **Web:** Always returns an empty iterator
    */
-  videoModes(): Array<VideoModeHandle>
+  videoModes(): Array<VideoMode>
+  /** Returns an identifier that persistently changes across a system reboot. */
+  id(): bigint
+  /** Returns a platform-native identifier for the monitor. */
+  nativeId(): bigint
+  /**
+   * Returns the current video mode of this monitor.
+   *
+   * This is useful to acquire the monitor's size and refresh rate.
+   */
+  currentVideoMode(): VideoMode | null
 }
 
 /** [winit::event_loop::OwnedDisplayHandle]  */
@@ -212,12 +219,13 @@ export declare class RawKeyEvent {
   get state(): ElementState
 }
 
-export declare class UserPayload {
+/** [winit::event::SurfaceSizeWriter] */
+export declare class SurfaceSizeWriter {
 
 }
 
-/** [winit::monitor::VideoModeHandle] */
-export declare class VideoModeHandle {
+/** [winit::monitor::VideoMode] */
+export declare class VideoMode {
   /** Returns the resolution of this video mode. */
   size(): Size
   /**
@@ -230,17 +238,11 @@ export declare class VideoModeHandle {
    * - **Wayland / Orbital:** Always returns 32.
    * - **iOS:** Always returns 32.
    */
-  bitDepth(): number
+  bitDepth(): number | null
   /** Returns the refresh rate of this video mode in mHz. */
-  refreshRateMillihertz(): number
-  /**
-   * Returns the monitor that this video mode is valid for. Each monitor has
-   * a separate set of valid video modes.
-   */
-  monitor(): MonitorHandle
+  refreshRateMillihertz(): number | null
 }
 
-/** [winit::window::Window] */
 export declare class Window {
   static defaultAttributes(): WindowAttributes
   id(): WindowId
@@ -248,16 +250,16 @@ export declare class Window {
   requestRedraw(): void
   prePresentNotify(): void
   resetDeadKeys(): void
-  innerPosition(): Position
+  surfacePosition(): Position
   outerPosition(): Position
   setOuterPosition(position: Position): void
-  innerSize(): Size
-  requestInnerSize(size: Size): Size | null
+  surfaceSize(): Size
+  requestSurfaceSize(size: Size): Size | null
   outerSize(): Size
-  setMinInnerSize(minSize?: Size | undefined | null): void
-  setMaxInnerSize(minSize?: Size | undefined | null): void
-  resizeIncrements(): Size | null
-  setResizeIncrements(increments?: Size | undefined | null): void
+  setMinSurfaceSize(minSize?: Size | undefined | null): void
+  setMaxSurfaceSize(maxSize?: Size | undefined | null): void
+  surfaceResizeIncrements(): Size | null
+  setSurfaceResizeIncrements(increments?: Size | undefined | null): void
   setTitle(title: string): void
   setTransparent(transparent: boolean): void
   setBlur(blur: boolean): void
@@ -302,9 +304,9 @@ export declare class Window {
 
 export declare class WindowAttributes {
   constructor()
-  withInnerSize(size: Size): this
-  withMinInnerSize(minSize: Size): this
-  withMaxInnerSize(maxSize: Size): this
+  withSurfaceSize(size: Size): this
+  withMinSurfaceSize(minSize: Size): this
+  withMaxSurfaceSize(maxSize: Size): this
   withPosition(position: Position): this
   withResizable(resizable: boolean): this
   withEnabledButtons(buttons: WindowButtons): this
@@ -318,7 +320,7 @@ export declare class WindowAttributes {
   withDecorations(decorations: boolean): this
   withWindowLevel(level: WindowLevel): this
   withTheme(theme?: Theme | undefined | null): this
-  withResizeIncrements(resizeIncrements: Size): this
+  withSurfaceResizeIncrements(resizeIncrements: Size): this
   withContentProtected(protected: boolean): this
   withActive(active: boolean): this
   withCursor(cursor: Cursor): this
@@ -352,15 +354,24 @@ export declare class WindowId {
 
 export interface ApplicationCallbacks {
   onNewEvents?: (eventLoop: ActiveEventLoop, cause: StartCause) => unknown
-  onResumed: (eventLoop: ActiveEventLoop) => unknown
-  onUserEvent?: (eventLoop: ActiveEventLoop, event: UserPayload) => unknown
+  onResumed?: (eventLoop: ActiveEventLoop) => unknown
+  onCanCreateSurfaces: (eventLoop: ActiveEventLoop) => unknown
+  onProxyWakeUp?: (eventLoop: ActiveEventLoop) => unknown
   onWindowEvent: (eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => unknown
-  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId, event: DeviceEvent) => unknown
+  onDeviceEvent?: (eventLoop: ActiveEventLoop, deviceId: DeviceId | null, event: DeviceEvent) => unknown
   onAboutToWait?: (eventLoop: ActiveEventLoop) => unknown
   onSuspended?: (eventLoop: ActiveEventLoop) => unknown
-  onExiting?: (eventLoop: ActiveEventLoop) => unknown
+  onDestroySurfaces?: (eventLoop: ActiveEventLoop) => unknown
   onMemoryWarning?: (eventLoop: ActiveEventLoop) => unknown
 }
+
+/** [winit::event::ButtonSource] */
+export type ButtonSource =
+  | { type: 'Mouse', button: MouseButton }
+  | { type: 'Touch', fingerId: FingerId, force?: Force }
+  | { type: 'TabletTool', kind: TabletToolKind, button: TabletToolButton, data: TabletToolData }
+  | { type: 'Unknown', code: number }
+  | { type: 'NonExhaustive' }
 
 export type ControlFlow =
   | { type: 'Poll' }
@@ -373,7 +384,7 @@ export declare const enum CursorGrabMode {
   Locked = 'Locked'
 }
 
-/** [`winit::window::CursorIcon`]  */
+/** [`winit::cursor::CursorIcon`]  */
 export declare const enum CursorIcon {
   Default = 'Default',
   ContextMenu = 'ContextMenu',
@@ -413,18 +424,26 @@ export declare const enum CursorIcon {
 }
 
 export type DeviceEvent =
-  | { type: 'Added' }
-  | { type: 'Removed' }
-  | { type: 'MouseMotion', delta: Position }
+  | { type: 'PointerMotion', delta: Position }
   | { type: 'MouseWheel', delta: MouseScrollDelta }
-  | { type: 'Motion', axis: number, value: number }
   | { type: 'Button', button: number, state: ElementState }
   | { type: 'Key', raw: RawKeyEvent }
+  | { type: 'NonExhaustive' }
 
 export declare const enum DeviceEvents {
   Always = 'Always',
   WhenFocused = 'WhenFocused',
   Never = 'Never'
+}
+
+/** [winit::event_loop::DndAction] */
+export declare const enum DndAction {
+  Move = 'Move',
+  Copy = 'Copy',
+  Link = 'Link',
+  Ask = 'Ask',
+  Private = 'Private',
+  NonExhaustive = 'NonExhaustive'
 }
 
 export interface Duration {
@@ -436,17 +455,6 @@ export declare const enum ElementState {
   Pressed = 'Pressed',
   Released = 'Released'
 }
-
-export type Event =
-  | { type: 'NewEvents', cause: StartCause }
-  | { type: 'WindowEvent', windowId: WindowId, event: WindowEvent }
-  | { type: 'DeviceEvent', deviceId: DeviceId, event: DeviceEvent }
-  | { type: 'UserEvent', payload: UserPayload }
-  | { type: 'Suspended' }
-  | { type: 'Resumed' }
-  | { type: 'AboutToWait' }
-  | { type: 'LoopExiting' }
-  | { type: 'MemoryWarning' }
 
 export type Force =
   | { type: 'Calibrated', /**
@@ -463,18 +471,11 @@ export type Force =
    * The value of this field is sufficiently high to provide a wide
    * dynamic range for values of the `force` field.
    */
-  maxPossibleForce: number, /**
-   * The altitude (in radians) of the stylus.
-   *
-   * A value of 0 radians indicates that the stylus is parallel to the
-   * surface. The value of this property is Pi/2 when the stylus is
-   * perpendicular to the surface.
-   */
-altitudeAngle?: number }
+maxPossibleForce: number }
 | { type: 'Normalized', value: number }
 
 export type Fullscreen =
-  | { type: 'Exclusive', videoMode: VideoModeHandle }
+  | { type: 'Exclusive', monitor: MonitorHandle, videoMode: VideoMode }
   | { type: 'Borderless', monitor?: MonitorHandle }
 
 export type Ime =
@@ -482,6 +483,7 @@ export type Ime =
   | { type: 'Preedit', preedit: string, position?: Position }
   | { type: 'Commit', commit: string }
   | { type: 'Disabled' }
+  | { type: 'NonExhaustive' }
 
 export declare const enum ImePurpose {
   Normal = 'Normal',
@@ -560,8 +562,8 @@ export declare const enum KeyCode {
   ControlLeft = 'ControlLeft',
   ControlRight = 'ControlRight',
   Enter = 'Enter',
-  SuperLeft = 'SuperLeft',
-  SuperRight = 'SuperRight',
+  MetaLeft = 'MetaLeft',
+  MetaRight = 'MetaRight',
   ShiftLeft = 'ShiftLeft',
   ShiftRight = 'ShiftRight',
   Space = 'Space',
@@ -644,7 +646,6 @@ export declare const enum KeyCode {
   AudioVolumeMute = 'AudioVolumeMute',
   AudioVolumeUp = 'AudioVolumeUp',
   WakeUp = 'WakeUp',
-  Meta = 'Meta',
   Hyper = 'Hyper',
   Turbo = 'Turbo',
   Abort = 'Abort',
@@ -711,17 +712,45 @@ export declare const enum ModifiersKeyState {
   Unknown = 'Unknown'
 }
 
+/** [winit::event::MouseButton] */
 export type MouseButton =
-  | { type: 'Left' }
-  | { type: 'Right' }
-  | { type: 'Middle' }
-  | { type: 'Back' }
-  | { type: 'Forward' }
-  | { type: 'Other', field0: number }
+  | { type: 'Left', discriminant: 0 }
+  | { type: 'Right', discriminant: 1 }
+  | { type: 'Middle', discriminant: 2 }
+  | { type: 'Back', discriminant: 3 }
+  | { type: 'Forward', discriminant: 4 }
+  | { type: 'Button6', discriminant: 5 }
+  | { type: 'Button7', discriminant: 6 }
+  | { type: 'Button8', discriminant: 7 }
+  | { type: 'Button9', discriminant: 8 }
+  | { type: 'Button10', discriminant: 9 }
+  | { type: 'Button11', discriminant: 10 }
+  | { type: 'Button12', discriminant: 11 }
+  | { type: 'Button13', discriminant: 12 }
+  | { type: 'Button14', discriminant: 13 }
+  | { type: 'Button15', discriminant: 14 }
+  | { type: 'Button16', discriminant: 15 }
+  | { type: 'Button17', discriminant: 16 }
+  | { type: 'Button18', discriminant: 17 }
+  | { type: 'Button19', discriminant: 18 }
+  | { type: 'Button20', discriminant: 19 }
+  | { type: 'Button21', discriminant: 20 }
+  | { type: 'Button22', discriminant: 21 }
+  | { type: 'Button23', discriminant: 22 }
+  | { type: 'Button24', discriminant: 23 }
+  | { type: 'Button25', discriminant: 24 }
+  | { type: 'Button26', discriminant: 25 }
+  | { type: 'Button27', discriminant: 26 }
+  | { type: 'Button28', discriminant: 27 }
+  | { type: 'Button29', discriminant: 28 }
+  | { type: 'Button30', discriminant: 29 }
+  | { type: 'Button31', discriminant: 30 }
+  | { type: 'Button32', discriminant: 31 }
 
 export type MouseScrollDelta =
   | { type: 'LineDelta', x: number, y: number }
   | { type: 'PixelDelta', delta: Position }
+  | { type: 'NonExhaustive' }
 
 export declare const enum NamedKey {
   Alt = 'Alt',
@@ -740,7 +769,6 @@ export declare const enum NamedKey {
   Super = 'Super',
   Enter = 'Enter',
   Tab = 'Tab',
-  Space = 'Space',
   ArrowDown = 'ArrowDown',
   ArrowLeft = 'ArrowLeft',
   ArrowRight = 'ArrowRight',
@@ -1040,6 +1068,7 @@ export type NativeKey =
   | { type: 'Windows', code: number }
   | { type: 'Xkb', code: number }
   | { type: 'Web', code: string }
+  | { type: 'NonExhaustive' }
 
 export type NativeKeyCode =
   | { type: 'Unidentified' }
@@ -1047,14 +1076,31 @@ export type NativeKeyCode =
   | { type: 'MacOS', code: number }
   | { type: 'Windows', code: number }
   | { type: 'Xkb', code: number }
+  | { type: 'NonExhaustive' }
 
 export type PhysicalKey =
-  | { type: 'Code', field0: KeyCode }
-  | { type: 'Unidentified', field0: NativeKeyCode }
+  | { type: 'Code', code: KeyCode }
+  | { type: 'Unidentified', key: NativeKeyCode }
 
 export type PixelUnit =
   | { type: 'Physical', count: number }
   | { type: 'Logical', count: number }
+
+/** [winit::event::PointerKind] */
+export type PointerKind =
+  | { type: 'Mouse' }
+  | { type: 'Touch', fingerId: FingerId }
+  | { type: 'TabletTool', kind: TabletToolKind }
+  | { type: 'Unknown' }
+  | { type: 'NonExhaustive' }
+
+/** [winit::event::PointerSource] */
+export type PointerSource =
+  | { type: 'Mouse' }
+  | { type: 'Touch', fingerId: FingerId, force?: Force }
+  | { type: 'TabletTool', kind: TabletToolKind, data: TabletToolData }
+  | { type: 'Unknown' }
+  | { type: 'NonExhaustive' }
 
 export type Position =
   | { type: 'Physical', x: number, y: number }
@@ -1085,31 +1131,52 @@ export type StartCause =
   | { type: 'WaitCancelled', start: Instant, requestedResume?: Instant }
   | { type: 'Poll' }
   | { type: 'Init' }
+  | { type: 'NonExhaustive' }
+
+/** [winit::event::TabletToolAngle] */
+export interface TabletToolAngle {
+  altitude: number
+  azimuth: number
+}
+
+/** [winit::event::TabletToolButton] */
+export declare const enum TabletToolButton {
+  Contact = 'Contact',
+  Barrel = 'Barrel',
+  NonExhaustive = 'NonExhaustive'
+}
+
+/** [winit::event::TabletToolData] */
+export interface TabletToolData {
+  force?: Force
+  tangentialForce?: number
+  twist?: number
+  tilt?: TabletToolTilt
+  angle?: TabletToolAngle
+}
+
+/** [winit::event::TabletToolKind] */
+export declare const enum TabletToolKind {
+  Pen = 'Pen',
+  Eraser = 'Eraser',
+  Brush = 'Brush',
+  Pencil = 'Pencil',
+  Airbrush = 'Airbrush',
+  Finger = 'Finger',
+  Mouse = 'Mouse',
+  Lens = 'Lens',
+  NonExhaustive = 'NonExhaustive'
+}
+
+/** [winit::event::TabletToolTilt] */
+export interface TabletToolTilt {
+  x: number
+  y: number
+}
 
 export declare const enum Theme {
   Light = 'Light',
   Dark = 'Dark'
-}
-
-/** [winit::event::Touch] */
-export interface Touch {
-  deviceId: DeviceId
-  phase: TouchPhase
-  location: Position
-  /**
-   * Describes how hard the screen was pressed. May be `None` if the platform
-   * does not support pressure sensitivity.
-   *
-   * ## Platform-specific
-   *
-   * - Only available on **iOS** 9.0+, **Windows** 8+, **Web**, and **Android**.
-   * - **Android**: This will never be [None]. If the device doesn't support pressure
-   *   sensitivity, force will either be 0.0 or 1.0. Also see the
-   *   [android documentation](https://developer.android.com/reference/android/view/MotionEvent#AXIS_PRESSURE).
-   */
-  force?: Force
-  /** Unique identifier of a finger. */
-  id: bigint
 }
 
 export declare const enum TouchPhase {
@@ -1126,33 +1193,34 @@ export declare const enum UserAttentionType {
 
 export type WindowEvent =
   | { type: 'ActivationTokenDone', serial: AsyncRequestSerial, token: ActivationToken }
-  | { type: 'Resized', size: Size }
+  | { type: 'SurfaceResized', size: Size }
   | { type: 'Moved', position: Position }
   | { type: 'CloseRequested' }
   | { type: 'Destroyed' }
-  | { type: 'DroppedFile', path: string }
-  | { type: 'HoveredFile', path: string }
-  | { type: 'HoveredFileCancelled' }
+  | { type: 'DragEntered', id: DataTransferId, position?: Position }
+  | { type: 'DragPosition', id: DataTransferId, position: Position, proposedAction?: DndAction }
+  | { type: 'DragDropped', id: DataTransferId, proposedAction?: DndAction }
+  | { type: 'DragLeft', id: DataTransferId }
   | { type: 'Focused', focused: boolean }
-  | { type: 'KeyboardInput', deviceId: DeviceId, event: KeyEvent, isSynthetic: boolean }
+  | { type: 'KeyboardInput', deviceId?: DeviceId, event: KeyEvent, isSynthetic: boolean }
   | { type: 'ModifiersChanged', modifiers: Modifiers }
   | { type: 'Ime', ime: Ime }
-  | { type: 'CursorMoved', deviceId: DeviceId, position: Position }
-  | { type: 'CursorEntered', deviceId: DeviceId }
-  | { type: 'CursorLeft', deviceId: DeviceId }
-  | { type: 'MouseWheel', deviceId: DeviceId, delta: MouseScrollDelta, phase: TouchPhase }
-  | { type: 'MouseInput', deviceId: DeviceId, state: ElementState, button: MouseButton }
-  | { type: 'PinchGesture', deviceId: DeviceId, delta: number, phase: TouchPhase }
-  | { type: 'PanGesture', deviceId: DeviceId, delta: Position, phase: TouchPhase }
-  | { type: 'DoubleTapGesture', deviceId: DeviceId }
-  | { type: 'RotationGesture', deviceId: DeviceId, delta: number, phase: TouchPhase }
-  | { type: 'TouchpadPressure', deviceId: DeviceId, pressure: number, stage: number }
-  | { type: 'AxisMotion', deviceId: DeviceId, axis: number, value: number }
-  | { type: 'Touch', touch: Touch }
-  | { type: 'ScaleFactorChanged', scaleFactor: number, innerSizeWriter: InnerSizeWriter }
+  | { type: 'PointerMoved', deviceId?: DeviceId, position: Position, primary: boolean, source: PointerSource }
+  | { type: 'PointerEntered', deviceId?: DeviceId, position: Position, primary: boolean, kind: PointerKind }
+  | { type: 'PointerLeft', deviceId?: DeviceId, position?: Position, primary: boolean, kind: PointerKind }
+  | { type: 'MouseWheel', deviceId?: DeviceId, delta: MouseScrollDelta, phase: TouchPhase }
+  | { type: 'PointerButton', deviceId?: DeviceId, state: ElementState, position: Position, primary: boolean, button: ButtonSource, isMacosActivationClick: boolean }
+  | { type: 'HoldGesture', deviceId?: DeviceId, phase: TouchPhase }
+  | { type: 'PinchGesture', deviceId?: DeviceId, delta: number, phase: TouchPhase }
+  | { type: 'PanGesture', deviceId?: DeviceId, delta: Position, phase: TouchPhase }
+  | { type: 'DoubleTapGesture', deviceId?: DeviceId }
+  | { type: 'RotationGesture', deviceId?: DeviceId, delta: number, phase: TouchPhase }
+  | { type: 'TouchpadPressure', deviceId?: DeviceId, pressure: number, stage: number }
+  | { type: 'ScaleFactorChanged', scaleFactor: number, surfaceSizeWriter: SurfaceSizeWriter }
   | { type: 'ThemeChanged', theme: Theme }
   | { type: 'Occluded', occluded: boolean }
   | { type: 'RedrawRequested' }
+  | { type: 'NonExhaustive' }
 
 export declare const enum WindowLevel {
   AlwaysOnBottom = 'AlwaysOnBottom',

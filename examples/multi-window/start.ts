@@ -44,7 +44,7 @@ function createNewWindow(activeEventLoop: any) {
     const order = ++countWindowCreated;
 
     const attrs = new WindowAttributes()
-        .withInnerSize({type: 'Logical', width: 400, height: 300})
+        .withSurfaceSize({type: 'Logical', width: 400, height: 300})
         // .withPosition({type: 'Logical', x: 100 + (index - 1) * 50, y: 100 + (index - 1) * 50})
         .withTitle(`Window order: ${order}`);
 
@@ -93,7 +93,7 @@ function redrawWindows() {
 }
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // Create initial window
         createNewWindow(eventLoop);
         console.log('');
@@ -187,7 +187,7 @@ const app = Application.withOptions({
             });
         }
 
-        if (event.type === 'Resized') {
+        if (event.type === 'SurfaceResized') {
             windowInfo.window.requestRedraw();
         }
     },

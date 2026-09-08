@@ -1,16 +1,16 @@
 use proc::{proxy_impl, proxy_wrap};
 use crate::{
     dpi::{Position, Size},
-    utils::helpers::{ref_clone_into, vec_map},
+    utils::helpers::{ref_clone_into, vec_map, option_map, to_option_string, option_into},
 };
 
-/**[winit::monitor::VideoModeHandle]*/
-#[proxy_wrap(origin_type = winit::monitor::VideoModeHandle)]
+/**[winit::monitor::VideoMode]*/
+#[proxy_wrap(origin_type = winit::monitor::VideoMode)]
 #[derive(Clone)]
-pub struct VideoModeHandle;
+pub struct VideoMode;
 
 #[proxy_impl(access_expr = self.0)]
-impl VideoModeHandle {
+impl VideoMode {
 
     /// Returns the resolution of this video mode.
     #[inline]
@@ -25,16 +25,13 @@ impl VideoModeHandle {
     /// - **Wayland / Orbital:** Always returns 32.
     /// - **iOS:** Always returns 32.
     #[inline]
-    pub fn bit_depth(&self) -> u16;
+    #[proxy_impl(conv_return = option_map(|bit_depth: std::num::NonZeroU16| bit_depth.get()))]
+    pub fn bit_depth(&self) -> Option<u16>;
 
     /// Returns the refresh rate of this video mode in mHz.
     #[inline]
-    pub fn refresh_rate_millihertz(&self) -> u32;
-
-    /// Returns the monitor that this video mode is valid for. Each monitor has
-    /// a separate set of valid video modes.
-    #[inline]
-    pub fn monitor(&self) -> MonitorHandle;
+    #[proxy_impl(conv_return = option_map(|refresh_rate: std::num::NonZeroU32| refresh_rate.get()))]
+    pub fn refresh_rate_millihertz(&self) -> Option<u32>;
 }
 
 /**[winit::monitor::MonitorHandle]*/
@@ -48,26 +45,19 @@ impl MonitorHandle {
     ///
     /// Returns `None` if the monitor doesn't exist anymore.
     #[inline]
+    #[proxy_impl(conv_return = to_option_string)]
     pub fn name(&self) -> Option<String>;
-
-    /// Returns the monitor's resolution.
-    #[inline]
-    pub fn size(&self) -> Size;
-
-    /// Returns the top-left corner position of the monitor relative to the larger full
-    /// screen area.
-    #[inline]
-    pub fn position(&self) -> Position;
 
     /// The monitor refresh rate used by the system.
     ///
     /// Return `Some` if succeed, or `None` if failed, which usually happens when the monitor
     /// the window is on is removed.
     ///
-    /// When using exclusive fullscreen, the refresh rate of the [`winit::monitor::VideoModeHandle`] that was
+    /// When using exclusive fullscreen, the refresh rate of the [`winit::monitor::VideoMode`] that was
     /// used to enter fullscreen should be used instead.
     #[inline]
-    pub fn refresh_rate_millihertz(&self) -> Option<u32>;
+    #[proxy_impl(conv_return = option_into)]
+    pub fn position(&self) -> Option<Position>;
 
     /// Returns the scale factor of the underlying monitor. To map logical pixels to physical
     /// pixels and vice versa, use [`Window::scale_factor`].
@@ -92,5 +82,23 @@ impl MonitorHandle {
     /// - **Web:** Always returns an empty iterator
     #[inline]
     #[proxy_impl(conv_return = [ Iterator::collect::<Vec<_>>, vec_map(ref_clone_into) ])]
-    pub fn video_modes(&self) -> Vec<VideoModeHandle>;
+    pub fn video_modes(&self) -> Vec<VideoMode>;
+}
+
+#[proxy_impl(access_expr = self.0)]
+impl MonitorHandle {
+    /// Returns an identifier that persistently changes across a system reboot.
+    #[inline]
+    pub fn id(&self) -> u128;
+
+    /// Returns a platform-native identifier for the monitor.
+    #[inline]
+    pub fn native_id(&self) -> u64;
+
+    /// Returns the current video mode of this monitor.
+    ///
+    /// This is useful to acquire the monitor's size and refresh rate.
+    #[inline]
+    #[proxy_impl(conv_return = option_into)]
+    pub fn current_video_mode(&self) -> Option<VideoMode>;
 }

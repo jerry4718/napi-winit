@@ -16,7 +16,7 @@ console.log('💡 Press ESC to exit\n');
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({type: 'Logical', width: 800, height: 600})
+    .withSurfaceSize({type: 'Logical', width: 800, height: 600})
     .withTitle('Animation Example - R:Toggle  SPACE:Color  ESC:Exit');
 
 let window: Window;
@@ -49,7 +49,7 @@ let lastFpsUpdate = Date.now();
 let currentFps = 0;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
         window.requestRedraw();
@@ -64,7 +64,7 @@ const app = Application.withOptions({
         }
 
         if (event.type === 'KeyboardInput') {
-            const {logicalKey, state} = event.event;
+            const {logicalKey, physicalKey, state} = event.event;
 
             if (state === 'Released' && logicalKey.type === 'Character') {
                 if (logicalKey.ch === 'r' || logicalKey.ch === 'R') {
@@ -76,12 +76,13 @@ const app = Application.withOptions({
                 }
             }
 
+            if (state === 'Released' && physicalKey.type === 'Code' && physicalKey.code === 'Space') {
+                bgIndex = (bgIndex + 1) % backgrounds.length;
+                backgroundColor = backgrounds[bgIndex];
+                console.log(`🎨 Background color changed`);
+            }
+
             if (state === 'Released' && logicalKey.type === 'Named') {
-                if (logicalKey.name === "Space") {
-                    bgIndex = (bgIndex + 1) % backgrounds.length;
-                    backgroundColor = backgrounds[bgIndex];
-                    console.log(`🎨 Background color changed`);
-                }
                 if (requestRedraw) {
                     window.requestRedraw();
                 }

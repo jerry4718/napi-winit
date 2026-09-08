@@ -2,8 +2,8 @@ use napi::bindgen_prelude::*;
 use proc::{proxy_enum, proxy_wrap};
 use crate::napi_reason;
 
-/** [`winit::window::CursorIcon`] */
-#[proxy_enum(origin_type = winit::window::CursorIcon, string_enum, non_exhaustive)]
+/** [`winit::cursor::CursorIcon`] */
+#[proxy_enum(origin_type = winit::cursor::CursorIcon, string_enum, non_exhaustive)]
 pub enum CursorIcon {
     Default, ContextMenu, Help, Pointer, Progress, Wait, Cell, Crosshair, Text, VerticalText,
     Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, EResize, NResize, NeResize, NwResize,
@@ -17,7 +17,7 @@ impl Default for CursorIcon {
     }
 }
 
-#[proxy_wrap(origin_type = winit::window::Cursor)]
+#[proxy_wrap(origin_type = winit::cursor::Cursor)]
 #[derive(Clone, Default)]
 pub struct Cursor;
 
@@ -25,26 +25,26 @@ pub struct Cursor;
 impl Cursor {
     #[napi(factory)]
     pub fn from_icon(icon: CursorIcon) -> Self {
-        Self(winit::window::Cursor::Icon(icon.into()))
+        Self(winit::cursor::Cursor::Icon(icon.into()))
     }
     #[napi(factory)]
     pub fn from_custom(custom: &CustomCursor) -> Self {
-        Self(winit::window::Cursor::Custom(custom.clone().into()))
+        Self(winit::cursor::Cursor::Custom(custom.clone().into()))
     }
 }
 
-#[proxy_wrap(origin_type = winit::window::CustomCursor, field_name = inner)]
+#[proxy_wrap(origin_type = winit::cursor::CustomCursor, field_name = inner)]
 #[derive(Clone)]
 pub struct CustomCursor;
 
-#[proxy_wrap(origin_type = winit::window::CustomCursorSource, field_name = inner)]
+#[proxy_wrap(origin_type = winit::cursor::CustomCursorSource, field_name = inner)]
 pub struct CustomCursorSource;
 
 #[napi]
 impl CustomCursor {
     #[napi]
     pub fn from_rgba(rgba: Uint8Array, width: u16, height: u16, hotspot_x: u16, hotspot_y: u16) -> Result<CustomCursorSource> {
-        winit::window::CustomCursor::from_rgba(rgba.to_vec(), width, height, hotspot_x, hotspot_y)
+        winit::cursor::CustomCursorSource::from_rgba(rgba.to_vec(), width, height, hotspot_x, hotspot_y)
             .map(CustomCursorSource::from)
             .map_err(|e| napi_reason!("{e}"))
     }

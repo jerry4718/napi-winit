@@ -62,12 +62,12 @@ const eventLoop = new EventLoop();
 const attrs = new WindowAttributes()
     .withActive(true)
     .withResizable(true)
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('Hello napi-winit');
 
 // 创建应用程序并设置事件处理器
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // 应用准备就绪时创建窗口
         const window = eventLoop.createWindow(attrs);
         console.log('窗口已创建');
@@ -136,7 +136,7 @@ const window = eventLoop.createWindow(attributes);
 const attrs = new WindowAttributes()
     .withActive(true) // 窗口是否激活
     .withResizable(true) // 窗口是否可调整大小
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 }) // 窗口内部尺寸
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 }) // 窗口表面尺寸
     .withPosition({ type: 'Logical', x: 100, y: 100 }) // 窗口位置
     .withTitle('Window Title') // 窗口标题
     .withTransparent(false) // 窗口是否透明
@@ -153,20 +153,20 @@ window.requestRedraw(); // 请求重绘事件
 window.prePresentNotify(); // 呈现前通知（某些平台需要）
 
 // 尺寸和位置
-const innerSize = window.innerSize(); // 获取当前内部尺寸
+const surfaceSize = window.surfaceSize(); // 获取当前表面尺寸
 const outerSize = window.outerSize(); // 获取外部尺寸（包括装饰）
-const innerPos = window.innerPosition(); // 获取内部位置
+const surfacePosition = window.surfacePosition(); // 获取表面位置
 const outerPos = window.outerPosition(); // 获取外部位置
 
 // 请求尺寸变化（返回实际尺寸或 null 如果不支持）
-const actualSize = window.requestInnerSize({ type: 'Logical', width: 1024, height: 768 });
+const actualSize = window.requestSurfaceSize({ type: 'Logical', width: 1024, height: 768 });
 
 // 设置位置
 window.setOuterPosition({ type: 'Logical', x: 100, y: 100 });
 
 // 尺寸约束
-window.setMinInnerSize({ type: 'Logical', width: 400, height: 300 });
-window.setMaxInnerSize({ type: 'Logical', width: 1920, height: 1080 });
+window.setMinSurfaceSize({ type: 'Logical', width: 400, height: 300 });
+window.setMaxSurfaceSize({ type: 'Logical', width: 1920, height: 1080 });
 
 // 窗口属性
 window.setTitle('新标题');
@@ -180,7 +180,7 @@ const id = window.id(); // 获取唯一窗口 ID
 
 // 光标控制
 import { Cursor, CursorIcon } from '@ylcc/napi-winit';
-window.setCursor(Cursor.fromIcon('Hand'));
+window.setCursor(Cursor.fromIcon('Pointer'));
 window.setCursorVisible(false);
 
 // 全屏
@@ -191,7 +191,7 @@ window.setFullscreen({
 window.setFullscreen(null); // 退出全屏
 
 // 焦点和注意
-window.focus();
+window.focusWindow();
 window.requestUserAttention('Informational'); // 或 'Critical'
 
 // 高级功能
@@ -208,7 +208,7 @@ const app = Application.withOptions({
     onNewEvents: (eventLoop, cause) => {
         // 新事件到达时调用
     },
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // 应用恢复时调用，通常在这里创建窗口
     },
     onWindowEvent: (eventLoop, windowId, event) => {
@@ -324,8 +324,8 @@ onWindowEvent: (eventLoop, windowId, event) => {
             // 在此执行渲染
             break;
 
-        case 'Resized':
-            // 窗口大小已改变
+        case 'SurfaceResized':
+            // 窗口表面尺寸已改变
             const { width, height } = event.size;
             console.log(`调整大小至 ${width}x${height}`);
             break;
@@ -358,20 +358,20 @@ onWindowEvent: (eventLoop, windowId, event) => {
             break;
 
         case 'ModifiersChanged':
-            // 修饰键状态改变（Shift、Ctrl、Alt、Super）
-            const mods = event.modifiers.state();
+            // 修饰键状态改变（Shift、Ctrl、Alt、Meta）
+            const mods = event.modifiers.state;
             console.log({
                 shift: mods.hasShift(),
                 ctrl: mods.hasControl(),
                 alt: mods.hasAlt(),
-                super: mods.hasSuper()
+                meta: mods.hasMeta()
             });
             break;
 
-        case 'MouseInput':
+        case 'PointerButton':
             // 鼠标按钮事件
-            const { button, state: btnState } = event.event;
-            console.log(`鼠标按钮 ${button}: ${btnState}`);
+            const { button, state: btnState } = event;
+            console.log(`鼠标按钮 ${button.type}: ${btnState}`);
             break;
 
         case 'MouseWheel':
@@ -380,25 +380,25 @@ onWindowEvent: (eventLoop, windowId, event) => {
             console.log(`滚轮: (${deltaX}, ${deltaY})`);
             break;
 
-        case 'CursorMoved':
-            // 光标位置改变
+        case 'PointerMoved':
+            // 指针位置改变
             const position = event.position;
-            console.log(`光标: (${position.x}, ${position.y})`);
+            console.log(`指针: (${position.x}, ${position.y})`);
             break;
 
-        case 'CursorEntered':
-            // 光标进入窗口
-            console.log('光标进入');
+        case 'PointerEntered':
+            // 指针进入窗口
+            console.log('指针进入');
             break;
 
-        case 'CursorLeft':
-            // 光标离开窗口
-            console.log('光标离开');
+        case 'PointerLeft':
+            // 指针离开窗口
+            console.log('指针离开');
             break;
 
         case 'ScaleFactorChanged':
             // DPI 缩放因子改变
-            const { scaleFactor, innerSizeWriter } = event;
+            const { scaleFactor, surfaceSizeWriter } = event;
             console.log(`新缩放因子: ${scaleFactor}`);
             break;
 
@@ -496,7 +496,7 @@ import { Application, EventLoop, WindowAttributes, type ControlFlow,Instant,Dura
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('控制流演示 - 按 1、2、3 切换模式，ESC 退出');
 
 let window;
@@ -504,7 +504,7 @@ let mode: ControlFlow['type'] = 'Wait';
 let waitCancelled = false;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         console.log('窗口已创建。按 1（Wait）、2（WaitUntil）、3（Poll）');
     },
@@ -595,7 +595,7 @@ import { Application, EventLoop, WindowAttributes, Window, Instant, Extra } from
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('动画示例 - 按 R 切换重绘');
 
 let window: Window;
@@ -608,7 +608,7 @@ let rectangleX = 0;
 let velocityX = 2;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
         // 请求初始重绘
@@ -788,7 +788,7 @@ let window: Window | null = null;
 let surface: Extra.BufferSurface | null = null;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
     },

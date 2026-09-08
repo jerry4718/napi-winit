@@ -11,7 +11,7 @@ const eventLoop = new EventLoop();
 const attrs = new WindowAttributes()
     .withActive(true)
     .withResizable(true)
-    .withInnerSize({type: 'Logical', width: 600, height: 400})
+    .withSurfaceSize({type: 'Logical', width: 600, height: 400})
     .withTitle('Hello napi-winit - Press ESC to exit');
 
 let window: Window;
@@ -19,7 +19,7 @@ let surface: Extra.BufferSurface;
 
 // Create application
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // Create window when app starts
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);

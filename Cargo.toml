@@ -16,24 +16,17 @@ members = [
 [workspace.dependencies]
 macros = { path = "crates/macros" }
 
-
 [dependencies]
 proc = { path = "crates/proc" }
 threadpool = "1.8.1"
 
 [dependencies.winit]
-version = "0.30.12"
-features = ["rwh_05", "rwh_06"]
+version = "0.31.0-beta.3"
 
 [dependencies.tokio]
-version = "1.49.0"
+version = "1.53.1"
 features = ["time"]
 # features = [ "rt", "rt-multi-thread","time" ]
-
-[dependencies.rwh_05]
-package = "raw-window-handle"
-version = "0.5.2"
-features = ["std"]
 
 [dependencies.rwh_06]
 package = "raw-window-handle"
@@ -41,13 +34,13 @@ version = "0.6.2"
 features = ["std"]
 
 [dependencies.napi]
-version = "3.9.0"
+version = "3.12.2"
 default-features = false
 # see https://nodejs.org/api/n-api.html#node-api-version-matrix
 features = ["napi6", "async"]
 
 [dependencies.napi-derive]
-version = "3.5.6"
+version = "3.6.3"
 features = ["type-def"]
 
 [dependencies.softbuffer]
@@ -70,7 +63,7 @@ version = "0.3.0"
 #features = ["disable_initial_exec_tls"]
 
 [build-dependencies]
-napi-build = "2.3.2"
+napi-build = "2.4.1"
 
 [profile.release]
 lto = true

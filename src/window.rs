@@ -1,8 +1,8 @@
 use napi::bindgen_prelude::*;
 
 use winit::{
-    monitor::{MonitorHandle as OriginMonitorHandle, VideoModeHandle as OriginVideoModeHandle},
-    window::{Fullscreen as OriginFullscreen},
+    monitor::{MonitorHandle as OriginMonitorHandle, VideoMode as OriginVideoModeHandle},
+    monitor::Fullscreen as OriginFullscreen,
 };
 
 use proc::{proxy_enum, proxy_flags, proxy_impl, proxy_wrap};
@@ -11,16 +11,16 @@ use crate::{
     utils::helpers::{option_map, option_into, pipe, ref_clone_into, result_map, result_into, result_err_reason, vec_map, vec_map_into},
     cursor::{Cursor, CursorIcon},
     dpi::{Position, Size},
-    monitor::{MonitorHandle, VideoModeHandle},
+    monitor::{MonitorHandle, VideoMode},
     napi_reason,
 };
 
 #[napi]
 #[derive(Clone)]
 pub struct WindowAttributes {
-    pub(crate) inner_size: Option<Size>,
-    pub(crate) min_inner_size: Option<Size>,
-    pub(crate) max_inner_size: Option<Size>,
+    pub(crate) surface_size: Option<Size>,
+    pub(crate) min_surface_size: Option<Size>,
+    pub(crate) max_surface_size: Option<Size>,
     pub(crate) position: Option<Position>,
     pub(crate) resizable: bool,
     pub(crate) enabled_buttons: WindowButtons,
@@ -32,7 +32,7 @@ pub struct WindowAttributes {
     pub(crate) decorations: bool,
     pub(crate) window_icon: Option<Icon>,
     pub(crate) preferred_theme: Option<Theme>,
-    pub(crate) resize_increments: Option<Size>,
+    pub(crate) surface_resize_increments: Option<Size>,
     pub(crate) content_protected: bool,
     pub(crate) window_level: WindowLevel,
     pub(crate) active: bool,
@@ -49,9 +49,9 @@ impl Default for WindowAttributes {
     #[inline]
     fn default() -> Self {
         Self {
-            inner_size: None,
-            min_inner_size: None,
-            max_inner_size: None,
+            surface_size: None,
+            min_surface_size: None,
+            max_surface_size: None,
             position: None,
             resizable: true,
             enabled_buttons: WindowButtons::all(),
@@ -65,7 +65,7 @@ impl Default for WindowAttributes {
             window_level: WindowLevel::Normal,
             window_icon: None,
             preferred_theme: None,
-            resize_increments: None,
+            surface_resize_increments: None,
             content_protected: false,
             cursor: Cursor::default(),
             active: true,
@@ -91,18 +91,18 @@ impl Into<winit::window::WindowAttributes> for WindowAttributes {
             .with_content_protected(self.content_protected)
             .with_cursor(self.cursor);
 
-        let attrs = match self.inner_size {
-            Some(inner_size) => attrs.with_inner_size(inner_size),
+        let attrs = match self.surface_size {
+            Some(surface_size) => attrs.with_surface_size(surface_size),
             None => attrs,
         };
 
-        let attrs = match self.min_inner_size {
-            Some(min_inner_size) => attrs.with_min_inner_size(min_inner_size),
+        let attrs = match self.min_surface_size {
+            Some(min_surface_size) => attrs.with_min_surface_size(min_surface_size),
             None => attrs,
         };
 
-        let attrs = match self.max_inner_size {
-            Some(max_inner_size) => attrs.with_max_inner_size(max_inner_size),
+        let attrs = match self.max_surface_size {
+            Some(max_surface_size) => attrs.with_max_surface_size(max_surface_size),
             None => attrs,
         };
 
@@ -126,8 +126,8 @@ impl Into<winit::window::WindowAttributes> for WindowAttributes {
             None => attrs,
         };
 
-        let attrs = match self.resize_increments {
-            Some(resize_increments) => attrs.with_resize_increments(resize_increments),
+        let attrs = match self.surface_resize_increments {
+            Some(surface_resize_increments) => attrs.with_surface_resize_increments(surface_resize_increments),
             None => attrs,
         };
 
@@ -143,20 +143,20 @@ impl WindowAttributes {
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_inner_size(&mut self, size: Size) -> &Self {
-        self.inner_size = Some(size);
+    pub fn with_surface_size(&mut self, size: Size) -> &Self {
+        self.surface_size = Some(size);
         self
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_min_inner_size(&mut self, min_size: Size) -> &Self {
-        self.min_inner_size = Some(min_size);
+    pub fn with_min_surface_size(&mut self, min_size: Size) -> &Self {
+        self.min_surface_size = Some(min_size);
         self
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_max_inner_size(&mut self, max_size: Size) -> &Self {
-        self.max_inner_size = Some(max_size);
+    pub fn with_max_surface_size(&mut self, max_size: Size) -> &Self {
+        self.max_surface_size = Some(max_size);
         self
     }
 
@@ -244,8 +244,8 @@ impl WindowAttributes {
     }
 
     #[napi(ts_return_type = "this")]
-    pub fn with_resize_increments(&mut self, resize_increments: Size) -> &Self {
-        self.resize_increments = Some(resize_increments.into());
+    pub fn with_surface_resize_increments(&mut self, resize_increments: Size) -> &Self {
+        self.surface_resize_increments = Some(resize_increments.into());
         self
     }
 
@@ -285,28 +285,30 @@ impl WindowAttributes {
 
 #[napi]
 pub enum Fullscreen {
-    Exclusive { video_mode: Reference<VideoModeHandle> },
+    Exclusive { monitor: Reference<MonitorHandle>, video_mode: Reference<VideoMode> },
     Borderless { monitor: Option<Reference<MonitorHandle>> },
 }
 
 impl Fullscreen {
     pub(crate) fn from_origin(origin: OriginFullscreen, env: Env) -> Result<Self> {
         match origin {
-            OriginFullscreen::Exclusive(video_mode) => {
-                VideoModeHandle::from(video_mode).into_reference(env)
-                    .map(|video_mode| Self::Exclusive { video_mode })
+            OriginFullscreen::Exclusive(monitor, video_mode) => {
+                let monitor = MonitorHandle::from(monitor).into_reference(env)?;
+                VideoMode::from(video_mode).into_reference(env)
+                    .map(|video_mode| Self::Exclusive { monitor, video_mode })
             }
             OriginFullscreen::Borderless(monitor) => {
                 let Some(monitor) = monitor else { return Ok(Self::Borderless { monitor: None }) };
                 MonitorHandle::from(monitor).into_reference(env)
                     .map(|monitor| Self::Borderless { monitor: Some(monitor) })
             }
+            _ => Err(napi_reason!("unknown fullscreen variant")),
         }
     }
     pub(crate) fn into_origin(self) -> OriginFullscreen {
         match self {
-            Self::Exclusive { video_mode } => {
-                OriginFullscreen::Exclusive((*video_mode).clone().into())
+            Self::Exclusive { monitor, video_mode } => {
+                OriginFullscreen::Exclusive((*monitor).clone().into(), (*video_mode).clone().into())
             }
             Self::Borderless { monitor } => {
                 let Some(monitor) = monitor else { return OriginFullscreen::Borderless(None) };
@@ -329,7 +331,7 @@ pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
 #[derive(Clone)]
 pub enum Theme { Light, Dark }
 
-#[proxy_wrap(origin_type = winit::window::Icon)]
+#[proxy_wrap(origin_type = winit::icon::Icon)]
 #[derive(Clone)]
 pub struct Icon;
 
@@ -337,7 +339,8 @@ pub struct Icon;
 impl Icon {
     #[napi(factory, ts_return_type = "Icon")]
     pub fn from_rgba(env: Env, rgba: Uint8Array, width: u32, height: u32) -> Result<Self> {
-        winit::window::Icon::from_rgba(rgba.to_vec(), width, height)
+        winit::icon::RgbaIcon::new(rgba.to_vec(), width, height)
+            .map(winit::icon::Icon::from)
             .map(Self::from)
             .map_err(|e| napi_reason!("{e}"))
     }
@@ -350,7 +353,7 @@ pub struct WindowId;
 #[napi]
 impl WindowId {
     pub fn raw_u64(&self) -> u64 {
-        Into::<u64>::into(self.0)
+        self.0.into_raw() as u64
     }
 
     #[napi]
@@ -368,7 +371,9 @@ impl WindowId {
 pub struct ActivationToken;
 
 /**[winit::window::Window]*/
-#[proxy_wrap(origin_type = winit::window::Window, field_name = inner)]
+pub(crate) type DynWindow = Box<dyn winit::window::Window>;
+
+#[proxy_wrap(origin_type = DynWindow, field_name = inner)]
 pub struct Window;
 
 #[napi]
@@ -390,29 +395,30 @@ impl Window {
 
 #[proxy_impl(access_expr = self.inner)]
 impl Window {
-    #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
-    fn inner_position(&self) -> Result<Position>;
+    #[proxy_impl(conv_return = Into::into)]
+    fn surface_position(&self) -> Position;
 
     #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
     fn outer_position(&self) -> Result<Position>;
 
-    fn set_outer_position(&self, #[proxy_impl(skip_conv_arg)] position: Position);
+    fn set_outer_position(&self, position: Position);
 
-    fn inner_size(&self) -> Size;
+    #[proxy_impl(conv_return = Into::into)]
+    fn surface_size(&self) -> Size;
 
     #[proxy_impl(conv_return = option_map(Into::into))]
-    fn request_inner_size(&self, #[proxy_impl(skip_conv_arg)] size: Size) -> Option<Size>;
+    fn request_surface_size(&self, size: Size) -> Option<Size>;
 
     fn outer_size(&self) -> Size;
 
-    fn set_min_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
+    fn set_min_surface_size(&self, #[proxy_impl(conv_arg = option_into)] min_size: Option<Size>);
 
-    fn set_max_inner_size(&self, #[proxy_impl(skip_conv_arg)] min_size: Option<Size>);
+    fn set_max_surface_size(&self, #[proxy_impl(conv_arg = option_into)] max_size: Option<Size>);
 
     #[proxy_impl(conv_return = option_into)]
-    fn resize_increments(&self) -> Option<Size>;
+    fn surface_resize_increments(&self) -> Option<Size>;
 
-    fn set_resize_increments(&self, #[proxy_impl(skip_conv_arg)] increments: Option<Size>);
+    fn set_surface_resize_increments(&self, #[proxy_impl(conv_arg = option_into)] increments: Option<Size>);
 }
 
 #[proxy_impl(access_expr = self.inner)]
@@ -454,7 +460,7 @@ impl Window {
 
     fn set_window_icon(&self, #[proxy_impl(conv_arg = [ window_icon.map(|icon| icon.clone().into()) ])] window_icon: Option<&Icon>);
 
-    fn set_ime_cursor_area(&self, #[proxy_impl(skip_conv_arg)] position: Position, #[proxy_impl(skip_conv_arg)] size: Size);
+    fn set_ime_cursor_area(&self, position: Position, size: Size);
 
     fn set_ime_allowed(&self, allowed: bool);
 
@@ -492,12 +498,12 @@ impl Window {
 
 #[proxy_impl(access_expr = self.inner)]
 impl Window {
-    fn set_cursor(&self, #[proxy_impl(conv_arg = Clone::clone)] cursor: &Cursor);
+    fn set_cursor(&self, #[proxy_impl(conv_arg = [ Clone::clone, Into::into ])] cursor: &Cursor);
 
     // fn set_cursor_icon(&self, icon: CursorIcon);
 
     #[proxy_impl(conv_return = [ result_err_reason ])]
-    fn set_cursor_position(&self, #[proxy_impl(skip_conv_arg)] position: Position) -> Result<()>;
+    fn set_cursor_position(&self, position: Position) -> Result<()>;
 
     #[proxy_impl(conv_return = [ result_err_reason ])]
     fn set_cursor_grab(&self, #[proxy_impl(conv_arg = mode.into())] mode: CursorGrabMode) -> Result<()>;
@@ -510,7 +516,7 @@ impl Window {
     #[proxy_impl(conv_return = [ result_err_reason ])]
     fn drag_resize_window(&self, #[proxy_impl(conv_arg = direction.into())] direction: ResizeDirection) -> Result<()>;
 
-    fn show_window_menu(&self, #[proxy_impl(skip_conv_arg)] position: Position);
+    fn show_window_menu(&self, position: Position);
 
     #[proxy_impl(conv_return = [ result_err_reason ])]
     fn set_cursor_hittest(&self, hittest: bool) -> Result<()>;

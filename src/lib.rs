@@ -5,7 +5,6 @@
 extern crate napi_derive;
 
 use std::sync::OnceLock;
-use crate::event::UserPayload;
 
 mod dpi;
 

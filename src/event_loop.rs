@@ -2,7 +2,7 @@ use napi::bindgen_prelude::*;
 
 use std::ptr::NonNull;
 
-use winit::platform::{
+use winit::event_loop::{
     pump_events::EventLoopExtPumpEvents,
     run_on_demand::EventLoopExtRunOnDemand,
 };
@@ -12,26 +12,25 @@ use proc::{proxy_enum, proxy_wrap};
 use crate::{
     application::Application,
     cursor::{CustomCursor, CustomCursorSource},
-    event::UserPayload,
     extra::time::{Instant, Duration},
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
 };
 
-#[proxy_wrap(origin_type = winit::event_loop::EventLoop::<UserPayload>, field_name = inner)]
+#[proxy_wrap(origin_type = winit::event_loop::EventLoop, field_name = inner)]
 pub struct EventLoop;
 
 #[napi]
 impl EventLoop {
     #[napi(constructor)]
     pub fn new() -> Self {
-        let event_loop = winit::event_loop::EventLoop::<UserPayload>::with_user_event().build().expect("Failed to build EventLoop");
+        let event_loop = winit::event_loop::EventLoop::new().expect("Failed to build EventLoop");
         Self { inner: event_loop }
     }
 }
 
-#[proxy_enum(origin_type = winit::platform::pump_events::PumpStatus, skip_backward)]
+#[proxy_enum(origin_type = winit::event_loop::pump_events::PumpStatus, skip_backward)]
 pub enum PumpStatus {
     Continue,
     Exit(#[proxy_enum(field_name = code)] i32),
@@ -42,6 +41,9 @@ impl EventLoop {
     // with_user_event
     #[napi]
     pub unsafe fn run_app(&mut self, env: Env, app: &mut Application) -> Result<()> {
+        // SAFETY: the event loop runs synchronously on this thread, so the JS `Application`
+        // (and its env) outlives every `ApplicationHandler` call inside `run_app`.
+        let app: &'static mut Application<'static> = unsafe { std::mem::transmute(app) };
         let event_loop = unsafe { Box::from_raw(self as *const _ as *mut EventLoop) };
         event_loop.inner.run_app(app).map_err(|e| napi_reason!("{e}"))
     }
@@ -65,19 +67,18 @@ impl EventLoop {
 
 #[napi]
 pub struct ActiveEventLoop {
-    pub(crate) inner_non_null: NonNull<winit::event_loop::ActiveEventLoop>,
+    pub(crate) inner_non_null: NonNull<dyn winit::event_loop::ActiveEventLoop>,
 }
 
 impl ActiveEventLoop {
-    pub fn new(origin: &winit::event_loop::ActiveEventLoop) -> Self {
-        let non_null = NonNull::new(origin as *const _ as *mut winit::event_loop::ActiveEventLoop).unwrap();
-        Self { inner_non_null: non_null }
+    pub fn new(origin: &dyn winit::event_loop::ActiveEventLoop) -> Self {
+        Self { inner_non_null: NonNull::from(origin) }
     }
 }
 
-impl From<&winit::event_loop::ActiveEventLoop> for ActiveEventLoop {
-    fn from(value: &winit::event_loop::ActiveEventLoop) -> Self {
-        Self::new(&value)
+impl From<&dyn winit::event_loop::ActiveEventLoop> for ActiveEventLoop {
+    fn from(value: &dyn winit::event_loop::ActiveEventLoop) -> Self {
+        Self::new(value)
     }
 }
 

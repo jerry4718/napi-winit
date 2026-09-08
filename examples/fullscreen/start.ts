@@ -15,7 +15,7 @@ console.log('');
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({type: 'Logical', width: 800, height: 600})
+    .withSurfaceSize({type: 'Logical', width: 800, height: 600})
     .withTitle('Fullscreen Example - F:Fullscreen  D:Decorations  M:Maximize  ESC:Exit');
 
 let window: Window;
@@ -46,11 +46,11 @@ function initStars(count: number, width: number, height: number) {
 let prevMonitorIndex = -1;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
 
-        const size = window.innerSize();
+        const size = window.surfaceSize();
         const width = size.type === 'Logical' ? size.width : size.width;
         const height = size.type === 'Logical' ? size.height : size.height;
         initStars(200, width, height);
@@ -121,7 +121,7 @@ const app = Application.withOptions({
             }
         }
 
-        if (event.type === 'Resized') {
+        if (event.type === 'SurfaceResized') {
             const {width, height} = event.size;
             console.log(`📐 Window resized: ${width}x${height}`);
 
@@ -130,7 +130,7 @@ const app = Application.withOptions({
             window.requestRedraw();
         }
 
-        if (event.type === 'Resized') {
+        if (event.type === 'SurfaceResized') {
             isMaximized = window.isMaximized();
             console.log(`📏 Window ${isMaximized ? 'maximized' : 'restored'}`);
         }

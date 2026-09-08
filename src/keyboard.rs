@@ -6,7 +6,7 @@ use proc::{proxy_enum, proxy_flags};
 
 use crate::utils::helpers::to_option_string;
 
-#[proxy_enum(origin_type = winit::keyboard::NativeKeyCode, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::NativeKeyCode, skip_backward, non_exhaustive)]
 pub enum NativeKeyCode {
     Unidentified,
     Android(#[proxy_enum(field_name = code)] u32),
@@ -15,7 +15,7 @@ pub enum NativeKeyCode {
     Xkb(#[proxy_enum(field_name = code)] u32),
 }
 
-#[proxy_enum(origin_type = winit::keyboard::NativeKey, skip_backward)]
+#[proxy_enum(origin_type = winit::keyboard::NativeKey, skip_backward, non_exhaustive)]
 pub enum NativeKey {
     Unidentified,
     Android(#[proxy_enum(field_name = code)] u32),
@@ -35,8 +35,8 @@ pub enum Key {
 
 #[proxy_enum(origin_type = winit::keyboard::PhysicalKey, skip_backward)]
 pub enum PhysicalKey {
-    Code(KeyCode),
-    Unidentified(NativeKeyCode),
+    Code(#[proxy_enum(field_name = code)] KeyCode),
+    Unidentified(#[proxy_enum(field_name = key)] NativeKeyCode),
 }
 
 #[proxy_enum(origin_type = winit::keyboard::KeyCode, string_enum, skip_backward, non_exhaustive)]
@@ -50,7 +50,7 @@ pub enum KeyCode {
     KeyO, KeyP, KeyQ, KeyR, KeyS, KeyT,
     KeyU, KeyV, KeyW, KeyX, KeyY, KeyZ,
     Minus, Period, Quote, Semicolon, Slash, AltLeft, AltRight, Backspace, CapsLock, ContextMenu,
-    ControlLeft, ControlRight, Enter, SuperLeft, SuperRight, ShiftLeft, ShiftRight,
+    ControlLeft, ControlRight, Enter, MetaLeft, MetaRight, ShiftLeft, ShiftRight,
     Space, Tab, Convert, KanaMode,
     Lang1, Lang2, Lang3, Lang4, Lang5,
     NonConvert, Delete, End, Help, Home, Insert, PageDown, PageUp,
@@ -63,7 +63,7 @@ pub enum KeyCode {
     BrowserBack, BrowserFavorites, BrowserForward, BrowserHome, BrowserRefresh, BrowserSearch,
     BrowserStop, Eject, LaunchApp1, LaunchApp2, LaunchMail, MediaPlayPause, MediaSelect, MediaStop,
     MediaTrackNext, MediaTrackPrevious, Power, Sleep, AudioVolumeDown, AudioVolumeMute, AudioVolumeUp,
-    WakeUp, Meta, Hyper, Turbo, Abort, Resume, Suspend, Again, Copy, Cut, Find, Open, Paste, Props,
+    WakeUp, Hyper, Turbo, Abort, Resume, Suspend, Again, Copy, Cut, Find, Open, Paste, Props,
     Select, Undo, Hiragana, Katakana,
     F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20,
     F21, F22, F23, F24, F25, F26, F27, F28, F29, F30, F31, F32, F33, F34, F35
@@ -73,7 +73,7 @@ pub enum KeyCode {
 #[derive(Clone)]
 pub enum NamedKey {
     Alt, AltGraph, CapsLock, Control, Fn, FnLock, NumLock, ScrollLock, Shift, Symbol, SymbolLock,
-    Meta, Hyper, Super, Enter, Tab, Space, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, End, Home,
+    Meta, Hyper, Super, Enter, Tab, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, End, Home,
     PageDown, PageUp, Backspace, Clear, Copy, CrSel, Cut, Delete, EraseEof, ExSel, Insert, Paste,
     Redo, Undo, Accept, Again, Attn, Cancel, ContextMenu, Escape, Execute, Find, Help, Pause, Play,
     Props, Select, ZoomIn, ZoomOut, BrightnessDown, BrightnessUp, Eject, LogOff, Power, PowerOff,
@@ -116,7 +116,7 @@ pub enum NamedKey {
 #[proxy_enum(origin_type = winit::keyboard::KeyLocation, string_enum, skip_backward)]
 pub enum KeyLocation { Standard, Left, Right, Numpad }
 
-#[proxy_flags(origin = winit::keyboard::ModifiersState, flags = (SHIFT, CONTROL, ALT, SUPER))]
+#[proxy_flags(origin = winit::keyboard::ModifiersState, flags = (SHIFT, CONTROL, ALT, META))]
 pub struct ModifiersState;
 
 #[proxy_enum(origin_type = winit::keyboard::ModifiersKeyState, string_enum, skip_backward)]

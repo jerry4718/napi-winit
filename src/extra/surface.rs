@@ -30,9 +30,9 @@ pub mod namespace {
 
     #[napi]
     struct BufferSurface<'scope> {
-        pub(crate) window: &'scope winit::window::Window,
-        pub(crate) context: Option<Context<&'scope winit::window::Window>>,
-        pub(crate) surface: Option<Surface<&'scope winit::window::Window, &'scope winit::window::Window>>,
+        pub(crate) window: &'scope dyn winit::window::Window,
+        pub(crate) context: Option<Context<&'scope dyn winit::window::Window>>,
+        pub(crate) surface: Option<Surface<&'scope dyn winit::window::Window, &'scope dyn winit::window::Window>>,
     }
 
     #[napi]
@@ -40,7 +40,7 @@ pub mod namespace {
         #[napi(constructor)]
         pub fn new(window: &'scope mut Window) -> Self {
             Self {
-                window: &mut window.inner,
+                window: &mut *window.inner,
                 context: None,
                 surface: None,
             }
@@ -107,7 +107,7 @@ pub mod namespace {
     impl BufferSurface<'_> {
         pub(crate) fn present<F>(&mut self, mut write_fn: F) -> Result<()>
         where
-            F: FnMut(NonZero<u32>, NonZero<u32>, &mut softbuffer::Buffer<&winit::window::Window, &winit::window::Window>) -> Result<()>,
+            F: FnMut(NonZero<u32>, NonZero<u32>, &mut softbuffer::Buffer<&dyn winit::window::Window, &dyn winit::window::Window>) -> Result<()>,
         {
             let context = match self.context {
                 Some(ref mut context) => context,
@@ -125,7 +125,7 @@ pub mod namespace {
                 }
             };
 
-            let size = self.window.inner_size();
+            let size = self.window.surface_size();
 
             let Some(width) = NonZeroU32::new(size.width)
             else { return Err(napi_reason!("invalid window size [width: {}]", size.width)) };

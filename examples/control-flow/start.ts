@@ -18,7 +18,7 @@ const attrs = new WindowAttributes()
     .withActive(true)
     .withFullscreen(null)
     .withResizable(true)
-    .withInnerSize({type: 'Logical', width: 480, height: 320})
+    .withSurfaceSize({type: 'Logical', width: 480, height: 320})
     .withPosition({type: "Logical", x: 500, y: 500})
     .withTransparent(false)
     .withTitle(
@@ -114,12 +114,16 @@ const app = Application.withOptions({
             console.log({mode, wait_cancelled, cause: cause});
         }
     },
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         const primaryMonitor = eventLoop.primaryMonitor();
         if (primaryMonitor) {
-            const {type, x, y} = primaryMonitor.position();
-            const {width, height} = primaryMonitor.size();
-            attrs.withPosition({type, x: x + width / 4, y: y + height / 4});
+            const position = primaryMonitor.position();
+            const videoMode = primaryMonitor.currentVideoMode();
+            if (position && videoMode) {
+                const {type, x, y} = position;
+                const {width, height} = videoMode.size();
+                attrs.withPosition({type, x: x + width / 4, y: y + height / 4});
+            }
         }
         window = eventLoop.createWindow(attrs);
         surface = new BufferSurface(window);
@@ -147,7 +151,7 @@ const app = Application.withOptions({
                     request_redraw = !request_redraw;
                 }
                 if (logicalKey.ch === "s") {
-                    window.requestInnerSize({type: 'Logical', width: 480, height: 320});
+                    window.requestSurfaceSize({type: 'Logical', width: 480, height: 320});
                 }
             }
             if (logicalKey.type === "Named") {

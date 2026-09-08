@@ -62,12 +62,12 @@ const eventLoop = new EventLoop();
 const attrs = new WindowAttributes()
     .withActive(true)
     .withResizable(true)
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('Hello napi-winit');
 
 // Create application with event handlers
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // Create window when application is ready
         const window = eventLoop.createWindow(attrs);
         console.log('Window created');
@@ -136,7 +136,7 @@ Used to configure window properties.
 const attrs = new WindowAttributes()
     .withActive(true) // Whether the window is active
     .withResizable(true) // Whether the window is resizable
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 }) // Window inner size
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 }) // Window surface size
     .withPosition({ type: 'Logical', x: 100, y: 100 }) // Window position
     .withTitle('Window Title') // Window title
     .withTransparent(false) // Whether the window is transparent
@@ -153,20 +153,20 @@ window.requestRedraw(); // Request a redraw event
 window.prePresentNotify(); // Notify before presenting (required for some platforms)
 
 // Size and position
-const innerSize = window.innerSize(); // Get current inner size
+const surfaceSize = window.surfaceSize(); // Get current surface size
 const outerSize = window.outerSize(); // Get outer size (including decorations)
-const innerPos = window.innerPosition(); // Get inner position
+const surfacePosition = window.surfacePosition(); // Get surface position
 const outerPos = window.outerPosition(); // Get outer position
 
 // Request size change (returns actual size or null if not supported)
-const actualSize = window.requestInnerSize({ type: 'Logical', width: 1024, height: 768 });
+const actualSize = window.requestSurfaceSize({ type: 'Logical', width: 1024, height: 768 });
 
 // Set position
 window.setOuterPosition({ type: 'Logical', x: 100, y: 100 });
 
 // Size constraints
-window.setMinInnerSize({ type: 'Logical', width: 400, height: 300 });
-window.setMaxInnerSize({ type: 'Logical', width: 1920, height: 1080 });
+window.setMinSurfaceSize({ type: 'Logical', width: 400, height: 300 });
+window.setMaxSurfaceSize({ type: 'Logical', width: 1920, height: 1080 });
 
 // Window properties
 window.setTitle('New Title');
@@ -180,7 +180,7 @@ const id = window.id(); // Get unique window ID
 
 // Cursor control
 import { Cursor, CursorIcon } from '@ylcc/napi-winit';
-window.setCursor(Cursor.fromIcon('Hand'));
+window.setCursor(Cursor.fromIcon('Pointer'));
 window.setCursorVisible(false);
 
 // Fullscreen
@@ -191,7 +191,7 @@ window.setFullscreen({
 window.setFullscreen(null); // Exit fullscreen
 
 // Focus and attention
-window.focus();
+window.focusWindow();
 window.requestUserAttention('Informational'); // or 'Critical'
 
 // Advanced
@@ -208,7 +208,7 @@ const app = Application.withOptions({
     onNewEvents: (eventLoop, cause) => {
         // Called when new events arrive
     },
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         // Called when the application resumes, usually where windows are created
     },
     onWindowEvent: (eventLoop, windowId, event) => {
@@ -324,8 +324,8 @@ onWindowEvent: (eventLoop, windowId, event) => {
             // Perform rendering here
             break;
 
-        case 'Resized':
-            // Window size changed
+        case 'SurfaceResized':
+            // Window surface size changed
             const { width, height } = event.size;
             console.log(`Resized to ${width}x${height}`);
             break;
@@ -358,20 +358,20 @@ onWindowEvent: (eventLoop, windowId, event) => {
             break;
 
         case 'ModifiersChanged':
-            // Modifier keys state changed (Shift, Ctrl, Alt, Super)
-            const mods = event.modifiers.state();
+            // Modifier keys state changed (Shift, Ctrl, Alt, Meta)
+            const mods = event.modifiers.state;
             console.log({
                 shift: mods.hasShift(),
                 ctrl: mods.hasControl(),
                 alt: mods.hasAlt(),
-                super: mods.hasSuper()
+                meta: mods.hasMeta()
             });
             break;
 
-        case 'MouseInput':
+        case 'PointerButton':
             // Mouse button event
-            const { button, state: btnState } = event.event;
-            console.log(`Mouse button ${button}: ${btnState}`);
+            const { button, state: btnState } = event;
+            console.log(`Mouse button ${button.type}: ${btnState}`);
             break;
 
         case 'MouseWheel':
@@ -380,25 +380,25 @@ onWindowEvent: (eventLoop, windowId, event) => {
             console.log(`Wheel: (${deltaX}, ${deltaY})`);
             break;
 
-        case 'CursorMoved':
-            // Cursor position changed
+        case 'PointerMoved':
+            // Pointer position changed
             const position = event.position;
-            console.log(`Cursor: (${position.x}, ${position.y})`);
+            console.log(`Pointer: (${position.x}, ${position.y})`);
             break;
 
-        case 'CursorEntered':
-            // Cursor entered window
-            console.log('Cursor entered');
+        case 'PointerEntered':
+            // Pointer entered window
+            console.log('Pointer entered');
             break;
 
-        case 'CursorLeft':
-            // Cursor left window
-            console.log('Cursor left');
+        case 'PointerLeft':
+            // Pointer left window
+            console.log('Pointer left');
             break;
 
         case 'ScaleFactorChanged':
             // DPI scale factor changed
-            const { scaleFactor, innerSizeWriter } = event;
+            const { scaleFactor, surfaceSizeWriter } = event;
             console.log(`New scale factor: ${scaleFactor}`);
             break;
 
@@ -497,14 +497,14 @@ import { Extra } from '@ylcc/napi-winit';
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('Control Flow Example');
 
 let window: Window;
 let mode: ControlFlow['type'] = 'Wait';
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
     },
     onWindowEvent: (eventLoop, windowId, event) => {
@@ -562,7 +562,7 @@ import { Application, EventLoop, WindowAttributes, Window, Instant, Extra } from
 const eventLoop = new EventLoop();
 
 const attrs = new WindowAttributes()
-    .withInnerSize({ type: 'Logical', width: 800, height: 600 })
+    .withSurfaceSize({ type: 'Logical', width: 800, height: 600 })
     .withTitle('Animation Example - Press R to toggle redraw');
 
 let window: Window;
@@ -575,7 +575,7 @@ let rectangleX = 0;
 let velocityX = 2;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
         // Request initial redraw
@@ -755,7 +755,7 @@ let window: Window | null = null;
 let surface: Extra.BufferSurface | null = null;
 
 const app = Application.withOptions({
-    onResumed: (eventLoop) => {
+    onCanCreateSurfaces: (eventLoop) => {
         window = eventLoop.createWindow(attrs);
         surface = new Extra.BufferSurface(window);
     },

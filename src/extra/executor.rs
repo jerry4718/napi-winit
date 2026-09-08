@@ -34,14 +34,15 @@ pub mod namespace {
         }
 
         #[napi(ts_args_type = "callback: () => (Promise<void> | void)")]
-        pub fn execute(&self, env: Env, exec: Function<(), ()>) {
-            let task = exec.build_threadsafe_function().build().unwrap();
+        pub fn execute(&self, env: Env, exec: Function<(), ()>) -> Result<()> {
+            let task = exec.build_threadsafe_function().build()?;
             self.pool.execute(move ||
                 block_on(async {
                     let result = task.call_async(()).await;
                     handle_res!(result);
                 })
             );
+            Ok(())
         }
     }
 }
