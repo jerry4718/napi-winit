@@ -2,7 +2,10 @@ import test from 'ava'
 
 import {Application, EventLoop, WindowAttributes} from '../index.js'
 
-test('window creation timing on x11 (resumed vs can_create_surfaces)', (t) => {
+// CI runners have no display server and this probe creates a real window, so it runs locally only.
+const testLifecycle = process.env.CI ? test.skip : test
+
+testLifecycle('window creation timing on x11 (resumed vs can_create_surfaces)', (t) => {
     const events: string[] = []
     const eventLoop = new EventLoop()
 

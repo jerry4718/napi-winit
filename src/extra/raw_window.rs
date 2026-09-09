@@ -68,7 +68,7 @@ mod rwh_06_impl {
             (RawWindowHandle::Xlib(window), RawDisplayHandle::Xlib(display)) => {
                 Ok(SurfaceOptions {
                     system: SurfaceSystem::X11,
-                    window_handle: BigInt::from(window.window),
+                    window_handle: BigInt::from(u64::from(window.window)),
                     display_handle: BigInt::from(display.display.unwrap().as_ptr() as u64),
                 })
             }
