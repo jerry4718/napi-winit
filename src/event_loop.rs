@@ -2,11 +2,10 @@ use napi::bindgen_prelude::*;
 
 use std::ptr::NonNull;
 
+use proc::{proxy_enum, proxy_impl, proxy_wrap};
 use winit::event_loop::{
     pump_events::EventLoopExtPumpEvents, run_on_demand::EventLoopExtRunOnDemand,
 };
-
-use proc::{proxy_enum, proxy_wrap};
 
 use crate::{
     application::Application,
@@ -14,6 +13,7 @@ use crate::{
     extra::time::{Duration, Instant, try_std_duration, try_std_instant},
     monitor::MonitorHandle,
     napi_reason,
+    utils::helpers::{result_err_reason, result_map},
     window::{Theme, Window, WindowAttributes},
 };
 
@@ -70,11 +70,42 @@ impl EventLoop {
             .map(|timeout| PumpStatus::from(self.inner.pump_app_events(timeout, app)))
     }
 
+    #[napi]
+    pub fn is_x11(&self) -> bool {
+        #[cfg(x11_platform)]
+        {
+            use winit::platform::x11::EventLoopExtX11;
+            self.inner.is_x11()
+        }
+        #[cfg(not(x11_platform))]
+        return false;
+    }
+
+    #[napi]
+    pub fn is_wayland(&self) -> bool {
+        #[cfg(wayland_platform)]
+        {
+            use winit::platform::wayland::EventLoopExtWayland;
+            self.inner.is_wayland()
+        }
+        #[cfg(not(x11_platform))]
+        return false;
+    }
+
     // create_proxy
     // owned_display_handle
-    // listen_device_events
     // create_window
-    // create_custom_cursor
+}
+
+#[proxy_impl(access_expr = self.inner)]
+impl EventLoop {
+    fn listen_device_events(&self, allowed: DeviceEvents);
+    fn set_control_flow(&self, control_flow: ControlFlow);
+    #[proxy_impl(conv_return = [ result_map(Into::into), result_err_reason ])]
+    fn create_custom_cursor(
+        &self,
+        #[proxy_impl(conv_arg = [ Clone::clone, Into::into ])] custom_cursor: &CustomCursorSource,
+    ) -> Result<CustomCursor>;
 }
 
 #[napi]

@@ -57,11 +57,14 @@ impl Cursor {
     }
 }
 
+/** [`winit::cursor::CustomCursor`] **/
 #[proxy_wrap(origin_type = winit::cursor::CustomCursor, field_name = inner)]
 #[derive(Clone)]
 pub struct CustomCursor;
 
+/** [`winit::cursor::CustomCursorSource`] **/
 #[proxy_wrap(origin_type = winit::cursor::CustomCursorSource, field_name = inner)]
+#[derive(Clone)]
 pub struct CustomCursorSource;
 
 #[napi]

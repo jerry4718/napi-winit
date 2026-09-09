@@ -209,7 +209,6 @@ async function run() {
         pump();
         await new Promise(resolve => setTimeout(resolve, 1000 / 120));
     }
-    // threadInterval(Timeout.fromNanos(1_000_000 / 60), pump);
 }
 
 run().catch(console.error);

@@ -26,6 +26,9 @@ if (status.type === 'Exit') {
 | `runApp(app)` | 运行应用直到退出 |
 | `runAppOnDemand(app)` | 按需运行应用 |
 | `pumpAppEvents(app, timeout?): PumpStatus` | 泵一次事件；`timeout: Duration \| null` |
+| `setControlFlow(flow)` | 设置 `ControlFlow` 模式 |
+| `listenDeviceEvents(allowed)` | 过滤设备事件 |
+| `createCustomCursor(source): CustomCursor` | 创建自定义光标 |
 
 **不应当在多个 Application 之间复用 EventLoop，也不应当在 EventLoop 生命周期结束后重新创建。** winit 用一次性标志保证 EventLoop 全进程只创建一次，创建后标志永不重置，再次创建一律返回 `RecreationAttempt`，各平台一致。
 
@@ -217,22 +220,16 @@ surface.presentWithTyped(buffer);
 surface.presentWithThreadsafeWriter((view, width, height) => {});
 ```
 
-### ThreadPool
-
-```typescript
-const pool = Extra.ThreadPool.default(); // 或 Extra.ThreadPool.main()、new Extra.ThreadPool(n)
-pool.execute(() => {
-    console.log('Running in thread pool');
-});
-```
-
 ### 定时器
 
 ```typescript
 await Extra.tokioSleep(Duration.fromMillis(100));
-Extra.tokioInterval(Duration.fromMillis(100), () => {});
-Extra.tokioCallSpawn(() => {});
-Extra.threadInterval(Duration.fromMillis(100), () => {});
+
+// 立即执行第一次，之后按周期执行
+const stopper = Extra.tokioInterval(Duration.fromMillis(100), () => {});
+
+// 停止循环
+stopper.stop();
 ```
 
 ### 原生窗口句柄

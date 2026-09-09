@@ -12,6 +12,11 @@ members = [ "crates/proc" ]
 
 [workspace.dependencies]
 
+[features]
+default = ["x11", "wayland"]
+x11 = ["winit/x11"]
+wayland = ["winit/wayland"]
+
 [dependencies]
 proc = { path = "crates/proc" }
 threadpool = "1.8.1"
@@ -58,8 +63,11 @@ version = "0.3.0"
 #version = "0.3.2"
 #features = ["disable_initial_exec_tls"]
 
-[build-dependencies]
-napi-build = "2.4.1"
+[build-dependencies.napi-build]
+version = "2.4.1"
+
+[build-dependencies.cfg_aliases]
+version = "0.2.2"
 
 [profile.release]
 lto = true

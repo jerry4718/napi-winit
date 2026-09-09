@@ -50,7 +50,7 @@ mod rwh_impl {
         };
 
         match (window_handle, display_handle) {
-            #[cfg(target_os = "windows")]
+            #[cfg(windows_platform)]
             (RawWindowHandle::Win32(window), _) => Ok(SurfaceOptions::Win32 {
                 window_handle: window.hwnd.unsigned_abs().get(),
                 // Windows has no display object; rwh delivers the instance
@@ -59,12 +59,12 @@ mod rwh_impl {
                     .hinstance
                     .map(|hinstance| hinstance.unsigned_abs().get()),
             }),
-            #[cfg(target_os = "macos")]
+            #[cfg(macos_platform)]
             (RawWindowHandle::AppKit(window), _) => Ok(SurfaceOptions::Cocoa {
                 // NSView pointer; consumers resolve the CAMetalLayer from it.
                 window_handle: window.ns_view.as_ptr() as usize,
             }),
-            #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
+            #[cfg(x11_platform)]
             (RawWindowHandle::Xlib(window), RawDisplayHandle::Xlib(display)) => {
                 // XWindow is c_ulong: pointer-width, so the cast to usize is
                 // lossless on every supported target.
@@ -73,7 +73,7 @@ mod rwh_impl {
                     display_handle: display.display.map(|display| display.as_ptr() as usize),
                 })
             }
-            #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
+            #[cfg(wayland_platform)]
             (RawWindowHandle::Wayland(window), RawDisplayHandle::Wayland(display)) => {
                 Ok(SurfaceOptions::Wayland {
                     window_handle: window.surface.as_ptr() as usize,

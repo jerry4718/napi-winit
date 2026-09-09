@@ -18,11 +18,8 @@ export declare namespace Extra {
     presentWithWriter(write: (view: Uint32Array, width: number, height: number) => void): void
     presentWithThreadsafeWriter(write: (view: Uint32Array, width: number, height: number) => void): void
   }
-  export class ThreadPool {
-    constructor(numThreads: number)
-    static default(): ThreadPool
-    static main(): ThreadPool
-    execute(callback: () => (Promise<void> | void)): void
+  export class IntervalStopper {
+    stop(): void
   }
   export function getRwhOptions(window: Window): Extra.SurfaceOptions
   export type SurfaceOptions =
@@ -30,9 +27,7 @@ export declare namespace Extra {
     | { system: 'cocoa', windowHandle: bigint }
     | { system: 'x11', windowHandle: bigint, displayHandle?: bigint }
     | { system: 'wayland', windowHandle: bigint, displayHandle: bigint }
-  export function threadInterval(duration: Duration, exec: () => (Promise<void> | void)): void
-  export function tokioCallSpawn(callback: () => (Promise<void> | void)): void
-  export function tokioInterval(duration: Duration, exec: () => (Promise<void> | void)): void
+  export function tokioInterval(duration: Duration, exec: () => (Promise<void> | void)): Extra.IntervalStopper
   export function tokioSleep(duration: Duration): Promise<void>
 }
 
@@ -79,10 +74,12 @@ export declare class Cursor {
   static fromCustom(custom: CustomCursor): Cursor
 }
 
+/** [`winit::cursor::CustomCursor`] * */
 export declare class CustomCursor {
   static fromRgba(rgba: Uint8Array, width: number, height: number, hotspotX: number, hotspotY: number): CustomCursorSource
 }
 
+/** [`winit::cursor::CustomCursorSource`] * */
 export declare class CustomCursorSource {
 
 }
@@ -102,6 +99,11 @@ export declare class EventLoop {
   runApp(app: Application): void
   runAppOnDemand(app: Application): void
   pumpAppEvents(app: Application, timeout?: Duration | undefined | null): PumpStatus
+  isX11(): boolean
+  isWayland(): boolean
+  listenDeviceEvents(allowed: DeviceEvents): void
+  setControlFlow(controlFlow: ControlFlow): void
+  createCustomCursor(customCursor: CustomCursorSource): CustomCursor
 }
 
 /** [winit::event::FingerId] */

@@ -26,6 +26,9 @@ if (status.type === 'Exit') {
 | `runApp(app)` | Run the application until exit |
 | `runAppOnDemand(app)` | Run the application on demand |
 | `pumpAppEvents(app, timeout?): PumpStatus` | Pump events once; `timeout: Duration \| null` |
+| `setControlFlow(flow)` | Set `ControlFlow` mode |
+| `listenDeviceEvents(allowed)` | Filter device events |
+| `createCustomCursor(source): CustomCursor` | Create a custom cursor |
 
 **Do not share an `EventLoop` between multiple `Application`s, and do not create a new one after the previous one has ended.** winit enforces one `EventLoop` per process with a one-shot flag: once created, the flag is never reset, so any later creation fails with `RecreationAttempt` — consistently across platforms.
 
@@ -217,22 +220,16 @@ surface.presentWithTyped(buffer);
 surface.presentWithThreadsafeWriter((view, width, height) => {});
 ```
 
-### ThreadPool
-
-```typescript
-const pool = Extra.ThreadPool.default(); // or Extra.ThreadPool.main(), new Extra.ThreadPool(n)
-pool.execute(() => {
-    console.log('Running in thread pool');
-});
-```
-
 ### Timers
 
 ```typescript
 await Extra.tokioSleep(Duration.fromMillis(100));
-Extra.tokioInterval(Duration.fromMillis(100), () => {});
-Extra.tokioCallSpawn(() => {});
-Extra.threadInterval(Duration.fromMillis(100), () => {});
+
+// First call fires immediately, then once per period
+const stopper = Extra.tokioInterval(Duration.fromMillis(100), () => {});
+
+// Stop the interval
+stopper.stop();
 ```
 
 ### Raw window handles
