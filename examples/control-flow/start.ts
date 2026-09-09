@@ -196,7 +196,7 @@ const app = Application.withOptions({
 });
 
 function pump() {
-    const status = eventLoop.pumpAppEvents(null, app);
+    const status = eventLoop.pumpAppEvents(app);
     if (status.type === "Continue") {
         return;
     }

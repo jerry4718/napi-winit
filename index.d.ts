@@ -24,17 +24,12 @@ export declare namespace Extra {
     static main(): ThreadPool
     execute(callback: () => (Promise<void> | void)): void
   }
-  export interface SurfaceOptions {
-    system: Extra.SurfaceSystem
-    windowHandle: bigint
-    displayHandle: bigint
-  }
-  export const enum SurfaceSystem {
-    Win32 = 'win32',
-    Cocoa = 'cocoa',
-    X11 = 'x11',
-    Wayland = 'wayland'
-  }
+  export function getRwhOptions(window: Window): Extra.SurfaceOptions
+  export type SurfaceOptions =
+    | { system: 'win32', windowHandle: bigint, displayHandle?: bigint }
+    | { system: 'cocoa', windowHandle: bigint }
+    | { system: 'x11', windowHandle: bigint, displayHandle?: bigint }
+    | { system: 'wayland', windowHandle: bigint, displayHandle: bigint }
   export function threadInterval(duration: Duration, exec: () => (Promise<void> | void)): void
   export function tokioCallSpawn(callback: () => (Promise<void> | void)): void
   export function tokioInterval(duration: Duration, exec: () => (Promise<void> | void)): void
@@ -106,7 +101,7 @@ export declare class EventLoop {
   constructor()
   runApp(app: Application): void
   runAppOnDemand(app: Application): void
-  pumpAppEvents(timeout: Duration | undefined | null, app: Application): PumpStatus
+  pumpAppEvents(app: Application, timeout?: Duration | undefined | null): PumpStatus
 }
 
 /** [winit::event::FingerId] */

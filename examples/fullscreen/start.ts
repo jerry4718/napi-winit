@@ -223,7 +223,7 @@ const app = Application.withOptions({
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(null, app);
+        const status = eventLoop.pumpAppEvents(app);
         if (status.type === 'Exit') {
             console.log('\n✨ Application exited');
             break;

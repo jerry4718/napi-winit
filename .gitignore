@@ -200,3 +200,4 @@ Cargo.lock
 
 *.node
 *.wasm
+.ignore

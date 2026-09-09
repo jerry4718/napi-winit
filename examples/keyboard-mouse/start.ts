@@ -284,7 +284,7 @@ function drawCircleOutline(view: Uint32Array, width: number, height: number, cx:
 
 async function run() {
     while (true) {
-        const status = eventLoop.pumpAppEvents(null, app);
+        const status = eventLoop.pumpAppEvents(app);
         if (status.type === 'Exit') {
             console.log(`\n✨ Application exited, drew ${points.length} points`);
             break;

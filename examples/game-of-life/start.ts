@@ -235,7 +235,7 @@ async function run(): Promise<void> {
     });
 
     while (true) {
-        const status = eventLoop.pumpAppEvents(null, app);
+        const status = eventLoop.pumpAppEvents(app);
         if (status.type === 'Exit') {
             console.log(`Exited at generation ${generation}`);
             await gpuContext.settled();

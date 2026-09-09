@@ -2,32 +2,43 @@
 pub mod namespace {
     use napi::bindgen_prelude::*;
 
-    #[napi(string_enum = "lowercase")]
-    pub enum SurfaceSystem {
-        Win32,
-        Cocoa,
-        X11,
-        Wayland,
-    }
-
-    #[napi(object)]
-    pub struct SurfaceOptions {
-        pub system: SurfaceSystem,
-        pub window_handle: BigInt,
-        pub display_handle: BigInt,
+    #[napi(
+        discriminant = "system",
+        discriminant_case = "lowercase",
+        object_from_js = false
+    )]
+    pub enum SurfaceOptions {
+        Win32 {
+            window_handle: usize,
+            // Some: rwh delivered the instance handle; None: rwh reports it
+            // absent. Surface consumers reject the window without it.
+            display_handle: Option<usize>,
+        },
+        Cocoa {
+            window_handle: usize,
+        },
+        X11 {
+            window_handle: usize,
+            // Some: rwh delivered the Display pointer; None: rwh reports it
+            // absent. Surface consumers reject the window without it.
+            display_handle: Option<usize>,
+        },
+        Wayland {
+            window_handle: usize,
+            display_handle: usize,
+        },
     }
 }
 
-/* just draft */
 #[napi(js_name = "Extra")]
-mod rwh_06_impl {
+mod rwh_impl {
     use super::namespace::*;
     use crate::{napi_reason, window::Window};
     use napi::bindgen_prelude::*;
-    use rwh_06::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
+    use rwh::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
-    // #[napi]
-    pub fn get_rwh_06_options(window: &Window) -> Result<SurfaceOptions> {
+    #[napi]
+    pub fn get_rwh_options(window: &Window) -> Result<SurfaceOptions> {
         let window_handle = match window.inner.window_handle() {
             Err(e) => return Err(napi_reason!("{e}")),
             Ok(handle) => handle.as_raw(),
@@ -40,44 +51,33 @@ mod rwh_06_impl {
 
         match (window_handle, display_handle) {
             #[cfg(target_os = "windows")]
-            (RawWindowHandle::Win32(window), _) => Ok(SurfaceOptions {
-                system: SurfaceSystem::Win32,
-                window_handle: BigInt::from(window.hwnd.unsigned_abs().get() as u64),
-                display_handle: BigInt::from(window.hinstance.unwrap().unsigned_abs().get() as u64),
+            (RawWindowHandle::Win32(window), _) => Ok(SurfaceOptions::Win32 {
+                window_handle: window.hwnd.unsigned_abs().get(),
+                // Windows has no display object; rwh delivers the instance
+                // handle as the display-side value.
+                display_handle: window
+                    .hinstance
+                    .map(|hinstance| hinstance.unsigned_abs().get()),
             }),
             #[cfg(target_os = "macos")]
-            (RawWindowHandle::AppKit(window), _) => {
-                use objc2::rc::Retained;
-                use objc2_app_kit::{NSView, NSWindow};
-
-                let ns_view = window.ns_view.as_ptr();
-
-                let ns_view: Retained<NSView> =
-                    unsafe { Retained::retain(ns_view.cast()) }.unwrap();
-                let ns_window: Retained<NSWindow> = ns_view
-                    .window()
-                    .expect("view was not installed in a window");
-
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Cocoa,
-                    window_handle: BigInt::from(Retained::as_ptr(&ns_window) as u64),
-                    display_handle: BigInt::from(Retained::as_ptr(&ns_view) as u64),
-                })
-            }
+            (RawWindowHandle::AppKit(window), _) => Ok(SurfaceOptions::Cocoa {
+                // NSView pointer; consumers resolve the CAMetalLayer from it.
+                window_handle: window.ns_view.as_ptr() as usize,
+            }),
             #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
             (RawWindowHandle::Xlib(window), RawDisplayHandle::Xlib(display)) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::X11,
-                    window_handle: BigInt::from(u64::from(window.window)),
-                    display_handle: BigInt::from(display.display.unwrap().as_ptr() as u64),
+                // XWindow is c_ulong: pointer-width, so the cast to usize is
+                // lossless on every supported target.
+                Ok(SurfaceOptions::X11 {
+                    window_handle: window.window as usize,
+                    display_handle: display.display.map(|display| display.as_ptr() as usize),
                 })
             }
             #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
             (RawWindowHandle::Wayland(window), RawDisplayHandle::Wayland(display)) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Wayland,
-                    window_handle: BigInt::from(window.surface.as_ptr() as u64),
-                    display_handle: BigInt::from(display.display.as_ptr() as u64),
+                Ok(SurfaceOptions::Wayland {
+                    window_handle: window.surface.as_ptr() as usize,
+                    display_handle: display.display.as_ptr() as usize,
                 })
             }
             _ => Err(napi_reason!("unimplemented for this platform")),

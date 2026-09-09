@@ -40,7 +40,7 @@ pub struct WindowAttributes {
     pub(crate) window_level: WindowLevel,
     pub(crate) active: bool,
     pub(crate) cursor: Cursor,
-    // #[cfg(feature = "rwh_06")]
+    // #[cfg(feature = "rwh")]
     // pub(crate) parent_window: Option<SendSyncRawWindowHandle>,
     pub(crate) fullscreen: Option<OriginFullscreen>,
     // Platform-specific configuration.
@@ -72,7 +72,7 @@ impl Default for WindowAttributes {
             content_protected: false,
             cursor: Cursor::default(),
             active: true,
-            // #[cfg(feature = "rwh_06")]
+            // #[cfg(feature = "rwh")]
             // parent_window: None,
             // platform_specific: Default::default(),
         }
@@ -293,18 +293,18 @@ impl WindowAttributes {
         self
     }
 
-    // #[cfg(feature = "rwh_06")]
+    // #[cfg(feature = "rwh")]
     // #[inline]
     // pub unsafe fn with_parent_window(
     //     mut self,
-    //     parent_window: Option<rwh_06::RawWindowHandle>,
+    //     parent_window: Option<rwh::RawWindowHandle>,
     // ) -> Self {
     //     self.parent_window = parent_window.map(SendSyncRawWindowHandle);
     //     self
     // }
 
-    // #[cfg(feature = "rwh_06")]
-    // pub fn parent_window(&self) -> Option<&rwh_06::RawWindowHandle> {
+    // #[cfg(feature = "rwh")]
+    // pub fn parent_window(&self) -> Option<&rwh::RawWindowHandle> {
     //     self.parent_window.as_ref().map(|handle| &handle.0)
     // }
 }

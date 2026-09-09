@@ -61,8 +61,8 @@ impl EventLoop {
     pub fn pump_app_events(
         &mut self,
         env: Env,
-        timeout: Option<Duration>,
         app: &mut Application,
+        timeout: Option<Duration>,
     ) -> Result<PumpStatus> {
         timeout
             .map(|duration| try_std_duration(&duration))

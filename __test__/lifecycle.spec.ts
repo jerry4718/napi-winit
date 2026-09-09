@@ -39,7 +39,7 @@ testLifecycle('window creation timing on x11 (resumed vs can_create_surfaces)', 
     })
 
     for (let i = 0; i < 50; i++) {
-        const status = eventLoop.pumpAppEvents(null, app)
+        const status = eventLoop.pumpAppEvents(app)
         if (status.type === 'Exit') {
             break
         }
