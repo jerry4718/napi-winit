@@ -3,6 +3,8 @@
 [![npm version](https://img.shields.io/npm/v/@ylcc/napi-winit.svg)](https://www.npmjs.com/package/@ylcc/napi-winit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[English](README.md)
+
 > 基于 Rust winit 的 Node.js / Deno 原生窗口库，性能接近原生
 
 **napi-winit** 是面向 Node.js 和 Deno 的高性能原生窗口管理库，基于 Rust 的 [winit](https://github.com/rust-windowing/winit) 库与 NAPI-RS 绑定构建，以极低的开销提供创建原生窗口、处理窗口事件、管理应用生命周期的完整方案。

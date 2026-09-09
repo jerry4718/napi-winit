@@ -27,9 +27,17 @@ if (status.type === 'Exit') {
 | `runAppOnDemand(app)` | 按需运行应用 |
 | `pumpAppEvents(app, timeout?): PumpStatus` | 泵一次事件；`timeout: Duration \| null` |
 
+**不应当在多个 Application 之间复用 EventLoop，也不应当在 EventLoop 生命周期结束后重新创建。** winit 用一次性标志保证 EventLoop 全进程只创建一次，创建后标志永不重置，再次创建一律返回 `RecreationAttempt`，各平台一致。
+
+**事件只消费一次，不会广播。** 如果你创建了多个 Application，轮番向他们 pump，那么 pump 会将队列中积压的事件、加上 pump 期间新到达的事件，一并交给 pump 的目标 Application。
+
 ## ActiveEventLoop
 
 传递给每个 `Application` 回调的 `eventLoop` 参数。窗口创建与控制流都在它上面。
+
+**与 `EventLoop` 的区别**：同一个事件循环的两种形态，按生命周期划分。`EventLoop` 由你创建并长期持有，代表循环空闲、未分发事件时的状态；回调执行期间循环处于运行态，winit 只允许在运行态创建窗口、设置控制流、退出循环——所以回调收到的是 `ActiveEventLoop`，只在回调执行期间有效。类型上一分为二，让"时机不对的调用"变成编译期错误，而不是运行时崩溃。
+
+实现上，`ActiveEventLoop` 脱离回调的同步范围后仍然可用——例如把它存进外部变量、在异步任务里调用。但不建议脱离太久：它的语义只在回调期间成立，脱离后事件循环可能已退出或状态已变化，`createWindow` 等操作的行为不再有保证。需要异步操作时，优先在下次回调里完成。
 
 ```typescript
 onCanCreateSurfaces: (activeEventLoop) => {
@@ -78,7 +86,7 @@ const app = Application.withOptions({
 });
 ```
 
-`onCanCreateSurfaces` 与 `onWindowEvent` 为必填，其余可选。
+`onCanCreateSurfaces` 与 `onWindowEvent` 为必填，其余可选。一个 `EventLoop` 同一时刻只泵一个 `Application`——见 [EventLoop](#eventloop)。
 
 ## WindowAttributes
 

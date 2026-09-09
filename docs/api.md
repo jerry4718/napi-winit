@@ -27,9 +27,17 @@ if (status.type === 'Exit') {
 | `runAppOnDemand(app)` | Run the application on demand |
 | `pumpAppEvents(app, timeout?): PumpStatus` | Pump events once; `timeout: Duration \| null` |
 
+**Do not share an `EventLoop` between multiple `Application`s, and do not create a new one after the previous one has ended.** winit enforces one `EventLoop` per process with a one-shot flag: once created, the flag is never reset, so any later creation fails with `RecreationAttempt` — consistently across platforms.
+
+**Events are consumed once, not broadcast.** If you create multiple `Application`s and pump them in turn, the pump hands the backlogged events — plus any that arrive during the pump — to the target `Application`.
+
 ## ActiveEventLoop
 
 The `eventLoop` argument passed to every `Application` callback. Window creation and control flow live here.
+
+**Difference from `EventLoop`**: two views of the same loop, split by lifetime. You create and own the `EventLoop`; it represents the loop while it is idle and dispatching nothing. While a callback runs, the loop is in its running state, and winit only allows window creation, control-flow changes, and exit in that running state — so callbacks receive an `ActiveEventLoop`, valid only for the duration of the callback. Splitting them into two types turns wrong-timing calls into compile-time errors instead of runtime panics.
+
+In practice, `ActiveEventLoop` remains usable outside the synchronous scope of a callback — e.g. captured in a variable, called from an async task. Avoid escaping too far, though: its semantics only hold while the callback runs. Once the loop may have exited or changed state, calls such as `createWindow` have no guaranteed behavior. Prefer finishing async work in the next callback.
 
 ```typescript
 onCanCreateSurfaces: (activeEventLoop) => {
@@ -78,7 +86,7 @@ const app = Application.withOptions({
 });
 ```
 
-`onCanCreateSurfaces` and `onWindowEvent` are required; the rest are optional.
+`onCanCreateSurfaces` and `onWindowEvent` are required; the rest are optional. An `EventLoop` pumps one `Application` at a time — see [EventLoop](#eventloop).
 
 ## WindowAttributes
 

@@ -3,6 +3,8 @@
 [![npm version](https://img.shields.io/npm/v/@ylcc/napi-winit.svg)](https://www.npmjs.com/package/@ylcc/napi-winit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[简体中文](README-zh.md)
+
 > Windowing for Node.js and Deno with native performance
 
 **napi-winit** is a high-performance native window management library for Node.js and Deno, built on Rust's [winit](https://github.com/rust-windowing/winit) library and NAPI-RS bindings. It provides a complete solution for creating native windows, handling window events, and managing application lifecycles with minimal overhead.
