@@ -94,8 +94,8 @@ macro_rules! inner_ref {
 impl ActiveEventLoop {
     #[napi]
     pub fn create_window(&self, window_attributes: &WindowAttributes) -> Result<Window> {
-        inner_ref!(self).create_window(window_attributes.clone().into())
-            .map_err(|e| napi_reason!("{e}"))
+        winit::window::WindowAttributes::try_from(window_attributes.clone())
+            .and_then(|attrs| inner_ref!(self).create_window(attrs).map_err(|e| napi_reason!("{e}")))
             .map(Window::from)
     }
     // #[napi]

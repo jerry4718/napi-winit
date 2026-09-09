@@ -10,6 +10,7 @@ use winit::dpi::{
     Position as OriginPosition,
     Size as OriginSize
 };
+use crate::napi_reason;
 
 #[napi]
 #[derive(Clone)]
@@ -18,18 +19,12 @@ pub enum Position {
     Logical { x: f64, y: f64 },
 }
 
+// Used by `DeviceEvent::PointerMotion { delta: (f64, f64) }`: winit documents the delta as
+// "raw, unfiltered physical motion" in "unspecified units", so it must stay tagged Physical —
+// a Logical tag would invite consumers to scale it by the DPI factor.
 impl From<(f64, f64)> for Position {
     fn from((x, y): (f64, f64)) -> Self {
         Self::Physical { x, y }
-    }
-}
-
-impl From<(usize, usize)> for Position {
-    fn from((x, y): (usize, usize)) -> Self {
-        Self::Logical {
-            x: f64::from(x as u32),
-            y: f64::from(y as u32)
-        }
     }
 }
 
@@ -68,9 +63,9 @@ impl From<OriginPosition> for Position {
     }
 }
 
-impl Into<OriginPosition> for Position {
-    fn into(self) -> OriginPosition {
-        match self {
+impl From<Position> for OriginPosition {
+    fn from(value: Position) -> OriginPosition {
+        match value {
             Position::Physical { x, y } => OriginPosition::Physical(OriginPhysicalPosition {
                 x: i32::from_f64(x),
                 y: i32::from_f64(y),
@@ -78,6 +73,18 @@ impl Into<OriginPosition> for Position {
             Position::Logical { x, y } => OriginPosition::Logical(OriginLogicalPosition { x, y })
         }
     }
+}
+
+// JS boundary validation: NaN/infinite coordinates are rejected instead of silently
+// saturating to zero inside `Pixel::from_f64`. Negative physical positions are valid
+// (multi-monitor coordinates extend past the origin), so only finiteness is enforced.
+pub(crate) fn try_std_position(value: &Position) -> napi::Result<OriginPosition> {
+    let (x, y) = match value {
+        Position::Physical { x, y } | Position::Logical { x, y } => (*x, *y),
+    };
+    (x.is_finite() && y.is_finite())
+        .then(|| value.clone().into())
+        .ok_or_else(|| napi_reason!("position must be a finite number"))
 }
 
 #[napi]
@@ -122,9 +129,9 @@ impl From<OriginSize> for Size {
     }
 }
 
-impl Into<OriginSize> for Size {
-    fn into(self) -> OriginSize {
-        match self {
+impl From<Size> for OriginSize {
+    fn from(value: Size) -> OriginSize {
+        match value {
             Size::Physical { width, height } => OriginSize::Physical(OriginPhysicalSize {
                 width: u32::from_f64(width),
                 height: u32::from_f64(height),
@@ -134,7 +141,19 @@ impl Into<OriginSize> for Size {
     }
 }
 
+// JS boundary validation: a size is non-negative by definition, so negative and
+// NaN/infinite values are rejected instead of silently clamping to zero.
+pub(crate) fn try_std_size(value: &Size) -> napi::Result<OriginSize> {
+    let (width, height) = match value {
+        Size::Physical { width, height } | Size::Logical { width, height } => (*width, *height),
+    };
+    (width.is_finite() && height.is_finite() && width >= 0.0 && height >= 0.0)
+        .then(|| value.clone().into())
+        .ok_or_else(|| napi_reason!("size must be a non-negative finite number"))
+}
+
 #[napi]
+#[derive(Clone)]
 pub enum PixelUnit {
     Physical { count: f64 },
     Logical { count: f64 },
@@ -155,7 +174,7 @@ where
     f64: From<T>,
 {
     fn from(OriginLogicalUnit(count): OriginLogicalUnit<T>) -> Self {
-        Self::Physical { count: f64::from(count) }
+        Self::Logical { count: f64::from(count) }
     }
 }
 
@@ -168,9 +187,9 @@ impl From<OriginPixelUnit> for PixelUnit {
     }
 }
 
-impl Into<OriginPixelUnit> for PixelUnit {
-    fn into(self) -> OriginPixelUnit {
-        match self {
+impl From<PixelUnit> for OriginPixelUnit {
+    fn from(value: PixelUnit) -> OriginPixelUnit {
+        match value {
             PixelUnit::Physical { count } => OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count))),
             PixelUnit::Logical { count } => OriginPixelUnit::Logical(OriginLogicalUnit(count))
         }

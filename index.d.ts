@@ -424,6 +424,7 @@ export declare const enum CursorIcon {
   NonExhaustive = 'NonExhaustive'
 }
 
+/** [winit::event::DeviceEvent] */
 export type DeviceEvent =
   | { type: 'PointerMotion', delta: Position }
   | { type: 'MouseWheel', delta: MouseScrollDelta }
@@ -479,9 +480,10 @@ export type Fullscreen =
   | { type: 'Exclusive', monitor: MonitorHandle, videoMode: VideoMode }
   | { type: 'Borderless', monitor?: MonitorHandle }
 
+/** [winit::event::Ime] */
 export type Ime =
   | { type: 'Enabled' }
-  | { type: 'Preedit', preedit: string, position?: Position }
+  | { type: 'Preedit', preedit: string, cursor?: PreeditCursorPosition }
   | { type: 'Commit', commit: string }
   | { type: 'Disabled' }
   | { type: 'NonExhaustive' }
@@ -1106,6 +1108,11 @@ export type PointerSource =
 export type Position =
   | { type: 'Physical', x: number, y: number }
   | { type: 'Logical', x: number, y: number }
+
+export interface PreeditCursorPosition {
+  begin: number
+  end: number
+}
 
 export type PumpStatus =
   | { type: 'Continue' }

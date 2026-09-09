@@ -93,10 +93,10 @@ impl ToTokens for ProxyFlags {
             .collect();
 
         append_to_tokens(tokens, quote_spanned! { name.span() =>
-            impl Into<#origin_ty> for #name {
-                fn into(self) -> #origin_ty {
+            impl From<#name> for #origin_ty {
+                fn from(value: #name) -> #origin_ty {
                     let mut origin = #origin_ty::empty();
-                    let Self { #( #flag_idents ),* } = self;
+                    let #name { #( #flag_idents ),* } = value;
                     #( #flag_compose )*
                     origin
                 }

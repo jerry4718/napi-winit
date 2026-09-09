@@ -7,7 +7,7 @@ use crate::{
     event_loop::AsyncRequestSerial,
     extra::time::Instant,
     keyboard::{Key, KeyLocation, ModifiersState, PhysicalKey},
-    utils::helpers::option_into,
+    utils::helpers::{option_into, option_map},
     window::{ActivationToken, Theme, WindowId},
 };
 
@@ -276,12 +276,25 @@ impl Modifiers {
     }
 }
 
+// winit's `Ime::Preedit(String, Option<(usize, usize)>)` carries the cursor begin/end offsets
+// as **byte indices into the preedit string** (UTF-8), not screen coordinates. `Position` would
+// wrongly present them as physical/logical pixels, so they get their own data carrier.
+#[napi(object)]
+pub struct PreeditCursorPosition {
+    pub begin: u32,
+    pub end: u32,
+}
+
+/**[winit::event::Ime]*/
 #[proxy_enum(origin_type = winit::event::Ime, skip_backward, non_exhaustive)]
 pub enum Ime {
     Enabled,
     Preedit(
         #[proxy_enum(field_name = preedit)] String,
-        #[proxy_enum(field_name = position, from_origin = option_into)] Option<Position>,
+        #[proxy_enum(
+            field_name = cursor,
+            from_origin = option_map(|(begin, end)| PreeditCursorPosition { begin: begin as u32, end: end as u32 })
+        )] Option<PreeditCursorPosition>,
     ),
     Commit(#[proxy_enum(field_name = commit)] String),
     Disabled,
@@ -384,6 +397,7 @@ pub enum Force {
     Normalized(#[proxy_enum(field_name = value)] f64),
 }
 
+/**[winit::event::DeviceEvent]*/
 #[proxy_enum(origin_type = winit::event::DeviceEvent, skip_backward, non_exhaustive)]
 pub enum DeviceEvent {
     PointerMotion {

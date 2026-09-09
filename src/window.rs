@@ -10,7 +10,7 @@ use proc::{proxy_enum, proxy_flags, proxy_impl, proxy_wrap};
 use crate::{
     utils::helpers::{option_map, option_into, pipe, ref_clone_into, result_map, result_into, result_err_reason, vec_map, vec_map_into},
     cursor::{Cursor, CursorIcon},
-    dpi::{Position, Size},
+    dpi::{try_std_position, try_std_size, Position, Size},
     monitor::{MonitorHandle, VideoMode},
     napi_reason,
 };
@@ -76,62 +76,70 @@ impl Default for WindowAttributes {
     }
 }
 
-impl Into<winit::window::WindowAttributes> for WindowAttributes {
-    fn into(self) -> winit::window::WindowAttributes {
+impl TryFrom<WindowAttributes> for winit::window::WindowAttributes {
+    type Error = napi::Error;
+
+    fn try_from(value: WindowAttributes) -> Result<Self> {
+        let surface_size = value.surface_size.map(|size| try_std_size(&size)).transpose()?;
+        let min_surface_size = value.min_surface_size.map(|size| try_std_size(&size)).transpose()?;
+        let max_surface_size = value.max_surface_size.map(|size| try_std_size(&size)).transpose()?;
+        let position = value.position.map(|position| try_std_position(&position)).transpose()?;
+        let surface_resize_increments = value.surface_resize_increments.map(|size| try_std_size(&size)).transpose()?;
+
         let attrs = winit::window::WindowAttributes::default()
-            .with_resizable(self.resizable)
-            .with_enabled_buttons(self.enabled_buttons.into())
-            .with_title(self.title)
-            .with_maximized(self.maximized)
-            .with_visible(self.visible)
-            .with_transparent(self.transparent)
-            .with_blur(self.blur)
-            .with_decorations(self.decorations)
-            .with_window_level(self.window_level.into())
-            .with_content_protected(self.content_protected)
-            .with_cursor(self.cursor);
+            .with_resizable(value.resizable)
+            .with_enabled_buttons(value.enabled_buttons.into())
+            .with_title(value.title)
+            .with_maximized(value.maximized)
+            .with_visible(value.visible)
+            .with_transparent(value.transparent)
+            .with_blur(value.blur)
+            .with_decorations(value.decorations)
+            .with_window_level(value.window_level.into())
+            .with_content_protected(value.content_protected)
+            .with_cursor(value.cursor);
 
-        let attrs = match self.surface_size {
-            Some(surface_size) => attrs.with_surface_size(surface_size),
+        let attrs = match surface_size {
+            Some(size) => attrs.with_surface_size(size),
             None => attrs,
         };
 
-        let attrs = match self.min_surface_size {
-            Some(min_surface_size) => attrs.with_min_surface_size(min_surface_size),
+        let attrs = match min_surface_size {
+            Some(min_size) => attrs.with_min_surface_size(min_size),
             None => attrs,
         };
 
-        let attrs = match self.max_surface_size {
-            Some(max_surface_size) => attrs.with_max_surface_size(max_surface_size),
+        let attrs = match max_surface_size {
+            Some(max_size) => attrs.with_max_surface_size(max_size),
             None => attrs,
         };
 
-        let attrs = match self.position {
+        let attrs = match position {
             Some(position) => attrs.with_position(position),
             None => attrs,
         };
 
-        let attrs = match self.fullscreen {
+        let attrs = match value.fullscreen {
             Some(fullscreen) => attrs.with_fullscreen(Some(fullscreen.into())),
             None => attrs,
         };
 
-        let attrs = match self.window_icon {
+        let attrs = match value.window_icon {
             Some(window_icon) => attrs.with_window_icon(Some(window_icon.into())),
             None => attrs,
         };
 
-        let attrs = match self.preferred_theme {
+        let attrs = match value.preferred_theme {
             Some(preferred_theme) => attrs.with_theme(Some(preferred_theme.into())),
             None => attrs,
         };
 
-        let attrs = match self.surface_resize_increments {
-            Some(surface_resize_increments) => attrs.with_surface_resize_increments(surface_resize_increments),
+        let attrs = match surface_resize_increments {
+            Some(increments) => attrs.with_surface_resize_increments(increments),
             None => attrs,
         };
 
-        attrs
+        Ok(attrs)
     }
 }
 
