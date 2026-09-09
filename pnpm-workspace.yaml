@@ -1,2 +1,8 @@
 packages:
-  - 'examples/*'
+  - examples/*
+
+catalog:
+  '@types/node': ^20.19.31
+  '@vgpu/adapter-node': ^0.4.1
+  '@webgpu/types': ^0.1.72
+  vgpu: ^0.4.1

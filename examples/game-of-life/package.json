@@ -1,0 +1,20 @@
+{
+  "name": "examples.game-of-life",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ./start.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "GPU-accelerated Conway's Game of Life with vgpu and softbuffer",
+  "dependencies": {
+    "@vgpu/adapter-node": "catalog:",
+    "@ylcc/napi-winit": "workspace:*",
+    "vgpu": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@webgpu/types": "catalog:"
+  }
+}

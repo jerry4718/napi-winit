@@ -12,6 +12,6 @@
     "@ylcc/napi-winit": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.11.16"
+    "@types/node": "catalog:"
   }
 }

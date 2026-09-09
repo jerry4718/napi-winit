@@ -13,6 +13,6 @@
     "examples.util": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.11.16"
+    "@types/node": "catalog:"
   }
 }
