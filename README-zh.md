@@ -196,7 +196,7 @@ window.requestUserAttention('Informational'); // 或 'Critical'
 
 // 高级功能
 window.resetDeadKeys(); // 重置死键状态
-window.setImeAllowed(true); // 允许输入法
+window.requestImeUpdate({ type: 'Enable', capabilities: { hintAndPurpose: true, cursorArea: false, surroundingText: false }, data: { hintAndPurpose: { hint: { completion: true }, purpose: 'Normal' } } }); // 启用输入法
 ```
 
 ### 4.4 Application

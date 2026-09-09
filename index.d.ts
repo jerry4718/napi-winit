@@ -246,6 +246,7 @@ export declare class VideoMode {
 
 export declare class Window {
   static defaultAttributes(): WindowAttributes
+  requestImeUpdate(request: ImeRequest): void
   id(): WindowId
   scaleFactor(): number
   requestRedraw(): void
@@ -278,9 +279,6 @@ export declare class Window {
   isDecorated(): boolean
   setWindowLevel(level: WindowLevel): void
   setWindowIcon(windowIcon?: Icon | undefined | null): void
-  setImeCursorArea(position: Position, size: Size): void
-  setImeAllowed(allowed: boolean): void
-  setImePurpose(purpose: ImePurpose): void
   focusWindow(): void
   hasFocus(): boolean
   requestUserAttention(requestType?: UserAttentionType | undefined | null): void
@@ -488,11 +486,71 @@ export type Ime =
   | { type: 'Disabled' }
   | { type: 'NonExhaustive' }
 
+/** [winit::window::ImeCapabilities] */
+export interface ImeCapabilities {
+  hintAndPurpose: boolean
+  cursorArea: boolean
+  surroundingText: boolean
+}
+
+export interface ImeCursorArea {
+  position: Position
+  size: Size
+}
+
+/** [winit::window::ImeHint] */
+export interface ImeHint {
+  completion: boolean
+  spellcheck: boolean
+  autoCapitalization: boolean
+  lowercase: boolean
+  uppercase: boolean
+  titlecase: boolean
+  hiddenText: boolean
+  sensitiveData: boolean
+  latin: boolean
+  multiline: boolean
+}
+
+export interface ImeHintAndPurpose {
+  hint: ImeHint
+  purpose: ImePurpose
+}
+
+/** [winit::window::ImePurpose] */
 export declare const enum ImePurpose {
   Normal = 'Normal',
   Password = 'Password',
   Terminal = 'Terminal',
+  Number = 'Number',
+  Phone = 'Phone',
+  Url = 'Url',
+  Email = 'Email',
+  Pin = 'Pin',
+  Date = 'Date',
+  Time = 'Time',
+  DateTime = 'DateTime',
   NonExhaustive = 'NonExhaustive'
+}
+
+/** [winit::window::ImeRequest] */
+export type ImeRequest =
+  | { type: 'Enable', capabilities: ImeCapabilities, data: ImeRequestData }
+  | { type: 'Update', data: ImeRequestData }
+  | { type: 'Disable' }
+
+/** [winit::window::ImeRequestData] */
+export interface ImeRequestData {
+  hintAndPurpose?: ImeHintAndPurpose
+  cursorArea?: ImeCursorArea
+  surroundingText?: ImeSurroundingText
+}
+
+/** [winit::window::ImeSurroundingText] */
+export interface ImeSurroundingText {
+  text: string
+  cursor: number
+  anchor: number
 }
 
 export interface Instant {

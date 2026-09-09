@@ -339,6 +339,149 @@ pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
 #[derive(Clone)]
 pub enum Theme { Light, Dark }
 
+/**[winit::window::ImeHint]*/
+#[napi(object)]
+#[derive(Clone, Copy)]
+pub struct ImeHint {
+    pub completion: bool,
+    pub spellcheck: bool,
+    pub auto_capitalization: bool,
+    pub lowercase: bool,
+    pub uppercase: bool,
+    pub titlecase: bool,
+    pub hidden_text: bool,
+    pub sensitive_data: bool,
+    pub latin: bool,
+    pub multiline: bool,
+}
+
+impl From<&ImeHint> for winit::window::ImeHint {
+    fn from(value: &ImeHint) -> Self {
+        let mut hint = winit::window::ImeHint::NONE;
+        if value.completion {
+            hint |= winit::window::ImeHint::COMPLETION;
+        }
+        if value.spellcheck {
+            hint |= winit::window::ImeHint::SPELLCHECK;
+        }
+        if value.auto_capitalization {
+            hint |= winit::window::ImeHint::AUTO_CAPITALIZATION;
+        }
+        if value.lowercase {
+            hint |= winit::window::ImeHint::LOWERCASE;
+        }
+        if value.uppercase {
+            hint |= winit::window::ImeHint::UPPERCASE;
+        }
+        if value.titlecase {
+            hint |= winit::window::ImeHint::TITLECASE;
+        }
+        if value.hidden_text {
+            hint |= winit::window::ImeHint::HIDDEN_TEXT;
+        }
+        if value.sensitive_data {
+            hint |= winit::window::ImeHint::SENSITIVE_DATA;
+        }
+        if value.latin {
+            hint |= winit::window::ImeHint::LATIN;
+        }
+        if value.multiline {
+            hint |= winit::window::ImeHint::MULTILINE;
+        }
+        hint
+    }
+}
+
+/**[winit::window::ImePurpose]*/
+#[proxy_enum(origin_type = winit::window::ImePurpose, string_enum, non_exhaustive)]
+#[derive(Clone)]
+pub enum ImePurpose {
+    Normal,
+    Password,
+    Terminal,
+    Number,
+    Phone,
+    Url,
+    Email,
+    Pin,
+    Date,
+    Time,
+    DateTime,
+}
+
+// winit keeps the fields of `ImeSurroundingText` private behind a validating constructor
+// (`new` enforces the 4000-byte limit and code-point boundaries), so the proxy is a plain
+// data object and the conversion goes through `ImeSurroundingText::new`.
+/**[winit::window::ImeSurroundingText]*/
+#[napi(object)]
+#[derive(Clone)]
+pub struct ImeSurroundingText {
+    pub text: String,
+    pub cursor: u32,
+    pub anchor: u32,
+}
+
+/**[winit::window::ImeCapabilities]*/
+#[napi(object)]
+#[derive(Clone, Copy)]
+pub struct ImeCapabilities {
+    pub hint_and_purpose: bool,
+    pub cursor_area: bool,
+    pub surrounding_text: bool,
+}
+
+impl From<&ImeCapabilities> for winit::window::ImeCapabilities {
+    fn from(value: &ImeCapabilities) -> Self {
+        let mut capabilities = winit::window::ImeCapabilities::new();
+        if value.hint_and_purpose {
+            capabilities = capabilities.with_hint_and_purpose();
+        }
+        if value.cursor_area {
+            capabilities = capabilities.with_cursor_area();
+        }
+        if value.surrounding_text {
+            capabilities = capabilities.with_surrounding_text();
+        }
+        capabilities
+    }
+}
+
+#[napi(object)]
+#[derive(Clone)]
+pub struct ImeHintAndPurpose {
+    pub hint: ImeHint,
+    pub purpose: ImePurpose,
+}
+
+#[napi(object)]
+#[derive(Clone)]
+pub struct ImeCursorArea {
+    pub position: Position,
+    pub size: Size,
+}
+
+/**[winit::window::ImeRequestData]*/
+#[napi(object)]
+#[derive(Clone)]
+pub struct ImeRequestData {
+    pub hint_and_purpose: Option<ImeHintAndPurpose>,
+    pub cursor_area: Option<ImeCursorArea>,
+    pub surrounding_text: Option<ImeSurroundingText>,
+}
+
+/**[winit::window::ImeRequest]*/
+#[napi]
+pub enum ImeRequest {
+    Enable {
+        capabilities: ImeCapabilities,
+        data: ImeRequestData,
+    },
+    Update {
+        data: ImeRequestData,
+    },
+    Disable,
+}
+
 #[proxy_wrap(origin_type = winit::icon::Icon)]
 #[derive(Clone)]
 pub struct Icon;
@@ -390,6 +533,72 @@ impl Window {
     pub fn default_attributes() -> WindowAttributes {
         WindowAttributes::default()
     }
+
+    #[napi]
+    pub fn request_ime_update(&self, request: ImeRequest) -> Result<()> {
+        let origin_request = match request {
+            ImeRequest::Enable { capabilities, data } => {
+                let data = try_ime_request_data(&data)?;
+                winit::window::ImeRequest::Enable(
+                    winit::window::ImeEnableRequest::new(
+                        winit::window::ImeCapabilities::from(&capabilities),
+                        data,
+                    )
+                    .ok_or_else(|| {
+                        napi_reason!("requested IME capabilities and data do not match")
+                    })?,
+                )
+            }
+            ImeRequest::Update { data } => {
+                winit::window::ImeRequest::Update(try_ime_request_data(&data)?)
+            }
+            ImeRequest::Disable => winit::window::ImeRequest::Disable,
+        };
+        self.inner
+            .request_ime_update(origin_request)
+            .map_err(|e| napi_reason!("{e}"))
+    }
+}
+
+fn try_ime_request_data(value: &ImeRequestData) -> Result<winit::window::ImeRequestData> {
+    let hint_and_purpose = value.hint_and_purpose.as_ref().map(|pair| {
+        (
+            winit::window::ImeHint::from(&pair.hint),
+            pair.purpose.clone().into(),
+        )
+    });
+    let cursor_area = value
+        .cursor_area
+        .as_ref()
+        .map(|area| {
+            try_std_position(&area.position)
+                .and_then(|position| try_std_size(&area.size).map(|size| (position, size)))
+        })
+        .transpose()?;
+    let surrounding_text = value
+        .surrounding_text
+        .as_ref()
+        .map(|surrounding| {
+            winit::window::ImeSurroundingText::new(
+                surrounding.text.clone(),
+                surrounding.cursor as usize,
+                surrounding.anchor as usize,
+            )
+            .map_err(|e| napi_reason!("{e}"))
+        })
+        .transpose()?;
+
+    let mut data = winit::window::ImeRequestData::default();
+    if let Some((hint, purpose)) = hint_and_purpose {
+        data = data.with_hint_and_purpose(hint, purpose);
+    }
+    if let Some((position, size)) = cursor_area {
+        data = data.with_cursor_area(position, size);
+    }
+    if let Some(surrounding) = surrounding_text {
+        data = data.with_surrounding_text(surrounding);
+    }
+    Ok(data)
 }
 
 #[proxy_impl(access_expr = self.inner)]
@@ -468,12 +677,6 @@ impl Window {
 
     fn set_window_icon(&self, #[proxy_impl(conv_arg = [ window_icon.map(|icon| icon.clone().into()) ])] window_icon: Option<&Icon>);
 
-    fn set_ime_cursor_area(&self, position: Position, size: Size);
-
-    fn set_ime_allowed(&self, allowed: bool);
-
-    fn set_ime_purpose(&self, #[proxy_impl(conv_arg = purpose.into())] purpose: ImePurpose);
-
     fn focus_window(&self);
 
     fn has_focus(&self) -> bool;
@@ -541,9 +744,6 @@ impl Window {
     #[proxy_impl(conv_return = option_into)]
     fn primary_monitor(&self) -> Option<MonitorHandle>;
 }
-
-#[proxy_enum(origin_type = winit::window::ImePurpose, string_enum, non_exhaustive)]
-pub enum ImePurpose { Normal, Password, Terminal }
 
 #[proxy_enum(origin_type = winit::window::UserAttentionType, string_enum)]
 pub enum UserAttentionType { Critical, Informational }

@@ -196,7 +196,7 @@ window.requestUserAttention('Informational'); // or 'Critical'
 
 // Advanced
 window.resetDeadKeys(); // Reset dead key state
-window.setImeAllowed(true); // Allow IME input
+window.requestImeUpdate({ type: 'Enable', capabilities: { hintAndPurpose: true, cursorArea: false, surroundingText: false }, data: { hintAndPurpose: { hint: { completion: true }, purpose: 'Normal' } } }); // Enable IME input
 ```
 
 ### 4.4 Application
