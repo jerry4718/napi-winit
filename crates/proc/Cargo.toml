@@ -1,6 +1,6 @@
 [package]
 name = "proc"
-version = "0.2.101"
+version = "0.3.102-next"
 edition = "2024"
 
 [lib]
