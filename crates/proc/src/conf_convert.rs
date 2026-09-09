@@ -1,5 +1,5 @@
+use crate::utils::{define_const_str, map_meta_to_local};
 use syn::Meta;
-use macros::{define_const_str, map_meta_to_local};
 
 pub(crate) struct ConfConvert {
     pub skip_from_origin: bool,
@@ -20,9 +20,12 @@ pub(crate) struct NormalConfConvert {
 impl ConfConvert {
     pub fn normal(&self) -> NormalConfConvert {
         let Self {
-            skip_from_origin, skip_into_origin,
-            skip_to_js, skip_from_js,
-            skip_forward, skip_backward,
+            skip_from_origin,
+            skip_into_origin,
+            skip_to_js,
+            skip_from_js,
+            skip_forward,
+            skip_backward,
         } = self;
         NormalConfConvert {
             skip_from_origin: *skip_from_origin || *skip_forward,

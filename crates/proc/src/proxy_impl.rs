@@ -1,20 +1,26 @@
 use crate::{
     conf_usage::{get_meta_value_as_conf_usage, quote_option_conf_usage},
-    utils::{append_to_tokens, get_meta_value_as, get_metas_by_attr_name, parse_as, parse_metas, separate_attr_by_name},
+    utils::{
+        append_to_tokens, define_const_str, get_meta_value_as, get_metas_by_attr_name,
+        map_meta_to_local, parse_as, parse_metas, separate_attr_by_name,
+    },
 };
-use macros::{define_const_str, map_meta_to_local};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use std::fmt::Debug;
 use syn::{
-    parse,
+    Attribute, Expr, FnArg, ImplItem, ImplItemFn, ItemImpl, Meta, Pat, PatIdent, PatType, Receiver,
+    ReturnType, Signature, Token, TraitItemFn, Visibility, parse,
     parse::{Parse, ParseStream},
     parse_macro_input,
-    punctuated::Punctuated, token::Pub,
-    Attribute, Expr, FnArg, ImplItem, ImplItemFn, ItemImpl, Meta, Pat, PatIdent, PatType, Receiver, ReturnType, Signature, Token, TraitItemFn, Visibility,
+    punctuated::Punctuated,
+    token::Pub,
 };
 
-pub(crate) fn proxy_impl(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub(crate) fn proxy_impl(
+    attrs: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
 
     let item_impl = parse_macro_input!(input as ItemImpl);
@@ -45,9 +51,7 @@ pub(crate) struct TraitFnLike {
 define_const_str!(ATTR_PROXY_IMPL = proxy_impl);
 const ATTR_INCLUDES: &[&str] = &[ATTR_PROXY_IMPL];
 
-define_const_str!(
-    META_ACCESS_EXPR = access_expr,
-);
+define_const_str!(META_ACCESS_EXPR = access_expr,);
 
 define_const_str!(
     META_CONV_ARG = conv_arg,
@@ -58,7 +62,8 @@ define_const_str!(
 
 impl Parse for TraitFnLike {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let attrs = input.call(Attribute::parse_outer)
+        let attrs = input
+            .call(Attribute::parse_outer)
             .unwrap_or_else(|e| Vec::new());
 
         let vis = input.parse::<Visibility>().ok();
@@ -76,10 +81,7 @@ fn parse_proxy_impl(metas: &Vec<Meta>, item_impl: &ItemImpl) -> ProxyImpl {
         panic!("so many proxy_impl 0");
     }
 
-    let impl_items: Vec<ProxyImplItem> = items
-        .iter()
-        .map(parse_proxy_impl_item)
-        .collect();
+    let impl_items: Vec<ProxyImplItem> = items.iter().map(parse_proxy_impl_item).collect();
 
     map_meta_to_local!(&metas => {
         META_ACCESS_EXPR => access_expr,
@@ -96,8 +98,9 @@ fn parse_proxy_impl(metas: &Vec<Meta>, item_impl: &ItemImpl) -> ProxyImpl {
 fn parse_proxy_impl_item(item: &ImplItem) -> ProxyImplItem {
     match item {
         ImplItem::Verbatim(payload) => {
-            let trait_item_like = parse::<TraitFnLike>(proc_macro::TokenStream::from(payload.to_token_stream()))
-                .expect("proxy_impl");
+            let trait_item_like =
+                parse::<TraitFnLike>(proc_macro::TokenStream::from(payload.to_token_stream()))
+                    .expect("proxy_impl");
 
             ProxyImplItem::TraitFnLike(trait_item_like)
         }
@@ -124,7 +127,8 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
 
     let conv_return = conv_return.as_ref().and_then(get_meta_value_as_conf_usage);
 
-    let access_expr = access_expr.as_ref()
+    let access_expr = access_expr
+        .as_ref()
         .and_then(get_meta_value_as)
         .or(body.access_expr.clone())
         .unwrap_or_else(|| parse_as::<Expr>(&"self.inner"));
@@ -135,33 +139,41 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
                 None | Some(Visibility::Inherited) => &Visibility::Public(Pub::default()),
                 Some(vis) => vis,
             };
-            let Signature { ident, inputs, output, .. } = sig;
-            let invoke_inputs = inputs.iter()
+            let Signature {
+                ident,
+                inputs,
+                output,
+                ..
+            } = sig;
+            let invoke_inputs = inputs
+                .iter()
                 .filter(|input| !matches!(input, &FnArg::Receiver(_)))
-                .map(|arg| {
-                    match arg {
-                        FnArg::Receiver(receiver) => unimplemented!("FnArg::Receiver({})", receiver.to_token_stream().to_string()),
-                        FnArg::Typed(PatType { attrs, pat, ty, .. }) => {
-                            let (matched, _) = separate_attr_by_name(attrs, ATTR_INCLUDES);
+                .map(|arg| match arg {
+                    FnArg::Receiver(receiver) => unimplemented!(
+                        "FnArg::Receiver({})",
+                        receiver.to_token_stream().to_string()
+                    ),
+                    FnArg::Typed(PatType { attrs, pat, ty, .. }) => {
+                        let (matched, _) = separate_attr_by_name(attrs, ATTR_INCLUDES);
 
-                            map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_IMPL) => {
-                                META_CONV_ARG => conv_arg,
-                                META_SKIP_CONV_ARG => skip_conv_arg,
-                            });
+                        map_meta_to_local!(&get_metas_by_attr_name(&matched, ATTR_PROXY_IMPL) => {
+                            META_CONV_ARG => conv_arg,
+                            META_SKIP_CONV_ARG => skip_conv_arg,
+                        });
 
-                            let name = match pat.as_ref() {
-                                Pat::Ident(PatIdent { ident, .. }) => ident,
-                                _ => unimplemented!("on quote_proxy_impl_item"),
-                            };
+                        let name = match pat.as_ref() {
+                            Pat::Ident(PatIdent { ident, .. }) => ident,
+                            _ => unimplemented!("on quote_proxy_impl_item"),
+                        };
 
-                            if skip_conv_arg.is_some() {
-                                return quote! { #name };
-                            }
-
-                            let conv_arg = conv_arg.and_then(|meta| get_meta_value_as_conf_usage(&meta));
-
-                            quote_option_conf_usage(name, &conv_arg)
+                        if skip_conv_arg.is_some() {
+                            return quote! { #name };
                         }
+
+                        let conv_arg =
+                            conv_arg.and_then(|meta| get_meta_value_as_conf_usage(&meta));
+
+                        quote_option_conf_usage(name, &conv_arg)
                     }
                 })
                 .collect::<Vec<_>>();
@@ -173,23 +185,22 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
                 ReturnType::Type(_, _) => quote_option_conf_usage(&stmt, &conv_return),
             };
 
-            let proxy_inputs = inputs.iter()
-                .map(|fn_arg| {
-                    match fn_arg {
-                        FnArg::Receiver(receiver) => {
-                            let (_, surplus) = separate_attr_by_name(&receiver.attrs, ATTR_INCLUDES);
-                            FnArg::Receiver(Receiver {
-                                attrs: surplus,
-                                ..receiver.clone()
-                            })
-                        }
-                        FnArg::Typed(pat_type) => {
-                            let (_, surplus) = separate_attr_by_name(&pat_type.attrs, ATTR_INCLUDES);
-                            FnArg::Typed(PatType {
-                                attrs: surplus,
-                                ..pat_type.clone()
-                            })
-                        }
+            let proxy_inputs = inputs
+                .iter()
+                .map(|fn_arg| match fn_arg {
+                    FnArg::Receiver(receiver) => {
+                        let (_, surplus) = separate_attr_by_name(&receiver.attrs, ATTR_INCLUDES);
+                        FnArg::Receiver(Receiver {
+                            attrs: surplus,
+                            ..receiver.clone()
+                        })
+                    }
+                    FnArg::Typed(pat_type) => {
+                        let (_, surplus) = separate_attr_by_name(&pat_type.attrs, ATTR_INCLUDES);
+                        FnArg::Typed(PatType {
+                            attrs: surplus,
+                            ..pat_type.clone()
+                        })
                     }
                 })
                 .collect::<Vec<_>>();
@@ -215,20 +226,31 @@ fn quote_proxy_impl_item(body: &ProxyImpl, item: &ProxyImplItem) -> TokenStream 
 
 impl ToTokens for ProxyImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, items, reserved_attrs, .. } = self;
+        let Self {
+            input,
+            items,
+            reserved_attrs,
+            ..
+        } = self;
 
         let ItemImpl { self_ty, .. } = input;
 
         let napi_metas = Vec::<TokenStream>::new();
 
-        let items: Vec<_> = items.iter().map(|item| quote_proxy_impl_item(self, item)).collect();
+        let items: Vec<_> = items
+            .iter()
+            .map(|item| quote_proxy_impl_item(self, item))
+            .collect();
 
-        append_to_tokens(tokens, quote! {
-            #( #reserved_attrs )*
-            #[napi( #( #napi_metas )* )]
-            impl #self_ty {
-                #( #items )*
-            }
-        });
+        append_to_tokens(
+            tokens,
+            quote! {
+                #( #reserved_attrs )*
+                #[napi( #( #napi_metas )* )]
+                impl #self_ty {
+                    #( #items )*
+                }
+            },
+        );
     }
 }

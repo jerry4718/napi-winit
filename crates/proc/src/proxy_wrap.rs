@@ -1,15 +1,20 @@
 use crate::{
-    conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert},
+    conf_convert::{ConfConvert, NormalConfConvert, parse_conf_convert},
     conf_usage::{get_meta_value_as_conf_usage, quote_option_conf_usage},
-    utils::{append_to_tokens, get_ident_optional, get_metas_by_attr_name, get_type_ty_or, parse_metas, separate_attr_by_name, to_case},
+    utils::{
+        append_to_tokens, define_const_str, get_ident_optional, get_metas_by_attr_name,
+        get_type_ty_or, parse_metas, separate_attr_by_name, to_case,
+    },
 };
 use convert_case::Case;
-use macros::define_const_str;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::{parse_macro_input, Attribute, Field, Ident, ItemStruct, LitStr, Meta, Type};
+use quote::{ToTokens, format_ident, quote, quote_spanned};
+use syn::{Attribute, Field, Ident, ItemStruct, LitStr, Meta, Type, parse_macro_input};
 
-pub(crate) fn proxy_wrap(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub(crate) fn proxy_wrap(
+    attrs: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
 
     let macro_input = parse_macro_input!(input as ItemStruct);
@@ -89,17 +94,34 @@ fn parse_proxy_wrap(metas: &Vec<Meta>, item_struct: &ItemStruct) -> ProxyWrap {
 impl ToTokens for ProxyWrap {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            input, reserved_attrs, origin_type, field_name,
-            no_getter: root_no_getter, no_setter: root_no_setter, conf_convert,
-            use_non_null, use_box,
+            input,
+            reserved_attrs,
+            origin_type,
+            field_name,
+            no_getter: root_no_getter,
+            no_setter: root_no_setter,
+            conf_convert,
+            use_non_null,
+            use_box,
         } = self;
 
-        let ItemStruct { ident, vis, fields, .. } = input;
-        let NormalConfConvert { skip_from_origin, skip_into_origin, skip_to_js, skip_from_js } = conf_convert.normal();
+        let ItemStruct {
+            ident, vis, fields, ..
+        } = input;
+        let NormalConfConvert {
+            skip_from_origin,
+            skip_into_origin,
+            skip_to_js,
+            skip_from_js,
+        } = conf_convert.normal();
 
         let mut napi_metas = Vec::new();
-        if skip_to_js { napi_metas.push(quote! {object_to_js = false}) }
-        if skip_from_js { napi_metas.push(quote! {object_from_js = false}) }
+        if skip_to_js {
+            napi_metas.push(quote! {object_to_js = false})
+        }
+        if skip_from_js {
+            napi_metas.push(quote! {object_from_js = false})
+        }
 
         let wrapped_type = match use_non_null {
             true => quote! { std::ptr::NonNull<#origin_type> },
@@ -125,15 +147,18 @@ impl ToTokens for ProxyWrap {
             (None, true) => quote! { unsafe { self.0.as_mut() } },
         };
 
-        append_to_tokens(tokens, quote! {
-            #[napi( #( #napi_metas ),* )]
-            #( #reserved_attrs )*
-            #vis struct #ident #wrap_body
-        });
+        append_to_tokens(
+            tokens,
+            quote! {
+                #[napi( #( #napi_metas ),* )]
+                #( #reserved_attrs )*
+                #vis struct #ident #wrap_body
+            },
+        );
 
         if !fields.is_empty() {
-            let fields = fields.iter().zip(0..fields.len())
-                .map(|(field, fdx)| {
+            let fields = fields.iter().enumerate()
+                .map(|(fdx, field)| {
                     let Field { attrs, ident: origin_ident, ty, .. } = field;
 
                     let pat_pos = origin_ident.clone()
@@ -145,7 +170,7 @@ impl ToTokens for ProxyWrap {
 
                     let js_name_string = to_case(quote! { #ident }.to_string(), Case::Camel);
 
-                    let js_name = LitStr::new(&*js_name_string, ident.span());
+                    let js_name = LitStr::new(&js_name_string, ident.span());
 
                     let (matched, _) = separate_attr_by_name(attrs, ATTR_INCLUDES);
 
@@ -196,12 +221,15 @@ impl ToTokens for ProxyWrap {
                     fns
                 })
                 .collect::<Vec<_>>();
-            append_to_tokens(tokens, quote! {
-                #[napi]
-                impl #ident {
-                    #( #fields )*
-                }
-            });
+            append_to_tokens(
+                tokens,
+                quote! {
+                    #[napi]
+                    impl #ident {
+                        #( #fields )*
+                    }
+                },
+            );
         }
 
         if !skip_from_origin {
@@ -210,13 +238,16 @@ impl ToTokens for ProxyWrap {
                 None => quote! { #ident (value) },
             };
 
-            append_to_tokens(tokens, quote! {
-                impl From<#origin_type> for #ident {
-                    fn from(value: #origin_type) -> Self {
-                        #from_code
+            append_to_tokens(
+                tokens,
+                quote! {
+                    impl From<#origin_type> for #ident {
+                        fn from(value: #origin_type) -> Self {
+                            #from_code
+                        }
                     }
-                }
-            });
+                },
+            );
         }
 
         if !skip_into_origin {
@@ -225,13 +256,16 @@ impl ToTokens for ProxyWrap {
                 None => quote! { self.0 },
             };
 
-            append_to_tokens(tokens, quote! {
-                impl Into<#origin_type> for #ident {
-                    fn into(self) -> #origin_type {
-                        #into_code
+            append_to_tokens(
+                tokens,
+                quote! {
+                    impl Into<#origin_type> for #ident {
+                        fn into(self) -> #origin_type {
+                            #into_code
+                        }
                     }
-                }
-            });
+                },
+            );
         }
     }
 }

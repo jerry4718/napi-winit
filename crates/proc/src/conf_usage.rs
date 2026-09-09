@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned, ToTokens};
-use syn::{Expr, ExprBlock, ExprCall, ExprClosure, ExprMethodCall, ExprPath, Meta, MetaNameValue};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::spanned::Spanned;
+use syn::{Expr, ExprBlock, ExprCall, ExprClosure, ExprMethodCall, ExprPath, Meta, MetaNameValue};
 
 pub(crate) enum ConfUsage {
     Path(ExprPath),
@@ -12,7 +12,10 @@ pub(crate) enum ConfUsage {
     Call(ExprCall),
 }
 
-pub(crate) fn quote_option_conf_usage(from: &dyn ToTokens, option: &Option<ConfUsage>) -> TokenStream {
+pub(crate) fn quote_option_conf_usage(
+    from: &dyn ToTokens,
+    option: &Option<ConfUsage>,
+) -> TokenStream {
     match option {
         Some(conf_usage) => quote_conf_usage(from, conf_usage),
         None => quote! { #from.into() },
@@ -26,16 +29,16 @@ pub(crate) fn quote_conf_usage(from: &dyn ToTokens, conf_usage: &ConfUsage) -> T
         ConfUsage::MethodCall(method_call) => quote_spanned! { method_call.span() => #method_call },
         ConfUsage::Block(block) => quote_spanned! { block.span() => #block },
         ConfUsage::Call(call) => quote_spanned! { call.span() => #call(#from) },
-        ConfUsage::Pipe(usages) => {
-            usages.iter()
-                .fold(from.to_token_stream(), |ts, usage| quote_conf_usage(&ts, usage))
-        }
+        ConfUsage::Pipe(usages) => usages.iter().fold(from.to_token_stream(), |ts, usage| {
+            quote_conf_usage(&ts, usage)
+        }),
     }
 }
 
 pub(crate) fn get_meta_value_as_conf_usage(meta: &Meta) -> Option<ConfUsage> {
-    let Meta::NameValue(MetaNameValue { value, .. }) = meta
-    else { return None };
+    let Meta::NameValue(MetaNameValue { value, .. }) = meta else {
+        return None;
+    };
 
     Some(expr_to_conf_usage(value))
 }

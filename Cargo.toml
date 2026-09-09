@@ -8,13 +8,9 @@ version = "0.2.101"
 crate-type = ["cdylib"]
 
 [workspace]
-members = [
-    "crates/macros",
-    "crates/proc"
-]
+members = [ "crates/proc" ]
 
 [workspace.dependencies]
-macros = { path = "crates/macros" }
 
 [dependencies]
 proc = { path = "crates/proc" }

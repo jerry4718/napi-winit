@@ -1,16 +1,14 @@
 #![allow(unused_imports, unused_variables, dead_code)]
 
-use macros::for_proc;
-
-mod utils;
-mod conf_fields;
 mod conf_convert;
+mod conf_fields;
+mod conf_usage;
 mod proxy_enum;
+mod proxy_flags;
+mod proxy_impl;
 mod proxy_struct;
 mod proxy_wrap;
-mod proxy_impl;
-mod proxy_flags;
-mod conf_usage;
+mod utils;
 
 use proc_macro::TokenStream;
 

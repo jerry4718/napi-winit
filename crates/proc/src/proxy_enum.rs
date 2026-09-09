@@ -1,21 +1,24 @@
-use std::{
-    fmt::format,
-    mem::transmute,
-};
 use crate::{
-    utils::{append_to_tokens, get_meta_value_as, get_type_ty_or, parse_metas, separate_attr_by_name},
-    conf_convert::{parse_conf_convert, ConfConvert, NormalConfConvert},
-    conf_fields::{parse_conf_fields, quote_conf_fields, ConfField, ConfFields, Kind, With},
+    conf_convert::{ConfConvert, NormalConfConvert, parse_conf_convert},
+    conf_fields::{ConfField, ConfFields, Kind, With, parse_conf_fields, quote_conf_fields},
     conf_usage::quote_option_conf_usage,
-    utils::parse_as,
+    utils::{
+        append_to_tokens, define_const_str, get_meta_value_as, get_metas_by_attr_name,
+        get_type_ty_or, map_meta_to_local, parse_as, parse_metas, separate_attr_by_name,
+    },
 };
-use macros::{define_const_str, map_meta_to_local};
 use proc_macro2::{Ident, Literal, TokenStream};
-use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::{parse_macro_input, spanned::Spanned, Attribute, BinOp, Expr, ExprBinary, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum, LitInt, Meta, Token, Type, Variant, Error, Path};
-use crate::utils::get_metas_by_attr_name;
+use quote::{ToTokens, format_ident, quote, quote_spanned};
+use std::{fmt::format, mem::transmute};
+use syn::{
+    Attribute, BinOp, Error, Expr, ExprBinary, Field, Fields, FieldsNamed, FieldsUnnamed, ItemEnum,
+    LitInt, Meta, Path, Token, Type, Variant, parse_macro_input, spanned::Spanned,
+};
 
-pub(crate) fn proxy_enum(attrs: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub(crate) fn proxy_enum(
+    attrs: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let metas = parse_metas(attrs);
     let item_enum = parse_macro_input!(input as ItemEnum);
 
@@ -57,8 +60,9 @@ enum ProxyVariants {
     Constants(Vec<ProxyVariant>),
 }
 
-fn get_repr_type(attrs: &Vec<Attribute>) -> Type {
-    get_metas_by_attr_name(attrs, "repr").first()
+fn get_repr_type(attrs: &[Attribute]) -> Type {
+    get_metas_by_attr_name(attrs, "repr")
+        .first()
         .map(Meta::path)
         .and_then(Path::get_ident)
         .map(|ident| parse_as::<Type>(ident))
@@ -66,11 +70,19 @@ fn get_repr_type(attrs: &Vec<Attribute>) -> Type {
 }
 
 fn parse_proxy_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> Result<ProxyEnum, Error> {
-    let ItemEnum { attrs, ident, variants, .. } = item_enum;
+    let ItemEnum {
+        attrs,
+        ident,
+        variants,
+        ..
+    } = item_enum;
 
     let (matched, surplus) = separate_attr_by_name(attrs, ATTR_INCLUDES);
     if matches!(matched.len(), n if n > 0) {
-        return Err(Error::new(item_enum.span(), "so many proxy_enum attributes"));
+        return Err(Error::new(
+            item_enum.span(),
+            "so many proxy_enum attributes",
+        ));
     }
 
     map_meta_to_local!(&metas => {
@@ -80,13 +92,20 @@ fn parse_proxy_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> Result<ProxyEnum
         META_CODE_NAME => code_name,
     });
 
-    let code_name = code_name.as_ref()
+    let code_name = code_name
+        .as_ref()
         .and_then(get_meta_value_as::<Ident>)
-        .map(|code_name| ConfCode { code_name, code_type: get_repr_type(&surplus) })
+        .map(|code_name| ConfCode {
+            code_name,
+            code_type: get_repr_type(&surplus),
+        })
         .or_else(|| {
-            let has_discriminant = variants.iter()
+            let has_discriminant = variants
+                .iter()
                 .any(|Variant { discriminant, .. }| discriminant.is_some());
-            if !has_discriminant { return None; }
+            if !has_discriminant {
+                return None;
+            }
 
             Some(ConfCode {
                 code_name: format_ident!("discriminant"),
@@ -94,7 +113,8 @@ fn parse_proxy_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> Result<ProxyEnum
             })
         });
 
-    let proxy_variants = parse_proxy_variants(string_enum.is_some(), &code_name, variants.iter().collect())?;
+    let proxy_variants =
+        parse_proxy_variants(string_enum.is_some(), &code_name, variants.iter().collect())?;
 
     Ok(ProxyEnum {
         input: item_enum.clone(),
@@ -111,28 +131,52 @@ fn parse_proxy_enum(metas: &Vec<Meta>, item_enum: &ItemEnum) -> Result<ProxyEnum
 impl ToTokens for ProxyEnum {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            input, reserved_attrs, proxy_variants,
-            origin_type, string_enum, non_exhaustive, conf_convert, conf_code
+            input,
+            reserved_attrs,
+            proxy_variants,
+            origin_type,
+            string_enum,
+            non_exhaustive,
+            conf_convert,
+            conf_code,
         } = self;
 
         let ItemEnum { ident, vis, .. } = input;
-        let NormalConfConvert { skip_from_origin, skip_into_origin, skip_to_js, skip_from_js } = conf_convert.normal();
+        let NormalConfConvert {
+            skip_from_origin,
+            skip_into_origin,
+            skip_to_js,
+            skip_from_js,
+        } = conf_convert.normal();
 
         let mut napi_metas = Vec::new();
-        if *string_enum { napi_metas.push(quote! {string_enum}) }
-        if skip_to_js { napi_metas.push(quote! {object_to_js = false}) }
-        if skip_from_js { napi_metas.push(quote! {object_from_js = false}) }
+        if *string_enum {
+            napi_metas.push(quote! {string_enum})
+        }
+        if skip_to_js {
+            napi_metas.push(quote! {object_to_js = false})
+        }
+        if skip_from_js {
+            napi_metas.push(quote! {object_from_js = false})
+        }
 
-        let non_exhaustive_variant = if !(*non_exhaustive) { vec![] } else { vec![quote! { NonExhaustive }] };
+        let non_exhaustive_variant = if !(*non_exhaustive) {
+            vec![]
+        } else {
+            vec![quote! { NonExhaustive }]
+        };
 
-        append_to_tokens(tokens, quote_spanned! { input.span() =>
-            #[napi( #( #napi_metas ),* )]
-            #( #reserved_attrs )*
-            #vis enum #ident {
-                #( #proxy_variants, )*
-                #( #non_exhaustive_variant, )*
-            }
-        });
+        append_to_tokens(
+            tokens,
+            quote_spanned! { input.span() =>
+                #[napi( #( #napi_metas ),* )]
+                #( #reserved_attrs )*
+                #vis enum #ident {
+                    #( #proxy_variants, )*
+                    #( #non_exhaustive_variant, )*
+                }
+            },
+        );
 
         if !skip_from_origin {
             let conv_from: Vec<_> = proxy_variants
@@ -154,21 +198,27 @@ impl ToTokens for ProxyEnum {
                 vec![quote! { _ => Self::NonExhaustive }]
             };
 
-            append_to_tokens(tokens, quote! {
-                impl From<#origin_type> for #ident {
-                    fn from(value: #origin_type) -> Self {
-                        match value {
-                            #( #conv_from, )*
-                            #( #non_exhaustive_from, )*
+            append_to_tokens(
+                tokens,
+                quote! {
+                    impl From<#origin_type> for #ident {
+                        fn from(value: #origin_type) -> Self {
+                            match value {
+                                #( #conv_from, )*
+                                #( #non_exhaustive_from, )*
+                            }
                         }
                     }
-                }
-            });
+                },
+            );
         }
 
         if !skip_into_origin {
-            let conv =
-                if !*string_enum { conv_structure_into } else { conv_unit_into };
+            let conv = if !*string_enum {
+                conv_structure_into
+            } else {
+                conv_unit_into
+            };
             let conv_into: Vec<_> = proxy_variants
                 .iter()
                 .map(|variant| {
@@ -185,46 +235,75 @@ impl ToTokens for ProxyEnum {
             let non_exhaustive_into = if !(*non_exhaustive) {
                 vec![]
             } else {
-                vec![quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) }]
+                vec![
+                    quote! { Self::NonExhaustive => unreachable!(stringify!(#ident::NonExhaustive)) },
+                ]
             };
 
-            append_to_tokens(tokens, quote! {
-                impl Into<#origin_type> for #ident {
-                    fn into(self) -> #origin_type {
-                        match self {
-                            #( #conv_into, )*
-                            #( #non_exhaustive_into, )*
+            append_to_tokens(
+                tokens,
+                quote! {
+                    impl Into<#origin_type> for #ident {
+                        fn into(self) -> #origin_type {
+                            match self {
+                                #( #conv_into, )*
+                                #( #non_exhaustive_into, )*
+                            }
                         }
                     }
-                }
-            });
+                },
+            );
         }
     }
 }
 
 fn conv_structure_from(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
-    let ProxyVariant { input: Variant { ident, .. }, conf_fields, .. } = variant;
+    let ProxyVariant {
+        input: Variant { ident, .. },
+        conf_fields,
+        ..
+    } = variant;
     let dispose = quote_conf_fields(
-        conf_fields, Kind::Dispose, With::Origin,
+        conf_fields,
+        Kind::Dispose,
+        With::Origin,
         |ConfField { field_ident, .. }| quote! { #field_ident },
     );
 
     let compose = quote_conf_fields(
-        conf_fields, Kind::Compose, With::Proxy,
-        |ConfField { field_ident, from_origin, .. }| quote_option_conf_usage(field_ident, from_origin),
+        conf_fields,
+        Kind::Compose,
+        With::Proxy,
+        |ConfField {
+             field_ident,
+             from_origin,
+             ..
+         }| quote_option_conf_usage(field_ident, from_origin),
     );
     quote! { #origin_type::#ident #dispose => Self::#ident #compose }
 }
 
 fn conv_structure_into(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
-    let ProxyVariant { input: Variant { ident, .. }, conf_fields, .. } = variant;
+    let ProxyVariant {
+        input: Variant { ident, .. },
+        conf_fields,
+        ..
+    } = variant;
     let dispose = quote_conf_fields(
-        conf_fields, Kind::Dispose, With::Proxy,
+        conf_fields,
+        Kind::Dispose,
+        With::Proxy,
         |ConfField { field_ident, .. }| quote! { #field_ident },
     );
     let compose = quote_conf_fields(
-        conf_fields, Kind::Compose, With::Origin,
-        |ConfField { field_ident, into_origin, .. }| quote_option_conf_usage(field_ident, into_origin),
+        conf_fields,
+        Kind::Compose,
+        With::Origin,
+        |ConfField {
+             field_ident,
+             into_origin,
+             ..
+         }| quote_option_conf_usage(field_ident, into_origin),
     );
     quote! { Self::#ident #dispose => #origin_type::#ident #compose }
 }
@@ -232,7 +311,10 @@ fn conv_structure_into(variant: &ProxyVariant, origin_type: &Type) -> TokenStrea
 fn conv_const_from(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
     let ProxyVariant {
         input: Variant { ident, fields, .. },
-        conf_code: Some(ConfCode { code_name, code_type }),
+        conf_code: Some(ConfCode {
+            code_name,
+            code_type,
+        }),
         ..
     } = variant
     else {
@@ -262,12 +344,18 @@ fn conv_const_into(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
 }
 
 fn conv_unit_from(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
-    let ProxyVariant { input: Variant { ident, .. }, .. } = variant;
+    let ProxyVariant {
+        input: Variant { ident, .. },
+        ..
+    } = variant;
     quote! { #origin_type::#ident => Self::#ident }
 }
 
 fn conv_unit_into(variant: &ProxyVariant, origin_type: &Type) -> TokenStream {
-    let ProxyVariant { input: Variant { ident, .. }, .. } = variant;
+    let ProxyVariant {
+        input: Variant { ident, .. },
+        ..
+    } = variant;
     quote! { Self::#ident => #origin_type::#ident }
 }
 
@@ -279,8 +367,13 @@ struct ProxyVariant {
     pub conf_code: Option<ConfCode>,
 }
 
-fn parse_proxy_variants(string_enum: bool, code_info: &Option<ConfCode>, variants: Vec<&Variant>) -> Result<Vec<ProxyVariant>, Error> {
-    let proxy_variants = variants.iter()
+fn parse_proxy_variants(
+    string_enum: bool,
+    code_info: &Option<ConfCode>,
+    variants: Vec<&Variant>,
+) -> Result<Vec<ProxyVariant>, Error> {
+    let proxy_variants = variants
+        .iter()
         .map(|variant| {
             let Variant { attrs, fields, .. } = variant;
 
@@ -301,37 +394,62 @@ fn parse_proxy_variants(string_enum: bool, code_info: &Option<ConfCode>, variant
 
 impl ToTokens for ProxyVariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { input, reserved_attrs, conf_fields, string_enum, conf_code, .. } = self;
-        let Variant { ident, discriminant, .. } = input;
+        let Self {
+            input,
+            reserved_attrs,
+            conf_fields,
+            string_enum,
+            conf_code,
+            ..
+        } = self;
+        let Variant {
+            ident,
+            discriminant,
+            ..
+        } = input;
         let ConfFields { fields, .. } = conf_fields;
 
-        if let Some(ConfCode { code_name, code_type, .. }) = conf_code {
+        if let Some(ConfCode {
+            code_name,
+            code_type,
+            ..
+        }) = conf_code
+        {
             let mut napi_metas = Vec::new();
 
             if let Some((_, Expr::Lit(lit))) = discriminant {
-                let expr = Literal::string(&*lit.into_token_stream().to_string());
+                let expr = Literal::string(&lit.into_token_stream().to_string());
                 napi_metas.push(quote! { ts_type = #expr });
             }
 
-            append_to_tokens(tokens, quote_spanned! { input.span() =>
-                #( #reserved_attrs )* #ident {
-                    #[napi( #( #napi_metas ),* )]
-                    #code_name: #code_type
-                }
-            });
+            append_to_tokens(
+                tokens,
+                quote_spanned! { input.span() =>
+                    #( #reserved_attrs )* #ident {
+                        #[napi( #( #napi_metas ),* )]
+                        #code_name: #code_type
+                    }
+                },
+            );
 
             return;
         }
 
         if *string_enum {
-            append_to_tokens(tokens, quote_spanned! { input.span() =>
-                #( #reserved_attrs )* #ident
-            });
+            append_to_tokens(
+                tokens,
+                quote_spanned! { input.span() =>
+                    #( #reserved_attrs )* #ident
+                },
+            );
             return;
         }
-        append_to_tokens(tokens, quote_spanned! { input.span() =>
-            #( #reserved_attrs )*
-            #ident { #( #fields ),* }
-        });
+        append_to_tokens(
+            tokens,
+            quote_spanned! { input.span() =>
+                #( #reserved_attrs )*
+                #ident { #( #fields ),* }
+            },
+        );
     }
 }
