@@ -1,7 +1,9 @@
-use napi::bindgen_prelude::*;
-use std::time::{Duration as StdDuration, Instant as StdInstant, SystemTime};
 use crate::napi_reason;
-use std::sync::OnceLock;
+use napi::bindgen_prelude::*;
+use std::{
+    sync::OnceLock,
+    time::{Duration as StdDuration, Instant as StdInstant, SystemTime},
+};
 
 struct TimeAnchor {
     instant: StdInstant,
@@ -21,7 +23,9 @@ fn anchor() -> &'static TimeAnchor {
 // saturating them to zero (which `as u64` would do).
 pub(crate) fn try_std_duration(value: &Duration) -> Result<StdDuration> {
     (value.secs.is_finite() && value.secs >= 0.0)
-        .then(|| StdDuration::from_secs(value.secs as u64) + StdDuration::from_nanos(value.nanos as u64))
+        .then(|| {
+            StdDuration::from_secs(value.secs as u64) + StdDuration::from_nanos(value.nanos as u64)
+        })
         .ok_or_else(|| napi_reason!("duration must be a non-negative finite number of seconds"))
 }
 
@@ -89,7 +93,9 @@ mod duration {
     #[napi]
     pub fn from_nanos(nanos: f64) -> Result<Duration> {
         validate_non_negative_f64(nanos)?;
-        Ok(Duration::from(StdDuration::from_nanos(nanos.round() as u64)))
+        Ok(Duration::from(
+            StdDuration::from_nanos(nanos.round() as u64),
+        ))
     }
 
     #[napi]
@@ -130,7 +136,10 @@ mod duration {
 
     impl From<StdDuration> for Duration {
         fn from(value: StdDuration) -> Self {
-            Duration { secs: value.as_secs() as f64, nanos: value.subsec_nanos() }
+            Duration {
+                secs: value.as_secs() as f64,
+                nanos: value.subsec_nanos(),
+            }
         }
     }
 
@@ -161,7 +170,10 @@ mod instant {
     #[napi]
     pub fn now() -> Instant {
         let duration = StdInstant::now().duration_since(anchor().instant);
-        Instant { secs: duration.as_secs() as f64, nanos: duration.subsec_nanos() }
+        Instant {
+            secs: duration.as_secs() as f64,
+            nanos: duration.subsec_nanos(),
+        }
     }
 
     #[napi]
@@ -208,13 +220,18 @@ mod instant {
         let other = try_std_instant(&other)?;
         base.checked_duration_since(other)
             .map(Duration::from)
-            .ok_or_else(|| napi_reason!("the subtracted instant is not earlier than the base instant"))
+            .ok_or_else(|| {
+                napi_reason!("the subtracted instant is not earlier than the base instant")
+            })
     }
 
     impl From<StdInstant> for Instant {
         fn from(value: StdInstant) -> Self {
             let duration = value.duration_since(anchor().instant);
-            Instant { secs: duration.as_secs() as f64, nanos: duration.subsec_nanos() }
+            Instant {
+                secs: duration.as_secs() as f64,
+                nanos: duration.subsec_nanos(),
+            }
         }
     }
 
@@ -224,7 +241,8 @@ mod instant {
             // `try_std_instant` first, so an out-of-range `secs` never reaches this path.
             // The macro-generated `Into<origin>` conversions depend on this impl staying
             // infallible.
-            let duration = StdDuration::from_secs(value.secs as u64) + StdDuration::from_nanos(value.nanos as u64);
+            let duration = StdDuration::from_secs(value.secs as u64)
+                + StdDuration::from_nanos(value.nanos as u64);
             anchor().instant + duration
         }
     }

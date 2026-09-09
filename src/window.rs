@@ -1,18 +1,21 @@
 use napi::bindgen_prelude::*;
 
 use winit::{
-    monitor::{MonitorHandle as OriginMonitorHandle, VideoMode as OriginVideoModeHandle},
     monitor::Fullscreen as OriginFullscreen,
+    monitor::{MonitorHandle as OriginMonitorHandle, VideoMode as OriginVideoModeHandle},
 };
 
 use proc::{proxy_enum, proxy_flags, proxy_impl, proxy_wrap};
 
 use crate::{
-    utils::helpers::{option_map, option_into, pipe, ref_clone_into, result_map, result_into, result_err_reason, vec_map, vec_map_into},
     cursor::{Cursor, CursorIcon},
-    dpi::{try_std_position, try_std_size, Position, Size},
+    dpi::{Position, Size, try_std_position, try_std_size},
     monitor::{MonitorHandle, VideoMode},
     napi_reason,
+    utils::helpers::{
+        option_into, option_map, pipe, ref_clone_into, result_err_reason, result_into, result_map,
+        vec_map, vec_map_into,
+    },
 };
 
 #[napi]
@@ -80,11 +83,26 @@ impl TryFrom<WindowAttributes> for winit::window::WindowAttributes {
     type Error = napi::Error;
 
     fn try_from(value: WindowAttributes) -> Result<Self> {
-        let surface_size = value.surface_size.map(|size| try_std_size(&size)).transpose()?;
-        let min_surface_size = value.min_surface_size.map(|size| try_std_size(&size)).transpose()?;
-        let max_surface_size = value.max_surface_size.map(|size| try_std_size(&size)).transpose()?;
-        let position = value.position.map(|position| try_std_position(&position)).transpose()?;
-        let surface_resize_increments = value.surface_resize_increments.map(|size| try_std_size(&size)).transpose()?;
+        let surface_size = value
+            .surface_size
+            .map(|size| try_std_size(&size))
+            .transpose()?;
+        let min_surface_size = value
+            .min_surface_size
+            .map(|size| try_std_size(&size))
+            .transpose()?;
+        let max_surface_size = value
+            .max_surface_size
+            .map(|size| try_std_size(&size))
+            .transpose()?;
+        let position = value
+            .position
+            .map(|position| try_std_position(&position))
+            .transpose()?;
+        let surface_resize_increments = value
+            .surface_resize_increments
+            .map(|size| try_std_size(&size))
+            .transpose()?;
 
         let attrs = winit::window::WindowAttributes::default()
             .with_resizable(value.resizable)
@@ -120,7 +138,7 @@ impl TryFrom<WindowAttributes> for winit::window::WindowAttributes {
         };
 
         let attrs = match value.fullscreen {
-            Some(fullscreen) => attrs.with_fullscreen(Some(fullscreen.into())),
+            Some(fullscreen) => attrs.with_fullscreen(Some(fullscreen)),
             None => attrs,
         };
 
@@ -253,7 +271,7 @@ impl WindowAttributes {
 
     #[napi(ts_return_type = "this")]
     pub fn with_surface_resize_increments(&mut self, resize_increments: Size) -> &Self {
-        self.surface_resize_increments = Some(resize_increments.into());
+        self.surface_resize_increments = Some(resize_increments);
         self
     }
 
@@ -293,8 +311,13 @@ impl WindowAttributes {
 
 #[napi]
 pub enum Fullscreen {
-    Exclusive { monitor: Reference<MonitorHandle>, video_mode: Reference<VideoMode> },
-    Borderless { monitor: Option<Reference<MonitorHandle>> },
+    Exclusive {
+        monitor: Reference<MonitorHandle>,
+        video_mode: Reference<VideoMode>,
+    },
+    Borderless {
+        monitor: Option<Reference<MonitorHandle>>,
+    },
 }
 
 impl Fullscreen {
@@ -302,24 +325,38 @@ impl Fullscreen {
         match origin {
             OriginFullscreen::Exclusive(monitor, video_mode) => {
                 let monitor = MonitorHandle::from(monitor).into_reference(env)?;
-                VideoMode::from(video_mode).into_reference(env)
-                    .map(|video_mode| Self::Exclusive { monitor, video_mode })
+                VideoMode::from(video_mode)
+                    .into_reference(env)
+                    .map(|video_mode| Self::Exclusive {
+                        monitor,
+                        video_mode,
+                    })
             }
             OriginFullscreen::Borderless(monitor) => {
-                let Some(monitor) = monitor else { return Ok(Self::Borderless { monitor: None }) };
-                MonitorHandle::from(monitor).into_reference(env)
-                    .map(|monitor| Self::Borderless { monitor: Some(monitor) })
+                let Some(monitor) = monitor else {
+                    return Ok(Self::Borderless { monitor: None });
+                };
+                MonitorHandle::from(monitor)
+                    .into_reference(env)
+                    .map(|monitor| Self::Borderless {
+                        monitor: Some(monitor),
+                    })
             }
             _ => Err(napi_reason!("unknown fullscreen variant")),
         }
     }
     pub(crate) fn into_origin(self) -> OriginFullscreen {
         match self {
-            Self::Exclusive { monitor, video_mode } => {
+            Self::Exclusive {
+                monitor,
+                video_mode,
+            } => {
                 OriginFullscreen::Exclusive((*monitor).clone().into(), (*video_mode).clone().into())
             }
             Self::Borderless { monitor } => {
-                let Some(monitor) = monitor else { return OriginFullscreen::Borderless(None) };
+                let Some(monitor) = monitor else {
+                    return OriginFullscreen::Borderless(None);
+                };
                 OriginFullscreen::Borderless(Some((*monitor).clone().into()))
             }
         }
@@ -333,11 +370,18 @@ pub struct WindowButtons;
 
 #[proxy_enum(origin_type = winit::window::WindowLevel, string_enum)]
 #[derive(Clone)]
-pub enum WindowLevel { AlwaysOnBottom, Normal, AlwaysOnTop }
+pub enum WindowLevel {
+    AlwaysOnBottom,
+    Normal,
+    AlwaysOnTop,
+}
 
 #[proxy_enum(origin_type = winit::window::Theme, string_enum)]
 #[derive(Clone)]
-pub enum Theme { Light, Dark }
+pub enum Theme {
+    Light,
+    Dark,
+}
 
 /**[winit::window::ImeHint]*/
 #[napi(object)]
@@ -635,7 +679,10 @@ impl Window {
     #[proxy_impl(conv_return = option_into)]
     fn surface_resize_increments(&self) -> Option<Size>;
 
-    fn set_surface_resize_increments(&self, #[proxy_impl(conv_arg = option_into)] increments: Option<Size>);
+    fn set_surface_resize_increments(
+        &self,
+        #[proxy_impl(conv_arg = option_into)] increments: Option<Size>,
+    );
 }
 
 #[proxy_impl(access_expr = self.inner)]
@@ -654,7 +701,10 @@ impl Window {
 
     fn is_resizable(&self) -> bool;
 
-    fn set_enabled_buttons(&self, #[proxy_impl(conv_arg = buttons.clone().into())] buttons: &WindowButtons);
+    fn set_enabled_buttons(
+        &self,
+        #[proxy_impl(conv_arg = buttons.clone().into())] buttons: &WindowButtons,
+    );
 
     fn enabled_buttons(&self) -> WindowButtons;
 
@@ -675,13 +725,20 @@ impl Window {
 
     fn set_window_level(&self, level: WindowLevel);
 
-    fn set_window_icon(&self, #[proxy_impl(conv_arg = [ window_icon.map(|icon| icon.clone().into()) ])] window_icon: Option<&Icon>);
+    fn set_window_icon(
+        &self,
+        #[proxy_impl(conv_arg = [ window_icon.map(|icon| icon.clone().into()) ])]
+        window_icon: Option<&Icon>,
+    );
 
     fn focus_window(&self);
 
     fn has_focus(&self) -> bool;
 
-    fn request_user_attention(&self, #[proxy_impl(conv_arg = option_into)] request_type: Option<UserAttentionType>);
+    fn request_user_attention(
+        &self,
+        #[proxy_impl(conv_arg = option_into)] request_type: Option<UserAttentionType>,
+    );
 
     fn set_theme(&self, #[proxy_impl(conv_arg = option_into)] theme: Option<Theme>);
 
@@ -697,13 +754,16 @@ impl Window {
 impl Window {
     #[napi]
     pub fn set_fullscreen(&self, fullscreen: Option<Fullscreen>) {
-        self.inner.set_fullscreen(fullscreen.map(Fullscreen::into_origin));
+        self.inner
+            .set_fullscreen(fullscreen.map(Fullscreen::into_origin));
     }
 
     #[napi]
     pub fn fullscreen(&self, env: Env) -> Result<Option<Fullscreen>> {
-        let Some(fullscreen) = self.inner.fullscreen() else { return Ok(None) };
-        Fullscreen::from_origin(fullscreen, env).map(|inner| Some(inner))
+        let Some(fullscreen) = self.inner.fullscreen() else {
+            return Ok(None);
+        };
+        Fullscreen::from_origin(fullscreen, env).map(Some)
     }
 }
 
@@ -717,7 +777,10 @@ impl Window {
     fn set_cursor_position(&self, position: Position) -> Result<()>;
 
     #[proxy_impl(conv_return = [ result_err_reason ])]
-    fn set_cursor_grab(&self, #[proxy_impl(conv_arg = mode.into())] mode: CursorGrabMode) -> Result<()>;
+    fn set_cursor_grab(
+        &self,
+        #[proxy_impl(conv_arg = mode.into())] mode: CursorGrabMode,
+    ) -> Result<()>;
 
     fn set_cursor_visible(&self, visible: bool);
 
@@ -725,7 +788,10 @@ impl Window {
     fn drag_window(&self) -> Result<()>;
 
     #[proxy_impl(conv_return = [ result_err_reason ])]
-    fn drag_resize_window(&self, #[proxy_impl(conv_arg = direction.into())] direction: ResizeDirection) -> Result<()>;
+    fn drag_resize_window(
+        &self,
+        #[proxy_impl(conv_arg = direction.into())] direction: ResizeDirection,
+    ) -> Result<()>;
 
     fn show_window_menu(&self, position: Position);
 
@@ -746,10 +812,26 @@ impl Window {
 }
 
 #[proxy_enum(origin_type = winit::window::UserAttentionType, string_enum)]
-pub enum UserAttentionType { Critical, Informational }
+pub enum UserAttentionType {
+    Critical,
+    Informational,
+}
 
 #[proxy_enum(origin_type = winit::window::CursorGrabMode, string_enum)]
-pub enum CursorGrabMode { None, Confined, Locked }
+pub enum CursorGrabMode {
+    None,
+    Confined,
+    Locked,
+}
 
 #[proxy_enum(origin_type = winit::window::ResizeDirection, string_enum)]
-pub enum ResizeDirection { East, North, NorthEast, NorthWest, South, SouthEast, SouthWest, West }
+pub enum ResizeDirection {
+    East,
+    North,
+    NorthEast,
+    NorthWest,
+    South,
+    SouthEast,
+    SouthWest,
+    West,
+}

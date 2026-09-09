@@ -8,19 +8,19 @@ use std::sync::OnceLock;
 
 mod dpi;
 
-mod extra;
-mod event_loop;
-mod event;
-mod window;
-mod cursor;
-mod keyboard;
-mod monitor;
-mod r#macro;
 mod application;
+mod cursor;
+mod event;
+mod event_loop;
+mod extra;
+mod keyboard;
+mod r#macro;
+mod monitor;
 mod utils;
+mod window;
 
 pub static THREAD_POOL: OnceLock<threadpool::ThreadPool> = OnceLock::new();
 
 fn get_thread_pool() -> &'static threadpool::ThreadPool {
-    THREAD_POOL.get_or_init(|| threadpool::ThreadPool::default())
+    THREAD_POOL.get_or_init(threadpool::ThreadPool::default)
 }

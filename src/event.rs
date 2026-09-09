@@ -158,7 +158,13 @@ pub struct DataTransferId;
 
 /**[winit::event_loop::DndAction]*/
 #[proxy_enum(origin_type = winit::event_loop::DndAction, string_enum, non_exhaustive)]
-pub enum DndAction { Move, Copy, Link, Ask, Private }
+pub enum DndAction {
+    Move,
+    Copy,
+    Link,
+    Ask,
+    Private,
+}
 
 /**[winit::event::PointerKind]*/
 #[proxy_enum(origin_type = winit::event::PointerKind, skip_backward, non_exhaustive)]
@@ -204,11 +210,23 @@ pub enum ButtonSource {
 
 /**[winit::event::TabletToolKind]*/
 #[proxy_enum(origin_type = winit::event::TabletToolKind, string_enum, non_exhaustive)]
-pub enum TabletToolKind { Pen, Eraser, Brush, Pencil, Airbrush, Finger, Mouse, Lens }
+pub enum TabletToolKind {
+    Pen,
+    Eraser,
+    Brush,
+    Pencil,
+    Airbrush,
+    Finger,
+    Mouse,
+    Lens,
+}
 
 /**[winit::event::TabletToolButton]*/
 #[proxy_enum(origin_type = winit::event::TabletToolButton, string_enum, non_exhaustive)]
-pub enum TabletToolButton { Contact, Barrel }
+pub enum TabletToolButton {
+    Contact,
+    Barrel,
+}
 
 /**[winit::event::TabletToolTilt]*/
 #[proxy_struct(origin_type = winit::event::TabletToolTilt, object)]
@@ -294,7 +312,8 @@ pub enum Ime {
         #[proxy_enum(
             field_name = cursor,
             from_origin = option_map(|(begin, end)| PreeditCursorPosition { begin: begin as u32, end: end as u32 })
-        )] Option<PreeditCursorPosition>,
+        )]
+        Option<PreeditCursorPosition>,
     ),
     Commit(#[proxy_enum(field_name = commit)] String),
     Disabled,
@@ -355,7 +374,10 @@ pub enum MouseButton {
 
 #[proxy_enum(origin_type = winit::event::MouseScrollDelta, skip_backward, non_exhaustive)]
 pub enum MouseScrollDelta {
-    LineDelta(#[proxy_enum(field_name = x)] f64, #[proxy_enum(field_name = y)] f64),
+    LineDelta(
+        #[proxy_enum(field_name = x)] f64,
+        #[proxy_enum(field_name = y)] f64,
+    ),
     PixelDelta(#[proxy_enum(field_name = delta)] Position),
 }
 
@@ -400,16 +422,9 @@ pub enum Force {
 /**[winit::event::DeviceEvent]*/
 #[proxy_enum(origin_type = winit::event::DeviceEvent, skip_backward, non_exhaustive)]
 pub enum DeviceEvent {
-    PointerMotion {
-        delta: Position,
-    },
-    MouseWheel {
-        delta: MouseScrollDelta,
-    },
-    Button {
-        button: u32,
-        state: ElementState,
-    },
+    PointerMotion { delta: Position },
+    MouseWheel { delta: MouseScrollDelta },
+    Button { button: u32, state: ElementState },
     Key(#[proxy_enum(field_name = raw)] RawKeyEvent),
 }
 

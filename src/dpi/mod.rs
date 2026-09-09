@@ -1,16 +1,10 @@
-use winit::dpi::{
-    LogicalPosition as OriginLogicalPosition,
-    LogicalSize as OriginLogicalSize,
-    LogicalUnit as OriginLogicalUnit,
-    PhysicalPosition as OriginPhysicalPosition,
-    PhysicalSize as OriginPhysicalSize,
-    PhysicalUnit as OriginPhysicalUnit,
-    Pixel as OriginPixel,
-    PixelUnit as OriginPixelUnit,
-    Position as OriginPosition,
-    Size as OriginSize
-};
 use crate::napi_reason;
+use winit::dpi::{
+    LogicalPosition as OriginLogicalPosition, LogicalSize as OriginLogicalSize,
+    LogicalUnit as OriginLogicalUnit, PhysicalPosition as OriginPhysicalPosition,
+    PhysicalSize as OriginPhysicalSize, PhysicalUnit as OriginPhysicalUnit, Pixel as OriginPixel,
+    PixelUnit as OriginPixelUnit, Position as OriginPosition, Size as OriginSize,
+};
 
 #[napi]
 #[derive(Clone)]
@@ -70,7 +64,7 @@ impl From<Position> for OriginPosition {
                 x: i32::from_f64(x),
                 y: i32::from_f64(y),
             }),
-            Position::Logical { x, y } => OriginPosition::Logical(OriginLogicalPosition { x, y })
+            Position::Logical { x, y } => OriginPosition::Logical(OriginLogicalPosition { x, y }),
         }
     }
 }
@@ -136,7 +130,9 @@ impl From<Size> for OriginSize {
                 width: u32::from_f64(width),
                 height: u32::from_f64(height),
             }),
-            Size::Logical { width, height } => OriginSize::Logical(OriginLogicalSize { width, height })
+            Size::Logical { width, height } => {
+                OriginSize::Logical(OriginLogicalSize { width, height })
+            }
         }
     }
 }
@@ -165,7 +161,9 @@ where
     f64: From<T>,
 {
     fn from(OriginPhysicalUnit(count): OriginPhysicalUnit<T>) -> Self {
-        Self::Physical { count: f64::from(count) }
+        Self::Physical {
+            count: f64::from(count),
+        }
     }
 }
 impl<T> From<OriginLogicalUnit<T>> for PixelUnit
@@ -174,7 +172,9 @@ where
     f64: From<T>,
 {
     fn from(OriginLogicalUnit(count): OriginLogicalUnit<T>) -> Self {
-        Self::Logical { count: f64::from(count) }
+        Self::Logical {
+            count: f64::from(count),
+        }
     }
 }
 
@@ -190,8 +190,10 @@ impl From<OriginPixelUnit> for PixelUnit {
 impl From<PixelUnit> for OriginPixelUnit {
     fn from(value: PixelUnit) -> OriginPixelUnit {
         match value {
-            PixelUnit::Physical { count } => OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count))),
-            PixelUnit::Logical { count } => OriginPixelUnit::Logical(OriginLogicalUnit(count))
+            PixelUnit::Physical { count } => {
+                OriginPixelUnit::Physical(OriginPhysicalUnit(i32::from_f64(count)))
+            }
+            PixelUnit::Logical { count } => OriginPixelUnit::Logical(OriginLogicalUnit(count)),
         }
     }
 }

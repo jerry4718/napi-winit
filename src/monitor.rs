@@ -1,8 +1,8 @@
-use proc::{proxy_impl, proxy_wrap};
 use crate::{
     dpi::{Position, Size},
-    utils::helpers::{ref_clone_into, vec_map, option_map, to_option_string, option_into},
+    utils::helpers::{option_into, option_map, ref_clone_into, to_option_string, vec_map},
 };
+use proc::{proxy_impl, proxy_wrap};
 
 /**[winit::monitor::VideoMode]*/
 #[proxy_wrap(origin_type = winit::monitor::VideoMode)]
@@ -11,7 +11,6 @@ pub struct VideoMode;
 
 #[proxy_impl(access_expr = self.0)]
 impl VideoMode {
-
     /// Returns the resolution of this video mode.
     #[inline]
     pub fn size(&self) -> Size;
@@ -73,7 +72,6 @@ impl MonitorHandle {
     /// [`Window::scale_factor`]: crate::window::Window::scale_factor
     #[inline]
     pub fn scale_factor(&self) -> f64;
-
 
     /// Returns all fullscreen video modes supported by this monitor.
     ///

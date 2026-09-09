@@ -22,9 +22,9 @@ pub mod namespace {
 #[napi(js_name = "Extra")]
 mod rwh_06_impl {
     use super::namespace::*;
+    use crate::{napi_reason, window::Window};
     use napi::bindgen_prelude::*;
     use rwh_06::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
-    use crate::{ window::Window, napi_reason };
 
     // #[napi]
     pub fn get_rwh_06_options(window: &Window) -> Result<SurfaceOptions> {
@@ -40,13 +40,11 @@ mod rwh_06_impl {
 
         match (window_handle, display_handle) {
             #[cfg(target_os = "windows")]
-            (RawWindowHandle::Win32(window), _) => {
-                Ok(SurfaceOptions {
-                    system: SurfaceSystem::Win32,
-                    window_handle: BigInt::from(window.hwnd.unsigned_abs().get() as u64),
-                    display_handle: BigInt::from(window.hinstance.unwrap().unsigned_abs().get() as u64),
-                })
-            }
+            (RawWindowHandle::Win32(window), _) => Ok(SurfaceOptions {
+                system: SurfaceSystem::Win32,
+                window_handle: BigInt::from(window.hwnd.unsigned_abs().get() as u64),
+                display_handle: BigInt::from(window.hinstance.unwrap().unsigned_abs().get() as u64),
+            }),
             #[cfg(target_os = "macos")]
             (RawWindowHandle::AppKit(window), _) => {
                 use objc2::rc::Retained;
@@ -54,8 +52,11 @@ mod rwh_06_impl {
 
                 let ns_view = window.ns_view.as_ptr();
 
-                let ns_view: Retained<NSView> = unsafe { Retained::retain(ns_view.cast()) }.unwrap();
-                let ns_window: Retained<NSWindow> = ns_view.window().expect("view was not installed in a window");
+                let ns_view: Retained<NSView> =
+                    unsafe { Retained::retain(ns_view.cast()) }.unwrap();
+                let ns_window: Retained<NSWindow> = ns_view
+                    .window()
+                    .expect("view was not installed in a window");
 
                 Ok(SurfaceOptions {
                     system: SurfaceSystem::Cocoa,
@@ -64,21 +65,15 @@ mod rwh_06_impl {
                 })
             }
             #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
-            (
-                RawWindowHandle::Xlib(window),
-                RawDisplayHandle::Xlib(display)
-            ) => {
+            (RawWindowHandle::Xlib(window), RawDisplayHandle::Xlib(display)) => {
                 Ok(SurfaceOptions {
                     system: SurfaceSystem::X11,
-                    window_handle: BigInt::from(window.window as u64),
+                    window_handle: BigInt::from(window.window),
                     display_handle: BigInt::from(display.display.unwrap().as_ptr() as u64),
                 })
             }
             #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
-            (
-                RawWindowHandle::Wayland(window),
-                RawDisplayHandle::Wayland(display)
-            ) => {
+            (RawWindowHandle::Wayland(window), RawDisplayHandle::Wayland(display)) => {
                 Ok(SurfaceOptions {
                     system: SurfaceSystem::Wayland,
                     window_handle: BigInt::from(window.surface.as_ptr() as u64),
@@ -89,4 +84,3 @@ mod rwh_06_impl {
         }
     }
 }
-

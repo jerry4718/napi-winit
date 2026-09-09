@@ -1,7 +1,7 @@
-pub mod time;
-pub mod surface;
-mod interval;
-mod sleep;
 mod executor;
+mod interval;
 mod raw_window;
+mod sleep;
+pub mod surface;
+pub mod time;
 // mod memory;

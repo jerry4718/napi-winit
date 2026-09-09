@@ -1,38 +1,47 @@
-use napi::bindgen_prelude::*;
 use crate::{
-    event::{
-        DeviceEvent,
-        DeviceId,
-        StartCause,
-        WindowEvent,
-    },
+    event::{DeviceEvent, DeviceId, StartCause, WindowEvent},
     event_loop::ActiveEventLoop,
-    window::WindowId,
     handle_res, handle_rop,
+    window::WindowId,
 };
+use napi::bindgen_prelude::*;
+
+// Callback aliases: keep the `Option` wrapper on the struct fields — napi-rs derives the
+// optional (`?`) TS signature from seeing the explicit `Option<...>` field type.
+type NewEventsCallback<'scope> =
+    FunctionRef<FnArgs<(ActiveEventLoop, StartCause)>, Unknown<'scope>>;
+type EventLoopCallback<'scope> = FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>;
+type WindowEventCallback<'scope> =
+    FunctionRef<FnArgs<(ActiveEventLoop, WindowId, WindowEvent)>, Unknown<'scope>>;
+type DeviceEventCallback<'scope> =
+    FunctionRef<FnArgs<(ActiveEventLoop, Option<DeviceId>, DeviceEvent)>, Unknown<'scope>>;
 
 #[napi(object, object_to_js = false)]
 pub struct ApplicationCallbacks<'scope> {
     #[napi(ts_type = "(eventLoop: ActiveEventLoop, cause: StartCause) => unknown")]
-    pub on_new_events: Option<FunctionRef<FnArgs<(ActiveEventLoop, StartCause)>, Unknown<'scope>>>,
+    pub on_new_events: Option<NewEventsCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_resumed: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
+    pub on_resumed: Option<EventLoopCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_can_create_surfaces: FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>,
+    pub on_can_create_surfaces: EventLoopCallback<'scope>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_proxy_wake_up: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
-    #[napi(ts_type = "(eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => unknown")]
-    pub on_window_event: FunctionRef<FnArgs<(ActiveEventLoop, WindowId, WindowEvent)>, Unknown<'scope>>,
-    #[napi(ts_type = "(eventLoop: ActiveEventLoop, deviceId: DeviceId | null, event: DeviceEvent) => unknown")]
-    pub on_device_event: Option<FunctionRef<FnArgs<(ActiveEventLoop, Option<DeviceId>, DeviceEvent)>, Unknown<'scope>>>,
+    pub on_proxy_wake_up: Option<EventLoopCallback<'scope>>,
+    #[napi(
+        ts_type = "(eventLoop: ActiveEventLoop, windowId: WindowId, event: WindowEvent) => unknown"
+    )]
+    pub on_window_event: WindowEventCallback<'scope>,
+    #[napi(
+        ts_type = "(eventLoop: ActiveEventLoop, deviceId: DeviceId | null, event: DeviceEvent) => unknown"
+    )]
+    pub on_device_event: Option<DeviceEventCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_about_to_wait: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
+    pub on_about_to_wait: Option<EventLoopCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_suspended: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
+    pub on_suspended: Option<EventLoopCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_destroy_surfaces: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
+    pub on_destroy_surfaces: Option<EventLoopCallback<'scope>>,
     #[napi(ts_type = "(eventLoop: ActiveEventLoop) => unknown")]
-    pub on_memory_warning: Option<FunctionRef<FnArgs<(ActiveEventLoop,)>, Unknown<'scope>>>,
+    pub on_memory_warning: Option<EventLoopCallback<'scope>>,
 }
 
 #[napi]

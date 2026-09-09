@@ -3,8 +3,7 @@ use napi::bindgen_prelude::*;
 use std::ptr::NonNull;
 
 use winit::event_loop::{
-    pump_events::EventLoopExtPumpEvents,
-    run_on_demand::EventLoopExtRunOnDemand,
+    pump_events::EventLoopExtPumpEvents, run_on_demand::EventLoopExtRunOnDemand,
 };
 
 use proc::{proxy_enum, proxy_wrap};
@@ -12,7 +11,7 @@ use proc::{proxy_enum, proxy_wrap};
 use crate::{
     application::Application,
     cursor::{CustomCursor, CustomCursorSource},
-    extra::time::{try_std_duration, try_std_instant, Instant, Duration},
+    extra::time::{Duration, Instant, try_std_duration, try_std_instant},
     monitor::MonitorHandle,
     napi_reason,
     window::{Theme, Window, WindowAttributes},
@@ -45,17 +44,28 @@ impl EventLoop {
         // (and its env) outlives every `ApplicationHandler` call inside `run_app`.
         let app: &'static mut Application<'static> = unsafe { std::mem::transmute(app) };
         let event_loop = unsafe { Box::from_raw(self as *const _ as *mut EventLoop) };
-        event_loop.inner.run_app(app).map_err(|e| napi_reason!("{e}"))
+        event_loop
+            .inner
+            .run_app(app)
+            .map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
     pub fn run_app_on_demand(&mut self, env: Env, app: &mut Application) -> Result<()> {
-        self.inner.run_app_on_demand(app).map_err(|e| napi_reason!("{e}"))
+        self.inner
+            .run_app_on_demand(app)
+            .map_err(|e| napi_reason!("{e}"))
     }
 
     #[napi]
-    pub fn pump_app_events(&mut self, env: Env, timeout: Option<Duration>, app: &mut Application) -> Result<PumpStatus> {
-        timeout.map(|duration| try_std_duration(&duration))
+    pub fn pump_app_events(
+        &mut self,
+        env: Env,
+        timeout: Option<Duration>,
+        app: &mut Application,
+    ) -> Result<PumpStatus> {
+        timeout
+            .map(|duration| try_std_duration(&duration))
             .transpose()
             .map(|timeout| PumpStatus::from(self.inner.pump_app_events(timeout, app)))
     }
@@ -74,7 +84,9 @@ pub struct ActiveEventLoop {
 
 impl ActiveEventLoop {
     pub fn new(origin: &dyn winit::event_loop::ActiveEventLoop) -> Self {
-        Self { inner_non_null: NonNull::from(origin) }
+        Self {
+            inner_non_null: NonNull::from(origin),
+        }
     }
 }
 
@@ -95,7 +107,11 @@ impl ActiveEventLoop {
     #[napi]
     pub fn create_window(&self, window_attributes: &WindowAttributes) -> Result<Window> {
         winit::window::WindowAttributes::try_from(window_attributes.clone())
-            .and_then(|attrs| inner_ref!(self).create_window(attrs).map_err(|e| napi_reason!("{e}")))
+            .and_then(|attrs| {
+                inner_ref!(self)
+                    .create_window(attrs)
+                    .map_err(|e| napi_reason!("{e}"))
+            })
             .map(Window::from)
     }
     // #[napi]
@@ -104,7 +120,10 @@ impl ActiveEventLoop {
     // }
     #[napi]
     pub fn available_monitors(&self) -> Vec<MonitorHandle> {
-        inner_ref!(self).available_monitors().map(|m| m.into()).collect()
+        inner_ref!(self)
+            .available_monitors()
+            .map(|m| m.into())
+            .collect()
     }
     #[napi]
     pub fn primary_monitor(&self) -> Option<MonitorHandle> {
@@ -145,7 +164,11 @@ impl ActiveEventLoop {
 }
 
 #[proxy_enum(origin_type = winit::event_loop::DeviceEvents, string_enum, skip_forward)]
-pub enum DeviceEvents { Always, WhenFocused, Never }
+pub enum DeviceEvents {
+    Always,
+    WhenFocused,
+    Never,
+}
 
 // /** [winit::event_loop::ControlFlow] */
 #[proxy_enum(origin_type = winit::event_loop::ControlFlow)]

@@ -1,20 +1,18 @@
 #[napi(js_name = "Extra")]
 pub mod namespace {
-    use std::future::Future;
-    use std::time::Duration as StdDuration;
-    use napi::bindgen_prelude::*;
     use crate::{
-        extra::time::{try_std_duration, Duration},
-        handle_res,
-        get_thread_pool,
+        extra::time::{Duration, try_std_duration},
+        get_thread_pool, handle_res,
         utils::alias::ThreadsafeNoCallee,
     };
+    use napi::bindgen_prelude::*;
+    use std::future::Future;
+    use std::time::Duration as StdDuration;
     #[napi]
 
     pub fn tokio_interval(
         duration: Duration,
-        #[napi(ts_arg_type = "() => (Promise<void> | void)")]
-        exec: Function<(), ()>,
+        #[napi(ts_arg_type = "() => (Promise<void> | void)")] exec: Function<(), ()>,
     ) -> Result<()> {
         let duration = try_std_duration(&duration)?;
         let task = exec.build_threadsafe_function().build().unwrap();
@@ -25,8 +23,7 @@ pub mod namespace {
     #[napi]
     pub fn thread_interval(
         duration: Duration,
-        #[napi(ts_arg_type = "() => (Promise<void> | void)")]
-        exec: Function<(), ()>,
+        #[napi(ts_arg_type = "() => (Promise<void> | void)")] exec: Function<(), ()>,
     ) -> Result<()> {
         let duration = try_std_duration(&duration)?;
         let task = exec.build_threadsafe_function().build().unwrap();

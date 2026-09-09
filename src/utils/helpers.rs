@@ -4,17 +4,23 @@ pub(crate) fn path_buf_to_string(path_buf: std::path::PathBuf) -> String {
 }
 
 #[inline]
-pub(crate) fn option_map<T, U, Conv: FnOnce(T) -> U>(conv: Conv) -> impl FnOnce(Option<T>) -> Option<U> {
+pub(crate) fn option_map<T, U, Conv: FnOnce(T) -> U>(
+    conv: Conv,
+) -> impl FnOnce(Option<T>) -> Option<U> {
     |input: Option<T>| input.map(conv)
 }
 
 #[inline]
-pub(crate) fn result_map<T, E, U, Conv: FnOnce(T) -> U>(conv: Conv) -> impl FnOnce(Result<T, E>) -> Result<U, E> {
+pub(crate) fn result_map<T, E, U, Conv: FnOnce(T) -> U>(
+    conv: Conv,
+) -> impl FnOnce(Result<T, E>) -> Result<U, E> {
     |input: Result<T, E>| input.map(conv)
 }
 
 #[inline]
-pub(crate) fn result_map_err<T, E, EO, Conv: FnOnce(E) -> EO>(conv: Conv) -> impl FnOnce(Result<T, E>) -> Result<T, EO> {
+pub(crate) fn result_map_err<T, E, EO, Conv: FnOnce(E) -> EO>(
+    conv: Conv,
+) -> impl FnOnce(Result<T, E>) -> Result<T, EO> {
     |input: Result<T, E>| input.map_err(conv)
 }
 
@@ -64,7 +70,10 @@ where
     |input| input.map(conv).collect::<Vec<U>>()
 }
 
-pub(crate) fn pipe<Mid, T, U>(conv1: impl Fn(T) -> Mid, conv2: impl Fn(Mid) -> U) -> impl Fn(T) -> U {
+pub(crate) fn pipe<Mid, T, U>(
+    conv1: impl Fn(T) -> Mid,
+    conv2: impl Fn(Mid) -> U,
+) -> impl Fn(T) -> U {
     move |input: T| conv2(conv1(input))
 }
 
@@ -74,6 +83,6 @@ pub(crate) fn ref_clone_into<T: Clone + Into<U>, U>(input: &T) -> U {
 }
 
 #[inline]
-pub(crate) fn string_as_str(input: &String) -> &str {
-    input.as_str()
+pub(crate) fn string_as_str(input: &str) -> &str {
+    input
 }

@@ -1,8 +1,8 @@
 #[napi(js_name = "Extra")]
 pub mod namespace {
-    use crate::{handle_res, get_thread_pool};
-    use napi::bindgen_prelude::*;
+    use crate::{get_thread_pool, handle_res};
     use napi::Env;
+    use napi::bindgen_prelude::*;
 
     #[napi(ts_args_type = "callback: () => (Promise<void> | void)")]
     pub fn tokio_call_spawn(env: Env, exec: Function<(), ()>) {
@@ -22,26 +22,32 @@ pub mod namespace {
     impl ThreadPool {
         #[napi(constructor)]
         pub fn new(num_threads: u32) -> ThreadPool {
-            Self { pool: threadpool::ThreadPool::new(num_threads as usize) }
+            Self {
+                pool: threadpool::ThreadPool::new(num_threads as usize),
+            }
         }
         #[napi(factory)]
         pub fn default() -> ThreadPool {
-            Self { pool: Default::default() }
+            Self {
+                pool: Default::default(),
+            }
         }
         #[napi(factory)]
         pub fn main() -> Self {
-            Self { pool: get_thread_pool().clone() }
+            Self {
+                pool: get_thread_pool().clone(),
+            }
         }
 
         #[napi(ts_args_type = "callback: () => (Promise<void> | void)")]
         pub fn execute(&self, env: Env, exec: Function<(), ()>) -> Result<()> {
             let task = exec.build_threadsafe_function().build()?;
-            self.pool.execute(move ||
+            self.pool.execute(move || {
                 block_on(async {
                     let result = task.call_async(()).await;
                     handle_res!(result);
                 })
-            );
+            });
             Ok(())
         }
     }

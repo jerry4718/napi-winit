@@ -811,6 +811,7 @@ export type MouseScrollDelta =
   | { type: 'PixelDelta', delta: Position }
   | { type: 'NonExhaustive' }
 
+/** [`winit::keyboard::NamedKey`] * */
 export declare const enum NamedKey {
   Alt = 'Alt',
   AltGraph = 'AltGraph',
